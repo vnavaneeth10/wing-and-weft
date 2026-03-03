@@ -7,6 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import PolicyModal from '../Policy/PolicyModal';
 import { POLICIES } from '../Policy/policies';
 
+
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
   const [email, setEmail] = useState('');

@@ -5,6 +5,7 @@ import { INSTAGRAM_POSTS, INSTAGRAM_URL } from '../../data/products';
 import { useTheme } from '../../context/ThemeContext';
 import { useInView } from '../../hooks';
 
+
 const InstagramSection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
