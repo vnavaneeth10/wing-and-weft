@@ -1,0 +1,180 @@
+// src/components/Banner/Banner.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { BANNER_SLIDES } from '../../data/products';
+import { useTheme } from '../../context/ThemeContext';
+
+const RIBBON_TEXT =
+  'Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail  ✦  Pure fabrics, authentic weaves, heritage craftsmanship  ✦  Free shipping on orders above ₹2000  ✦  Handpicked by artisans, curated for you  ✦  ';
+
+const Banner: React.FC = () => {
+  const { isDark } = useTheme();
+  const [current, setCurrent] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const goTo = useCallback(
+    (index: number) => {
+      if (isTransitioning) return;
+      setIsTransitioning(true);
+      setCurrent((index + BANNER_SLIDES.length) % BANNER_SLIDES.length);
+      setTimeout(() => setIsTransitioning(false), 700);
+    },
+    [isTransitioning]
+  );
+
+  const next = useCallback(() => goTo(current + 1), [current, goTo]);
+  const prev = useCallback(() => goTo(current - 1), [current, goTo]);
+
+  useEffect(() => {
+    const timer = setInterval(next, 5500);
+    return () => clearInterval(timer);
+  }, [next]);
+
+  return (
+    <section className="relative w-full" aria-label="Featured saree collection banner">
+      {/* Main carousel */}
+      <div className="relative w-full overflow-hidden" style={{ height: 'clamp(400px, 70vh, 700px)' }}>
+        {BANNER_SLIDES.map((slide, i) => (
+          <div
+            key={slide.id}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+            aria-hidden={i !== current}
+          >
+            {/* Image with Ken Burns effect */}
+            <div className="absolute inset-0 overflow-hidden">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className={`w-full h-full object-cover ${i === current ? 'banner-slide' : ''}`}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                style={{ transform: 'scale(1.05)' }}
+              />
+            </div>
+
+            {/* Gradient overlay */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to right, rgba(26,20,16,0.75) 0%, rgba(26,20,16,0.4) 50%, rgba(26,20,16,0.2) 100%)',
+              }}
+            />
+            {/* Bottom gradient for ribbon readability */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-32"
+              style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.8), transparent)' }}
+            />
+
+            {/* Slide text */}
+            <div className="absolute inset-0 flex items-center justify-center z-10 px-6 md:px-16">
+              <div className="text-center max-w-2xl">
+                <p
+                  className="text-brand-orange text-sm md:text-base uppercase tracking-widest mb-3 font-body"
+                  style={{ letterSpacing: '0.3em' }}
+                >
+                  Wing & Weft Collection
+                </p>
+                <h2
+                  className="text-white mb-4"
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
+                    fontWeight: 600,
+                    lineHeight: 1.1,
+                    textShadow: '0 2px 20px rgba(0,0,0,0.5)',
+                  }}
+                >
+                  {slide.title}
+                </h2>
+                <p
+                  className="text-brand-cream text-base md:text-xl mb-8 font-body"
+                  style={{ fontWeight: 300, textShadow: '0 1px 10px rgba(0,0,0,0.4)' }}
+                >
+                  {slide.subtitle}
+                </p>
+                <Link
+                  to={slide.link}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold font-body uppercase tracking-widest transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: 'linear-gradient(135deg, #bc3d3e, #b6893c)',
+                    color: '#e9e3cb',
+                    boxShadow: '0 4px 20px rgba(188,61,62,0.4)',
+                    letterSpacing: '0.15em',
+                  }}
+                >
+                  {slide.cta}
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Arrow controls */}
+        <button
+          onClick={prev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: 'rgba(233,227,203,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(233,227,203,0.25)' }}
+          aria-label="Previous slide"
+        >
+          <ChevronLeft size={20} color="#e9e3cb" />
+        </button>
+        <button
+          onClick={next}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: 'rgba(233,227,203,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(233,227,203,0.25)' }}
+          aria-label="Next slide"
+        >
+          <ChevronRight size={20} color="#e9e3cb" />
+        </button>
+
+        {/* Dots */}
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          {BANNER_SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: i === current ? '24px' : '8px',
+                height: '8px',
+                background: i === current ? '#bc3d3e' : 'rgba(233,227,203,0.5)',
+              }}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Scrolling ribbon */}
+      <div
+        className="overflow-hidden py-3 relative"
+        style={{
+          background: isDark
+            ? 'linear-gradient(90deg, #231d17, #bc3d3e 20%, #b6893c 50%, #bc3d3e 80%, #231d17)'
+            : 'linear-gradient(90deg, #2a1f1a, #bc3d3e 20%, #b6893c 50%, #bc3d3e 80%, #2a1f1a)',
+        }}
+        aria-label="Promotional ribbon"
+      >
+        <div className="ribbon-text">
+          {[...Array(6)].map((_, i) => (
+            <span
+              key={i}
+              className="whitespace-nowrap font-body text-sm px-4"
+              style={{
+                color: '#e9e3cb',
+                letterSpacing: '0.1em',
+              }}
+            >
+              {RIBBON_TEXT}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Banner;
