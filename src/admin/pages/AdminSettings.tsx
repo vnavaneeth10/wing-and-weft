@@ -1,8 +1,19 @@
 // src/admin/pages/AdminSettings.tsx
 import React, { useState, useEffect } from 'react';
-import { Save, Settings, Phone, Instagram, Facebook, MessageCircle, AlignLeft } from 'lucide-react';
+//import { Save, Settings, Phone, Instagram, Facebook, MessageCircle, AlignLeft } from 'lucide-react';
+import {
+  Save,
+  Settings,
+  Phone,
+  Instagram,
+  Facebook,
+  MessageCircle,
+  AlignLeft,
+  type LucideIcon,
+} from 'lucide-react';
 import { AdminBtn, Field, inputCls, inputStyle, Toast, Spinner } from '../components/AdminUI';
 import { useSettings } from '../hooks/useAdminData';
+//import { LucideIcon } from 'lucide-react';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
@@ -10,7 +21,7 @@ interface SettingField {
   key: string;
   label: string;
   placeholder: string;
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   hint?: string;
   type?: 'text' | 'tel' | 'url' | 'textarea';
 }

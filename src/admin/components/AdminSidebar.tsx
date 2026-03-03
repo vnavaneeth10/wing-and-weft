@@ -1,10 +1,20 @@
 // src/admin/components/AdminSidebar.tsx
 import React, { useState } from 'react';
 import {
-  LayoutDashboard, Package, Image, MessageSquare,
-  Settings, LogOut, Menu, X, ChevronRight, Layers,
+  LayoutDashboard,
+  Package,
+  Image,
+  MessageSquare,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  ChevronRight,
+  Layers,
+  type LucideIcon,
 } from 'lucide-react';
 import { useAdminAuth } from '../lib/AdminAuthContext';
+//import { LucideIcon } from 'lucide-react';
 
 export type AdminPage = 'dashboard' | 'products' | 'banners' | 'inquiries' | 'settings';
 
@@ -14,7 +24,7 @@ interface Props {
   newInquiries?: number;
 }
 
-const NAV_ITEMS: { id: AdminPage; label: string; icon: React.FC<{ size?: number; className?: string }> }[] = [
+const NAV_ITEMS: { id: AdminPage; label: string; icon: LucideIcon  }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'products', label: 'Products', icon: Package },
   { id: 'banners', label: 'Banners', icon: Image },
