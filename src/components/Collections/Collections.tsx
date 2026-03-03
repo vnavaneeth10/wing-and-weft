@@ -45,21 +45,19 @@ const Collections: React.FC = () => {
 
           {/* Tabs */}
           <div
-            className={`inline-flex rounded-full p-1 gap-1 ${
-              isDark ? 'bg-dark-bg border border-dark-border' : 'bg-white border border-stone-200 shadow-sm'
-            }`}
+            className={`inline-flex rounded-full p-1 gap-1 ${isDark ? 'bg-dark-bg border border-dark-border' : 'bg-white border border-stone-200 shadow-sm'
+              }`}
           >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold font-body transition-all duration-300 ${
-                  activeTab === tab.key
+                className={`px-5 py-2 rounded-full text-sm font-semibold font-body transition-all duration-300 ${activeTab === tab.key
                     ? 'text-white shadow-md'
                     : isDark
-                    ? 'text-dark-muted hover:text-dark-text'
-                    : 'text-stone-600 hover:text-stone-800'
-                }`}
+                      ? 'text-dark-muted hover:text-dark-text'
+                      : 'text-stone-600 hover:text-stone-800'
+                  }`}
                 style={
                   activeTab === tab.key
                     ? { background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }
