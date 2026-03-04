@@ -1,9 +1,9 @@
 // src/components/Collections/Collections.tsx
 import React, { useState } from 'react';
-import { getNewArrivals, getBestSellers, getFeaturedProducts } from '../../data/products';
 import { useTheme } from '../../context/ThemeContext';
 import { useInView } from '../../hooks';
 import ProductCard from '../Products/ProductCard';
+import { useFeaturedProducts } from '../../hooks/useProducts'; // ✅ live from Supabase
 
 type Tab = 'new' | 'best' | 'featured';
 
@@ -12,6 +12,9 @@ const Collections: React.FC = () => {
   const { ref, inView } = useInView();
   const [activeTab, setActiveTab] = useState<Tab>('new');
 
+  // ✅ CHANGED: fetch live from Supabase instead of static getters
+  const { newArrivals, bestSellers, featured, loading } = useFeaturedProducts();
+
   const tabs: { key: Tab; label: string }[] = [
     { key: 'new', label: 'New Arrivals' },
     { key: 'best', label: 'Best Selling' },
@@ -19,7 +22,9 @@ const Collections: React.FC = () => {
   ];
 
   const products =
-    activeTab === 'new' ? getNewArrivals() : activeTab === 'best' ? getBestSellers() : getFeaturedProducts();
+    activeTab === 'new' ? newArrivals :
+    activeTab === 'best' ? bestSellers :
+    featured;
 
   return (
     <section
@@ -45,24 +50,22 @@ const Collections: React.FC = () => {
 
           {/* Tabs */}
           <div
-            className={`inline-flex rounded-full p-1 gap-1 ${isDark ? 'bg-dark-bg border border-dark-border' : 'bg-white border border-stone-200 shadow-sm'
-              }`}
+            className={`inline-flex rounded-full p-1 gap-1 ${
+              isDark ? 'bg-dark-bg border border-dark-border' : 'bg-white border border-stone-200 shadow-sm'
+            }`}
           >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold font-body transition-all duration-300 ${activeTab === tab.key
+                className={`px-5 py-2 rounded-full text-sm font-semibold font-body transition-all duration-300 ${
+                  activeTab === tab.key
                     ? 'text-white shadow-md'
                     : isDark
-                      ? 'text-dark-muted hover:text-dark-text'
-                      : 'text-stone-600 hover:text-stone-800'
-                  }`}
-                style={
-                  activeTab === tab.key
-                    ? { background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }
-                    : {}
-                }
+                    ? 'text-dark-muted hover:text-dark-text'
+                    : 'text-stone-600 hover:text-stone-800'
+                }`}
+                style={activeTab === tab.key ? { background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' } : {}}
                 aria-pressed={activeTab === tab.key}
               >
                 {tab.label}
@@ -71,23 +74,47 @@ const Collections: React.FC = () => {
           </div>
         </div>
 
-        {/* Scrollable products */}
-        <div className="relative overflow-hidden">
-          <div
-            className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-            style={{ background: isDark ? 'linear-gradient(to right, #231d17, transparent)' : 'linear-gradient(to right, #faf5eb, transparent)' }}
-          />
-          <div
-            className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-            style={{ background: isDark ? 'linear-gradient(to left, #231d17, transparent)' : 'linear-gradient(to left, #faf5eb, transparent)' }}
-          />
-
-          <div className="auto-scroll-container gap-5 py-4">
-            {[...products, ...products].map((product, i) => (
-              <ProductCard key={`${product.id}-${i}`} product={product} compact />
+        {/* Loading skeleton */}
+        {loading ? (
+          <div className="flex gap-5 overflow-hidden py-4">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 rounded-xl overflow-hidden"
+                style={{ width: '200px' }}
+              >
+                <div className="shimmer w-full" style={{ height: '280px' }} />
+                <div className="p-3 space-y-2">
+                  <div className="shimmer h-3 rounded w-3/4" />
+                  <div className="shimmer h-3 rounded w-1/2" />
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-16">
+            <p className={`text-sm font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
+              No products in this collection yet. Add some from the admin panel!
+            </p>
+          </div>
+        ) : (
+          /* Scrollable products */
+          <div className="relative overflow-hidden">
+            <div
+              className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+              style={{ background: isDark ? 'linear-gradient(to right, #231d17, transparent)' : 'linear-gradient(to right, #faf5eb, transparent)' }}
+            />
+            <div
+              className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+              style={{ background: isDark ? 'linear-gradient(to left, #231d17, transparent)' : 'linear-gradient(to left, #faf5eb, transparent)' }}
+            />
+            <div className="auto-scroll-container gap-5 py-4">
+              {[...products, ...products].map((product, i) => (
+                <ProductCard key={`${product.id}-${i}`} product={product} compact />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

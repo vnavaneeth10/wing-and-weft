@@ -41,22 +41,32 @@ const AdminBanners: React.FC = () => {
   const handleSave = async (banner: DBBanner) => {
     setSaving(banner.id);
     try {
-      const edits = editing[banner.id] || {};
+      const edits = { ...(editing[banner.id] || {}) };
 
-      // Upload image if changed
+      // ✅ FIX: correct argument order — uploadBannerImage(id, file)
       if (pendingImages[banner.id]) {
-        const url = await uploadBannerImage(pendingImages[banner.id], banner.id);
+        const url = await uploadBannerImage(banner.id, pendingImages[banner.id]);
         edits.image_url = url;
-        setPendingImages((prev) => { const next = { ...prev }; delete next[banner.id]; return next; });
+        setPendingImages((prev) => {
+          const next = { ...prev };
+          delete next[banner.id];
+          return next;
+        });
       }
 
       if (Object.keys(edits).length > 0) {
         await updateBanner(banner.id, edits);
-        setEditing((prev) => { const next = { ...prev }; delete next[banner.id]; return next; });
+        setEditing((prev) => {
+          const next = { ...prev };
+          delete next[banner.id];
+          return next;
+        });
         showToast('Banner saved successfully', 'success');
+      } else {
+        showToast('No changes to save', 'error');
       }
-    } catch {
-      showToast('Failed to save banner', 'error');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to save banner', 'error');
     } finally {
       setSaving(null);
     }
@@ -94,7 +104,8 @@ const AdminBanners: React.FC = () => {
         <Image size={18} className="text-brand-gold mt-0.5 flex-shrink-0" />
         <p className="text-slate-400 text-sm" style={{ fontFamily: '"Raleway", sans-serif' }}>
           <span className="text-brand-gold font-semibold">Image dimensions: 1440 × 700 px</span>{' '}
-          (16:5 aspect ratio). JPG or WebP recommended. Max 300 KB per image. Keep the main subject slightly left-center to allow for text overlay on the right.
+          (16:5 aspect ratio). JPG or WebP recommended. Max 300 KB per image.
+          Keep the main subject slightly left-center to allow for text overlay on the right.
         </p>
       </div>
 
@@ -123,9 +134,7 @@ const AdminBanners: React.FC = () => {
                   <span className="text-slate-300 text-sm font-semibold" style={{ fontFamily: '"Raleway", sans-serif' }}>
                     Slide {idx + 1}
                   </span>
-                  {hasChanges(banner.id) && (
-                    <Badge label="Unsaved changes" color="orange" />
-                  )}
+                  {hasChanges(banner.id) && <Badge label="Unsaved changes" color="orange" />}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -156,17 +165,18 @@ const AdminBanners: React.FC = () => {
               <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Image upload */}
                 <div>
-                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3" style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.12em' }}>
+                  <p
+                    className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-3"
+                    style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.12em' }}
+                  >
                     Banner Image
                   </p>
-                  <div style={{ aspectRatio: '16/7' }}>
-                    <SingleImageUploader
-                      value={String(getField(banner, 'image_url') || '')}
-                      onChange={(url, file) => handleImageChange(banner.id, url, file)}
-                      label={`Banner ${idx + 1}`}
-                      aspectRatio="16/7"
-                    />
-                  </div>
+                  <SingleImageUploader
+                    value={String(getField(banner, 'image_url') || '')}
+                    onChange={(url, file) => handleImageChange(banner.id, url, file)}
+                    label={`Banner ${idx + 1}`}
+                    aspectRatio="16/7"
+                  />
                 </div>
 
                 {/* Text fields */}
@@ -210,7 +220,7 @@ const AdminBanners: React.FC = () => {
                     </Field>
                   </div>
 
-                  {/* Preview text */}
+                  {/* Live text preview */}
                   <div
                     className="mt-4 p-4 rounded-xl relative overflow-hidden"
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -246,7 +256,7 @@ const AdminBanners: React.FC = () => {
             >
               <Image size={32} className="text-slate-600 mx-auto mb-3" />
               <p className="text-slate-500 text-sm" style={{ fontFamily: '"Raleway", sans-serif' }}>
-                No banners found. Make sure your Supabase `banners` table is set up with 3 rows.
+                No banners found. Make sure your Supabase <code>banners</code> table is set up with 3 rows.
               </p>
             </div>
           )}

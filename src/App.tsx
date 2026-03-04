@@ -45,8 +45,8 @@ const PublicLayout: React.FC = () => (
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/category/:categoryId" element={<CategoryPage />} />
-          <Route path="/product/:productId" element={<ProductDetailPage />} />
+          {/* <Route path="/category/:categoryId" element={<CategoryPage />} /> */}
+          {/* <Route path="/product/:productId" element={<ProductDetailPage />} /> */}
           <Route path="/our-story" element={<OurStoryPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/search" element={<SearchPage />} />

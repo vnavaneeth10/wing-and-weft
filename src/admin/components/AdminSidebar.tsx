@@ -11,12 +11,13 @@ import {
   X,
   ChevronRight,
   Layers,
+  Tag,          // ✅ NEW: icon for Categories
   type LucideIcon,
 } from 'lucide-react';
 import { useAdminAuth } from '../lib/AdminAuthContext';
-//import { LucideIcon } from 'lucide-react';
 
-export type AdminPage = 'dashboard' | 'products' | 'banners' | 'inquiries' | 'settings';
+// ✅ Added 'categories' to the AdminPage type
+export type AdminPage = 'dashboard' | 'products' | 'banners' | 'categories' | 'inquiries' | 'settings';
 
 interface Props {
   activePage: AdminPage;
@@ -24,12 +25,13 @@ interface Props {
   newInquiries?: number;
 }
 
-const NAV_ITEMS: { id: AdminPage; label: string; icon: LucideIcon  }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'products', label: 'Products', icon: Package },
-  { id: 'banners', label: 'Banners', icon: Image },
-  { id: 'inquiries', label: 'Inquiries', icon: MessageSquare },
-  { id: 'settings', label: 'Settings', icon: Settings },
+const NAV_ITEMS: { id: AdminPage; label: string; icon: LucideIcon }[] = [
+  { id: 'dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { id: 'products',   label: 'Products',   icon: Package },
+  { id: 'banners',    label: 'Banners',    icon: Image },
+  { id: 'categories', label: 'Categories', icon: Tag },       // ✅ NEW
+  { id: 'inquiries',  label: 'Inquiries',  icon: MessageSquare },
+  { id: 'settings',   label: 'Settings',   icon: Settings },
 ];
 
 const AdminSidebar: React.FC<Props> = ({ activePage, onNavigate, newInquiries = 0 }) => {
@@ -74,7 +76,11 @@ const AdminSidebar: React.FC<Props> = ({ activePage, onNavigate, newInquiries = 
                   ? 'text-white shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
-              style={isActive ? { background: 'linear-gradient(135deg, rgba(188,61,62,0.3), rgba(182,137,60,0.2))', border: '1px solid rgba(188,61,62,0.3)' } : {}}
+              style={
+                isActive
+                  ? { background: 'linear-gradient(135deg, rgba(188,61,62,0.3), rgba(182,137,60,0.2))', border: '1px solid rgba(188,61,62,0.3)' }
+                  : {}
+              }
               aria-current={isActive ? 'page' : undefined}
             >
               <div className="flex items-center gap-3">
@@ -122,7 +128,7 @@ const AdminSidebar: React.FC<Props> = ({ activePage, onNavigate, newInquiries = 
 
   return (
     <>
-      {/* Mobile toggle button */}
+      {/* Mobile toggle */}
       <button
         className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
         style={{ background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -134,10 +140,7 @@ const AdminSidebar: React.FC<Props> = ({ activePage, onNavigate, newInquiries = 
 
       {/* Mobile backdrop */}
       {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/60 z-40"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Mobile sidebar */}

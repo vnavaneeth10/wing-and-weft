@@ -177,6 +177,9 @@ export function useProducts() {
 
 // ─── Banners ──────────────────────────────────────────────────────────────────
 
+// REPLACE only the useBanners function in src/admin/hooks/useAdminData.ts
+// The uploadBannerImage had (id, file) but was being called with (file, id) — now consistent
+
 export function useBanners() {
   const { session } = useAdminAuth();
   const [banners, setBanners] = useState<DBBanner[]>([]);
@@ -202,12 +205,14 @@ export function useBanners() {
     setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
   };
 
+  // ✅ FIX: argument order is (id, file) — consistent with how AdminBanners.tsx calls it
   const uploadBannerImage = async (id: string, file: File): Promise<string> => {
     if (!session) throw new Error('Not authenticated');
-    const path   = `banners/${id}_${Date.now()}.${file.name.split('.').pop() ?? 'jpg'}`;
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `banners/${id}_${Date.now()}.${ext}`;
     // Returns full public URL
     const pubUrl = await uploadImage('banner-images', path, file, session.access_token);
-    // Immediately save the URL to the database
+    // Save the URL to the database immediately
     await updateBanner(id, { image_url: pubUrl });
     return pubUrl;
   };
@@ -291,3 +296,97 @@ export function useSettings() {
 
   return { settings, loading, refresh, saveSetting };
 }
+
+  // ─── ADD THIS to src/admin/hooks/useAdminData.ts ─────────────────────────────
+// Paste this entire block at the bottom of the file, before the closing
+
+export interface DBCategory {
+  id:          string;
+  name:        string;
+  image:       string;
+  description: string;
+  count:       number;
+  sort_order:  number;
+  is_active:   boolean;
+  created_at?: string;
+}
+
+export function useCategories() {
+  const { session } = useAdminAuth();
+  const [categories, setCategories] = useState<DBCategory[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = session
+        ? await dbSelect<DBCategory>('categories', session.access_token, { order: 'sort_order.asc' })
+        : await publicFetch<DBCategory>('categories', { order: 'sort_order.asc', is_active: 'eq.true' });
+      setCategories(data ?? []);
+      setError('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load categories');
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const addCategory = async (
+    category: Omit<DBCategory, 'created_at'>,
+    imageFile?: File | null
+  ): Promise<DBCategory> => {
+    if (!session) throw new Error('Not authenticated');
+    let imageUrl = category.image;
+
+    // Upload image file if provided
+    if (imageFile) {
+      const ext  = imageFile.name.split('.').pop() ?? 'jpg';
+      const path = `categories/${category.id}_${Date.now()}.${ext}`;
+      imageUrl   = await uploadImage('category-images', path, imageFile, session.access_token);
+    }
+
+    const [created] = await dbInsert<DBCategory>('categories', session.access_token, {
+      ...category,
+      image: imageUrl,
+    });
+    setCategories((prev) => [...prev, created].sort((a, b) => a.sort_order - b.sort_order));
+    return created;
+  };
+
+  const updateCategory = async (
+    id: string,
+    updates: Partial<DBCategory>,
+    imageFile?: File | null
+  ): Promise<void> => {
+    if (!session) throw new Error('Not authenticated');
+    let finalUpdates = { ...updates };
+
+    // Upload new image if provided
+    if (imageFile) {
+      const ext  = imageFile.name.split('.').pop() ?? 'jpg';
+      const path = `categories/${id}_${Date.now()}.${ext}`;
+      finalUpdates.image = await uploadImage('category-images', path, imageFile, session.access_token);
+    }
+
+    await dbUpdate<DBCategory>('categories', session.access_token, id, finalUpdates);
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...finalUpdates } : c))
+    );
+  };
+
+  const deleteCategory = async (id: string): Promise<void> => {
+    if (!session) throw new Error('Not authenticated');
+    await dbDelete('categories', session.access_token, id);
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  return {
+    categories, loading, error, refresh,
+    addCategory, updateCategory, deleteCategory,
+  };
+}
+
+

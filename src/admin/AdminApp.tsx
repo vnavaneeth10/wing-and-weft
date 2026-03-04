@@ -1,5 +1,5 @@
 // src/admin/AdminApp.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AdminAuthProvider, useAdminAuth } from './lib/AdminAuthContext';
 import AdminLogin from './pages/AdminLogin';
 import AdminSidebar, { AdminPage } from './components/AdminSidebar';
@@ -8,6 +8,7 @@ import AdminProducts from './pages/AdminProducts';
 import AdminBanners from './pages/AdminBanners';
 import AdminInquiries from './pages/AdminInquiries';
 import AdminSettings from './pages/AdminSettings';
+import AdminCategories from './pages/AdminCategories';
 import { useProducts, useInquiries } from './hooks/useAdminData';
 
 // ─── Inner app (auth-gated) ────────────────────────────────────────────────────
@@ -15,8 +16,14 @@ const AdminInner: React.FC = () => {
   const { session } = useAdminAuth();
   const [page, setPage] = useState<AdminPage>('dashboard');
 
-  const { products, loading: productsLoading } = useProducts();
+  // ✅ FIX: products and refresh are owned HERE so dashboard always sees latest
+  const { products, loading: productsLoading, refresh: refreshProducts } = useProducts();
   const { newCount: newInquiries } = useInquiries();
+
+  // Called by AdminProducts after any add/edit/delete
+  const handleProductsChanged = useCallback(() => {
+    refreshProducts();
+  }, [refreshProducts]);
 
   if (!session) return <AdminLogin />;
 
@@ -32,9 +39,12 @@ const AdminInner: React.FC = () => {
           />
         );
       case 'products':
-        return <AdminProducts />;
+        // ✅ Pass onChanged so dashboard stats update immediately
+        return <AdminProducts onChanged={handleProductsChanged} />;
       case 'banners':
         return <AdminBanners />;
+      case 'categories':
+        return <AdminCategories />;
       case 'inquiries':
         return <AdminInquiries />;
       case 'settings':
@@ -60,7 +70,6 @@ const AdminInner: React.FC = () => {
           style={{ background: 'rgba(11,13,24,0.95)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,255,255,0.07)' }}
         >
           <div className="flex items-center gap-3 lg:hidden">
-            {/* spacer for mobile menu button */}
             <div className="w-10" />
           </div>
           <p
@@ -83,8 +92,10 @@ const AdminInner: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)', color: '#e9e3cb', fontFamily: '"Raleway", sans-serif' }}>
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)', color: '#e9e3cb', fontFamily: '"Raleway", sans-serif' }}
+              >
                 A
               </div>
               <span className="text-slate-400 text-xs hidden sm:block" style={{ fontFamily: '"Raleway", sans-serif' }}>Admin</span>
@@ -101,7 +112,6 @@ const AdminInner: React.FC = () => {
   );
 };
 
-// ─── Root export ──────────────────────────────────────────────────────────────
 const AdminApp: React.FC = () => (
   <AdminAuthProvider>
     <AdminInner />

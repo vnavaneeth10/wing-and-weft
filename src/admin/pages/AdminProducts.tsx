@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp,
-  Package, AlertTriangle, Filter,
+  Package,
 } from 'lucide-react';
 import {
   AdminBtn, Badge, Modal, Field, inputCls, inputStyle,
@@ -34,7 +34,8 @@ const EMPTY_PRODUCT: Omit<DBProduct, 'id' | 'created_at'> = {
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
 const AdminProducts: React.FC = () => {
-  const { products, loading, addProduct, updateProduct, deleteProduct, updateStock, uploadProductImage } = useProducts();
+  // ✅ FIX: removed uploadProductImage — it no longer exists in the hook
+  const { products, loading, addProduct, updateProduct, deleteProduct, updateStock } = useProducts();
 
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('all');
@@ -46,6 +47,7 @@ const AdminProducts: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<DBProduct | null>(null);
   const [form, setForm] = useState<Omit<DBProduct, 'id' | 'created_at'>>(EMPTY_PRODUCT);
+  // ✅ FIX: pendingImages is now managed locally and passed directly to addProduct/updateProduct
   const [pendingImages, setPendingImages] = useState<(File | null)[]>([null, null, null, null]);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DBProduct | null>(null);
@@ -59,7 +61,6 @@ const AdminProducts: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Filtered + sorted
   const displayed = useMemo(() => {
     let list = [...products];
     if (search) {
@@ -109,35 +110,19 @@ const AdminProducts: React.FC = () => {
     setPendingImages(files);
   };
 
+  // ✅ FIX: addProduct now receives pendingImages as 2nd arg
+  //         updateProduct now receives pendingImages as 3rd arg
+  //         No more manual uploadProductImage call here
   const handleSave = async () => {
     if (!form.name.trim()) { showToast('Product name is required', 'error'); return; }
     if (form.price <= 0) { showToast('Price must be greater than 0', 'error'); return; }
     setSaving(true);
     try {
-      let finalImages = [...form.images];
-
       if (editProduct) {
-        // Upload any new images
-        for (let i = 0; i < pendingImages.length; i++) {
-          const f = pendingImages[i];
-          if (f) {
-            finalImages[i] = await uploadProductImage(f, editProduct.id, i);
-          }
-        }
-        await updateProduct(editProduct.id, { ...form, images: finalImages });
+        await updateProduct(editProduct.id, form, pendingImages);
         showToast('Product updated successfully', 'success');
       } else {
-        // Need ID for image path — generate one
-        const tempId = `WW-${Date.now()}`;
-        for (let i = 0; i < pendingImages.length; i++) {
-          const f = pendingImages[i];
-          if (f) {
-            finalImages[i] = await uploadProductImage(f, tempId, i);
-          }
-        }
-        // Filter empty image slots
-        finalImages = finalImages.filter(Boolean);
-        await addProduct({ ...form, images: finalImages });
+        await addProduct(form, pendingImages);
         showToast('Product added successfully', 'success');
       }
       setModalOpen(false);
@@ -267,7 +252,6 @@ const AdminProducts: React.FC = () => {
               <tbody>
                 {displayed.map((p) => (
                   <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                    {/* Product */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: '#0f1117' }}>
@@ -282,13 +266,11 @@ const AdminProducts: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    {/* Category */}
                     <td className="px-4 py-3">
                       <span className="text-slate-400 text-xs capitalize" style={{ fontFamily: '"Raleway", sans-serif' }}>
                         {CATEGORIES.find((c) => c.id === p.category)?.label || p.category}
                       </span>
                     </td>
-                    {/* Price */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="text-brand-red text-xs font-bold" style={{ fontFamily: '"Raleway", sans-serif' }}>
                         ₹{(p.discount_price || p.price).toLocaleString()}
@@ -299,22 +281,19 @@ const AdminProducts: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    {/* Stock — inline editable */}
                     <td className="px-4 py-3">
                       {inlineStockId === p.id ? (
                         <div className="flex items-center gap-2">
                           <input
-                            type="number"
-                            min={0}
-                            value={inlineStockVal}
+                            type="number" min={0} value={inlineStockVal}
                             onChange={(e) => setInlineStockVal(Number(e.target.value))}
                             className="w-16 px-2 py-1 rounded-lg text-xs text-white outline-none focus:ring-1 focus:ring-brand-red/50"
                             style={{ background: '#0f1117', border: '1px solid rgba(188,61,62,0.4)', fontFamily: '"Raleway", sans-serif' }}
                             autoFocus
                             onKeyDown={(e) => { if (e.key === 'Enter') saveInlineStock(p.id); if (e.key === 'Escape') setInlineStockId(null); }}
                           />
-                          <button onClick={() => saveInlineStock(p.id)} className="text-green-400 text-xs hover:text-green-300" style={{ fontFamily: '"Raleway", sans-serif' }}>✓</button>
-                          <button onClick={() => setInlineStockId(null)} className="text-slate-500 text-xs hover:text-slate-300" style={{ fontFamily: '"Raleway", sans-serif' }}>✕</button>
+                          <button onClick={() => saveInlineStock(p.id)} className="text-green-400 text-xs hover:text-green-300">✓</button>
+                          <button onClick={() => setInlineStockId(null)} className="text-slate-500 text-xs hover:text-slate-300">✕</button>
                         </div>
                       ) : (
                         <button
@@ -330,7 +309,6 @@ const AdminProducts: React.FC = () => {
                         </button>
                       )}
                     </td>
-                    {/* Tags */}
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
                         {p.is_new_arrival && <Badge label="New" color="green" />}
@@ -338,7 +316,6 @@ const AdminProducts: React.FC = () => {
                         {p.is_featured && <Badge label="Featured" color="blue" />}
                       </div>
                     </td>
-                    {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
@@ -381,7 +358,6 @@ const AdminProducts: React.FC = () => {
           }
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-            {/* Left col */}
             <div>
               <Field label="Product Name" required>
                 <input className={inputCls} style={inputStyle} placeholder="e.g. Kanchipuram Royal Silk"
@@ -429,7 +405,6 @@ const AdminProducts: React.FC = () => {
                 <ColorPicker colors={form.colors} onChange={(colors) => setForm((f) => ({ ...f, colors }))} />
               </Field>
 
-              {/* Tags */}
               <Field label="Tags">
                 <div className="flex gap-3 flex-wrap">
                   {[
@@ -454,7 +429,6 @@ const AdminProducts: React.FC = () => {
               </Field>
             </div>
 
-            {/* Right col */}
             <div>
               <Field label="Product Images" hint="Upload 4 photos: main, side, detail, border" required>
                 <MultiImageUploader values={form.images} onChange={handleImages} />
@@ -484,7 +458,6 @@ const AdminProducts: React.FC = () => {
         </Modal>
       )}
 
-      {/* Delete confirm */}
       {deleteTarget && (
         <ConfirmDialog
           title="Delete Product"

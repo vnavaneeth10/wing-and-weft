@@ -1,14 +1,76 @@
 // src/components/Instagram/InstagramSection.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Instagram } from 'lucide-react';
-import { INSTAGRAM_POSTS, INSTAGRAM_URL } from '../../data/products';
 import { useTheme } from '../../context/ThemeContext';
 import { useInView } from '../../hooks';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface InstagramPost {
+  id:      string;
+  image:   string;
+  link:    string;
+  caption: string;
+}
 
+// ─── Fallback posts (shown while loading or if no DB posts set) ───────────────
+const FALLBACK_POSTS: InstagramPost[] = [
+  { id: '1', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop', link: 'https://www.instagram.com/wingandweft/', caption: 'Kanchipuram Elegance' },
+  { id: '2', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=500&fit=crop', link: 'https://www.instagram.com/wingandweft/', caption: 'Banarasi Dreams' },
+  { id: '3', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=500&fit=crop', link: 'https://www.instagram.com/wingandweft/', caption: 'Mysore Magic' },
+  { id: '4', image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=500&fit=crop', link: 'https://www.instagram.com/wingandweft/', caption: 'Patola Story' },
+  { id: '5', image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=500&fit=crop', link: 'https://www.instagram.com/wingandweft/', caption: 'Tussar Tales' },
+  { id: '6', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop&q=80', link: 'https://www.instagram.com/wingandweft/', caption: 'Handloom Love' },
+];
+
+// ─── Fetch instagram_url and instagram_posts from Supabase settings ───────────
+const fetchInstagramData = async (): Promise<{ posts: InstagramPost[]; url: string }> => {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/settings?key=in.(instagram_url,instagram_posts)`,
+    {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+    }
+  );
+  if (!res.ok) throw new Error('Failed to fetch');
+  const rows: { key: string; value: string }[] = await res.json();
+  const map: Record<string, string> = {};
+  rows.forEach((r) => { map[r.key] = r.value; });
+
+  let posts = FALLBACK_POSTS;
+  if (map['instagram_posts']) {
+    try {
+      const parsed = JSON.parse(map['instagram_posts']);
+      if (Array.isArray(parsed) && parsed.length > 0) posts = parsed;
+    } catch {
+      // keep fallback
+    }
+  }
+
+  return {
+    posts,
+    url: map['instagram_url'] || 'https://www.instagram.com/wingandweft/',
+  };
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const InstagramSection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
+  const [posts, setPosts] = useState<InstagramPost[]>(FALLBACK_POSTS);
+  const [instagramUrl, setInstagramUrl] = useState('https://www.instagram.com/wingandweft/');
+
+  // ✅ Fetch live from Supabase settings
+  useEffect(() => {
+    fetchInstagramData()
+      .then(({ posts: p, url }) => {
+        setPosts(p);
+        setInstagramUrl(url);
+      })
+      .catch(() => {/* keep fallbacks */});
+  }, []);
 
   return (
     <section
@@ -31,12 +93,7 @@ const InstagramSection: React.FC = () => {
             style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 600 }}
             className={isDark ? 'text-brand-cream' : 'text-stone-800'}
           >
-            <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-brand-red transition-colors"
-            >
+            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-brand-red transition-colors">
               @wingandweft
             </a>
           </h2>
@@ -54,7 +111,7 @@ const InstagramSection: React.FC = () => {
             style={{ background: isDark ? 'linear-gradient(to left, #1a1410, transparent)' : 'linear-gradient(to left, white, transparent)' }}
           />
           <div className="auto-scroll-container gap-4 py-2" style={{ animationDuration: '25s' }}>
-            {[...INSTAGRAM_POSTS, ...INSTAGRAM_POSTS].map((post, i) => (
+            {[...posts, ...posts].map((post, i) => (
               <a
                 key={`${post.id}-${i}`}
                 href={post.link}
@@ -84,7 +141,7 @@ const InstagramSection: React.FC = () => {
         {/* Follow button */}
         <div className="text-center">
           <a
-            href={INSTAGRAM_URL}
+            href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold font-body text-sm uppercase tracking-widest transition-all duration-300 hover:scale-105"

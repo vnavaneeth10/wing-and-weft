@@ -1,17 +1,41 @@
 // src/components/Products/ProductCard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MessageCircle, Share2 } from 'lucide-react';
-import { Product } from '../../types';
+import { Star, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { getWhatsAppLink } from '../../data/products';
+import { WHATSAPP_NUMBER } from '../../data/products';
+
+// ─── Product type matching Supabase DB schema (snake_case) ───────────────────
+export interface Product {
+  id:             string;
+  name:           string;
+  category:       string;
+  fabric:         string;
+  price:          number;
+  discount_price: number | null;  // ✅ was: discountPrice
+  stock:          number;
+  colors:         string[];
+  images:         string[];
+  description:    string;
+  saree_fabric:   string;         // ✅ was: specifications.sareeFabric
+  saree_length:   string;         // ✅ was: specifications.sareeLength
+  blouse_length:  string;         // ✅ was: specifications.blouseLength
+  blouse_fabric:  string;         // ✅ was: specifications.blouseFabric
+  is_best_seller: boolean;        // ✅ was: isBestSeller
+  is_new_arrival: boolean;        // ✅ was: isNewArrival
+  is_featured:    boolean;        // ✅ was: isFeatured
+  rating:         number;
+  review_count:   number;         // ✅ was: reviewCount
+  created_at?:    string;
+}
 
 interface Props {
   product: Product;
-  compact?: boolean; // for collection tabs
+  compact?: boolean;
 }
 
-const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 12 }) => (
+// ─── Star Rating ──────────────────────────────────────────────────────────────
+export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 12 }) => (
   <div className="flex gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
     {[1, 2, 3, 4, 5].map((s) => (
       <Star
@@ -24,25 +48,33 @@ const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size 
   </div>
 );
 
+// ─── WhatsApp link builder ────────────────────────────────────────────────────
+const buildWhatsAppLink = (product: Product): string => {
+  const text = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g, ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+};
+
+// ─── Product Card ─────────────────────────────────────────────────────────────
 const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const { isDark } = useTheme();
-  const discount =
-    product.discountPrice
-      ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
-      : 0;
+
+  // ✅ CHANGED: discount_price (snake_case)
+  const discount = product.discount_price
+    ? Math.round(((product.price - product.discount_price) / product.price) * 100)
+    : 0;
 
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    window.open(getWhatsAppLink(product), '_blank', 'noopener,noreferrer');
+    window.open(buildWhatsAppLink(product), '_blank', 'noopener,noreferrer');
   };
 
+  // ── Compact card (used in Collections tabs) ────────────────────────────────
   if (compact) {
-    // Compact card for Collections/Tabs
     return (
       <Link
         to={`/product/${product.id}`}
-        className={`flex-shrink-0 group block rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+        className="flex-shrink-0 group block rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
         style={{ width: '200px' }}
         aria-label={`View ${product.name}`}
       >
@@ -50,10 +82,11 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
           <img
             src={product.images[0]}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
-          {product.isNewArrival && (
+          {/* ✅ CHANGED: is_new_arrival */}
+          {product.is_new_arrival && (
             <span
               className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
               style={{ background: '#bc3d3e', color: '#e9e3cb' }}
@@ -77,7 +110,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
         </div>
         <div className={`p-3 ${isDark ? 'bg-dark-card' : 'bg-white'}`}>
           <p
-            className={`text-xs mb-0.5 font-body ${isDark ? 'text-brand-gold' : 'text-brand-gold'}`}
+            className="text-xs mb-0.5 font-body text-brand-gold"
             style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}
           >
             {product.category.replace(/-/g, ' ')}
@@ -88,16 +121,21 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
           >
             {product.name}
           </h3>
+          {/* ✅ CHANGED: discount_price */}
           <div className="flex items-center gap-2 mt-1">
-            {product.discountPrice ? (
+            {product.discount_price ? (
               <>
-                <span className="font-bold text-brand-red font-body text-sm">₹{product.discountPrice.toLocaleString()}</span>
+                <span className="font-bold text-brand-red font-body text-sm">
+                  ₹{product.discount_price.toLocaleString()}
+                </span>
                 <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
                   ₹{product.price.toLocaleString()}
                 </span>
               </>
             ) : (
-              <span className="font-bold text-brand-red font-body text-sm">₹{product.price.toLocaleString()}</span>
+              <span className="font-bold text-brand-red font-body text-sm">
+                ₹{product.price.toLocaleString()}
+              </span>
             )}
           </div>
         </div>
@@ -105,7 +143,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     );
   }
 
-  // Full product card for category/search pages
+  // ── Full card (category / search pages) ───────────────────────────────────
   return (
     <div
       className={`product-card group rounded-xl overflow-hidden border ${
@@ -120,30 +158,43 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
-          {/* Badges */}
+
+          {/* Badges — ✅ CHANGED: is_new_arrival, is_best_seller */}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
-            {product.isNewArrival && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#bc3d3e', color: '#e9e3cb' }}>
+            {product.is_new_arrival && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-body font-semibold"
+                style={{ background: '#bc3d3e', color: '#e9e3cb' }}
+              >
                 New Arrival
               </span>
             )}
-            {product.isBestSeller && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#b6893c', color: '#e9e3cb' }}>
+            {product.is_best_seller && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-body font-semibold"
+                style={{ background: '#b6893c', color: '#e9e3cb' }}
+              >
                 Best Seller
               </span>
             )}
           </div>
+
           {discount > 0 && (
-            <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#e69358', color: '#fff' }}>
+            <span
+              className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
+              style={{ background: '#e69358', color: '#fff' }}
+            >
               -{discount}%
             </span>
           )}
+
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span className="text-white font-semibold font-body">Out of Stock</span>
             </div>
           )}
-          {/* Quick share */}
+
+          {/* Quick share on hover */}
           <button
             onClick={handleShare}
             className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
@@ -156,8 +207,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
       </Link>
 
       <div className="p-4">
-        {/* Category + fabric */}
-        <p className={`text-xs mb-1 font-body uppercase tracking-wide ${isDark ? 'text-brand-gold' : 'text-brand-gold'}`}>
+        <p className="text-xs mb-1 font-body uppercase tracking-wide text-brand-gold">
           {product.fabric}
         </p>
         <Link to={`/product/${product.id}`}>
@@ -170,11 +220,11 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
           </h3>
         </Link>
 
-        {/* Rating */}
+        {/* Rating — ✅ CHANGED: review_count */}
         <div className="flex items-center gap-2 mb-2">
           <StarRating rating={product.rating} />
           <span className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
-            ({product.reviewCount})
+            ({product.review_count})
           </span>
         </div>
 
@@ -185,32 +235,47 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
               key={c}
               className="w-4 h-4 rounded-full border border-white/20"
               style={{ background: c }}
-              aria-label={`Color option: ${c}`}
+              aria-label={`Color: ${c}`}
             />
           ))}
         </div>
 
-        {/* Price & stock */}
+        {/* Price + stock + buy button — ✅ CHANGED: discount_price */}
         <div className="flex items-center justify-between">
           <div>
-            {product.discountPrice ? (
+            {product.discount_price ? (
               <div className="flex items-center gap-2">
-                <span className="font-bold text-brand-red font-body">₹{product.discountPrice.toLocaleString()}</span>
+                <span className="font-bold text-brand-red font-body">
+                  ₹{product.discount_price.toLocaleString()}
+                </span>
                 <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
                   ₹{product.price.toLocaleString()}
                 </span>
               </div>
             ) : (
-              <span className="font-bold text-brand-red font-body">₹{product.price.toLocaleString()}</span>
+              <span className="font-bold text-brand-red font-body">
+                ₹{product.price.toLocaleString()}
+              </span>
             )}
-            <p className={`text-xs mt-0.5 font-body ${product.stock === 0 ? 'text-red-500' : product.stock <= 5 ? 'text-orange-500' : isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
-              {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
+            <p
+              className={`text-xs mt-0.5 font-body ${
+                product.stock === 0
+                  ? 'text-red-500'
+                  : product.stock <= 5
+                  ? 'text-orange-500'
+                  : isDark ? 'text-dark-muted' : 'text-stone-500'
+              }`}
+            >
+              {product.stock === 0
+                ? 'Out of Stock'
+                : product.stock <= 5
+                ? `Only ${product.stock} left`
+                : 'In Stock'}
             </p>
           </div>
 
-          {/* WhatsApp buy button */}
           <a
-            href={getWhatsAppLink(product)}
+            href={buildWhatsAppLink(product)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105"
@@ -226,5 +291,4 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   );
 };
 
-export { StarRating };
 export default ProductCard;
