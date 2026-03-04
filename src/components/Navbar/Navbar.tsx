@@ -91,7 +91,7 @@ const Navbar: React.FC = () => {
                   fontFamily: '"Cormorant Garamond", serif',
                   fontSize: '1.1rem',
                   fontWeight: 700,
-                  color: '#e9e3cb',
+                  color: '#ffffff',
                 }}
               >
                 W&W
@@ -112,11 +112,11 @@ const Navbar: React.FC = () => {
               </span>
               <p
                 style={{
-                  fontSize: '0.6rem',
+                  fontSize: '0.7rem',
                   letterSpacing: '0.2em',
                   fontFamily: '"Raleway", sans-serif',
                 }}
-                className={isDark ? 'text-brand-gold' : 'text-brand-gold'}
+                className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
                 TIMELESS SAREES
               </p>
