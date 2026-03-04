@@ -676,7 +676,7 @@ export const getFeaturedProducts = (): Product[] =>
 export const getAllFabrics = (): string[] =>
   [...new Set(PRODUCTS.map((p) => p.fabric))];
 
-export const WHATSAPP_NUMBER = '919999999999'; // Replace with actual number
+export const WHATSAPP_NUMBER = '919388199640'; // Replace with actual number
 export const INSTAGRAM_URL = 'https://www.instagram.com/wingandweft/';
 
 export const getWhatsAppLink = (product?: Product): string => {
