@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ─── Launch date: April 15, 2026 at 12:00 AM IST ─────────────────────────────
-const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
+const LAUNCH_DATE = new Date('2025-04-15T00:00:00+05:30');
 
 interface TimeLeft {
   days:    number;
