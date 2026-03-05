@@ -1,7 +1,7 @@
 // src/components/ComingSoon/ComingSoon.tsx
 import React, { useState, useEffect } from 'react';
 
-// ─── Launch date: April 15, 2025 at 12:00 AM IST ─────────────────────────────
+// ─── Launch date: April 15, 2026 at 12:00 AM IST ─────────────────────────────
 const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
 
 interface TimeLeft {
@@ -435,7 +435,7 @@ const ComingSoon: React.FC = () => {
           <NotifyForm />
 
           {/* Footer */}
-          <p className="ww-footer">© 2025 Wing &amp; Weft · All rights reserved</p>
+          <p className="ww-footer">© 2026 Wing &amp; Weft · All rights reserved</p>
         </div>
       </div>
     </>

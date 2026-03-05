@@ -1,8 +1,8 @@
 // src/LaunchGate.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 // Drop this wrapper around your <App /> in main.tsx.
-// Before April 15 2025 12:00 AM IST → shows ComingSoon page
-// On/after April 15 2025 12:00 AM IST → shows normal website
+// Before April 15 2026 12:00 AM IST → shows ComingSoon page
+// On/after April 15 2026 12:00 AM IST → shows normal website
 //
 // TO DISABLE (when you're ready to go live early):
 //   Change LAUNCH_DATE to a past date, OR
