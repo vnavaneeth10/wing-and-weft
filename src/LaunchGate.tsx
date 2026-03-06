@@ -14,7 +14,7 @@ import ComingSoon from './components/ComingSoon/ComingSoon';
 
 // ✅ Change this date to go live early, or set BYPASS = true
 const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
-const BYPASS = false; // set true to skip the countdown and always show the site
+const BYPASS = true; // set true to skip the countdown and always show the site
 
 const LaunchGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   if (BYPASS) return <>{children}</>;
