@@ -7,9 +7,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface InstagramPost {
-  id:      string;
-  image:   string;
-  link:    string;
+  id: string;
+  image: string;
+  link: string;
   caption: string;
 }
 
@@ -69,7 +69,7 @@ const InstagramSection: React.FC = () => {
         setPosts(p);
         setInstagramUrl(url);
       })
-      .catch(() => {/* keep fallbacks */});
+      .catch(() => {/* keep fallbacks */ });
   }, []);
 
   return (
