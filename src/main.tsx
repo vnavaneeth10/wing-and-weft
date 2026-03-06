@@ -12,7 +12,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <LaunchGate>
-    <App />
+      <App />
     </LaunchGate>
   </React.StrictMode>
 );

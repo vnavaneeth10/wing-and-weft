@@ -8,13 +8,13 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
-  id:          string;
-  name:        string;
-  image:       string;
+  id: string;
+  name: string;
+  image: string;
   description: string;
-  count:       number;
-  sort_order:  number;
-  is_active:   boolean;
+  count: number;
+  sort_order: number;
+  is_active: boolean;
 }
 
 type ViewMode = 'scroll' | 'two' | 'three';
@@ -31,21 +31,21 @@ const fetchCategories = async (): Promise<Category[]> => {
 
 // ─── Fallback ─────────────────────────────────────────────────────────────────
 const FALLBACK: Category[] = [
-  { id: 'silk-sarees',      name: 'Silk Sarees',      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
-  { id: 'cotton-sarees',    name: 'Cotton Sarees',    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
+  { id: 'silk-sarees', name: 'Silk Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
+  { id: 'cotton-sarees', name: 'Cotton Sarees', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
   { id: 'georgette-sarees', name: 'Georgette Sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 3, is_active: true },
-  { id: 'linen-sarees',     name: 'Linen Sarees',     image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 4, is_active: true },
-  { id: 'chiffon-sarees',   name: 'Chiffon Sarees',   image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
-  { id: 'banarasi-sarees',  name: 'Banarasi Sarees',  image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
+  { id: 'linen-sarees', name: 'Linen Sarees', image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 4, is_active: true },
+  { id: 'chiffon-sarees', name: 'Chiffon Sarees', image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
+  { id: 'banarasi-sarees', name: 'Banarasi Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
 ];
 
 // ─── View Toggle Button ───────────────────────────────────────────────────────
 const ToggleBtn: React.FC<{
-  active:  boolean;
+  active: boolean;
   onClick: () => void;
-  icon:    React.ReactNode;
-  label:   string;
-  isDark:  boolean;
+  icon: React.ReactNode;
+  label: string;
+  isDark: boolean;
 }> = ({ active, onClick, icon, label, isDark }) => (
   <button
     onClick={onClick}
@@ -72,10 +72,10 @@ const CategorySection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
   const [categories, setCategories] = useState<Category[]>(FALLBACK);
-  const [loaded, setLoaded]         = useState(false);
-  const [view, setView]             = useState<ViewMode>('three');
+  const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState<ViewMode>('three');
   // animate cards when view changes
-  const [animKey, setAnimKey]       = useState(0);
+  const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
     fetchCategories()
@@ -227,8 +227,8 @@ const CategorySection: React.FC = () => {
 // height prop only used in scroll mode (fixed height); grid mode uses aspectRatio
 const CategoryCard: React.FC<{
   category: Category;
-  isDark:   boolean;
-  height?:  string;
+  isDark: boolean;
+  height?: string;
 }> = ({ category, height }) => (
   <Link
     to={`/category/${category.id}`}

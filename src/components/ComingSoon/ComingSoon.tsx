@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 
 // ─── Launch date: April 15, 2026 at 12:00 AM IST ─────────────────────────────
-const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
+const LAUNCH_DATE = new Date('2025-04-15T00:00:00+05:30');
 
 interface TimeLeft {
-  days:    number;
-  hours:   number;
+  days: number;
+  hours: number;
   minutes: number;
   seconds: number;
 }
@@ -15,8 +15,8 @@ const getTimeLeft = (): TimeLeft => {
   const diff = LAUNCH_DATE.getTime() - Date.now();
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   return {
-    days:    Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours:   Math.floor((diff / (1000 * 60 * 60)) % 24),
+    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
     minutes: Math.floor((diff / (1000 * 60)) % 60),
     seconds: Math.floor((diff / 1000) % 60),
   };
@@ -38,7 +38,7 @@ const Unit: React.FC<{ value: number; label: string }> = ({ value, label }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ComingSoon: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
-  const [mounted, setMounted]   = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -416,9 +416,9 @@ const ComingSoon: React.FC = () => {
 
           {/* Countdown */}
           <div className="ww-countdown">
-            <Unit value={timeLeft.days}    label="Days"    />
+            <Unit value={timeLeft.days} label="Days" />
             <span className="ww-separator">:</span>
-            <Unit value={timeLeft.hours}   label="Hours"   />
+            <Unit value={timeLeft.hours} label="Hours" />
             <span className="ww-separator">:</span>
             <Unit value={timeLeft.minutes} label="Minutes" />
             <span className="ww-separator">:</span>
@@ -444,7 +444,7 @@ const ComingSoon: React.FC = () => {
 
 // ─── Email notify form ────────────────────────────────────────────────────────
 const NotifyForm: React.FC = () => {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
