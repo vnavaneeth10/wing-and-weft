@@ -43,6 +43,7 @@ export interface DBInquiry {
   id:             string;
   customer_name:  string;
   customer_phone: string;
+  customer_email: string | null;   // ✅ ADD THIS
   product_id:     string | null;
   product_name:   string | null;
   message:        string;

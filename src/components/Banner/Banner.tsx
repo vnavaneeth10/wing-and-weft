@@ -101,7 +101,7 @@ const Banner: React.FC = () => {
   return (
     <section className="relative w-full" aria-label="Featured saree collection banner">
       {/* Main carousel */}
-      <div className="relative w-full overflow-hidden" style={{ height: 'clamp(400px, 70vh, 700px)' }}>
+      <div className="relative w-full overflow-hidden" style={{ height: 'clamp(480px, 85vh, 820px)' }}>
         {slides.map((slide, i) => (
           <div
             key={slide.id}
@@ -129,12 +129,12 @@ const Banner: React.FC = () => {
               }}
             />
             <div
-              className="absolute bottom-0 left-0 right-0 h-32"
-              style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.8), transparent)' }}
+              className="absolute bottom-0 left-0 right-0"
+              style={{ height: '65%', background: 'linear-gradient(to top, rgba(10,8,6,0.88) 0%, rgba(10,8,6,0.55) 50%, transparent 100%)' }}
             />
 
             {/* Slide text */}
-            <div className="absolute inset-0 flex items-center justify-center z-10 px-6 md:px-16">
+            <div className="absolute inset-0 flex items-end justify-center z-10 px-6 md:px-16 pb-20 md:pb-28">
               <div className="text-center max-w-2xl">
                 <p
                   className="text-brand-orange text-sm md:text-base uppercase tracking-widest mb-3 font-body"
