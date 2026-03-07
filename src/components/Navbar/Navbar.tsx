@@ -118,7 +118,7 @@ const Navbar: React.FC = () => {
                 }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
-                TIMELESS SAREES
+                {/* TIMELESS SAREES */}
               </p>
             </div>
           </Link>
