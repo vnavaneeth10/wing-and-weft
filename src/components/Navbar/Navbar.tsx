@@ -117,7 +117,7 @@ const Navbar: React.FC = () => {
                   fontFamily: '"Raleway", sans-serif',
                 }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
-              >
+              > CHEERS TO THE NEW BEGINNINGS
                 {/* TIMELESS SAREES */}
               </p>
             </div>
