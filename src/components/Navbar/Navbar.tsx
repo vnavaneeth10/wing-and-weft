@@ -80,12 +80,18 @@ const Navbar: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0" aria-label="Wing & Weft Home">
             {/* Logo image placeholder - replace src with actual logo */}
-            <div
+
+             {/* <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain rounded-full" /> */}
+
+             <img src="/logo.png" alt="Wing & Weft" className="h-10 md:h-11 w-auto object-contain" />
+
+
+            {/* <div
               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }}
               aria-hidden="true"
             >
-              {/* <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain rounded-full" /> */}
+              
               <span
                 style={{
                   fontFamily: '"Cormorant Garamond", serif',
@@ -96,7 +102,7 @@ const Navbar: React.FC = () => {
               >
                 W&W
               </span>
-            </div>
+            </div> */}
             <div className="hidden sm:block">
               <span
                 style={{
@@ -118,7 +124,7 @@ const Navbar: React.FC = () => {
                 }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               > CHEERS TO THE NEW BEGINNINGS
-                {/* TIMELESS SAREES */}
+                
               </p>
             </div>
           </Link>
