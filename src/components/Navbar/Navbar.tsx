@@ -83,7 +83,7 @@ const Navbar: React.FC = () => {
 
              {/* <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain rounded-full" /> */}
 
-             <img src="/logo.png" alt="Wing & Weft" className="h-10 md:h-11 w-auto object-contain" />
+             <img src="/public/Anjana logo 1.svg" alt="Wing & Weft" className="h-40 md:h-28 w-auto object-contain " />
 
 
             {/* <div

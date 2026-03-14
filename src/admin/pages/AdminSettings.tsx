@@ -1,7 +1,7 @@
 // src/admin/pages/AdminSettings.tsx
 import React, { useState, useEffect } from 'react';
 import {
-  Save, Settings, Phone, Instagram, Facebook,
+  Save, Settings, Phone, Instagram, Facebook, Clock,
   MessageCircle, AlignLeft, Plus, Trash2, Image as ImageIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -37,12 +37,15 @@ interface Reel {
 }
 
 const SETTING_FIELDS: SettingField[] = [
-  { key: 'whatsapp_number', label: 'WhatsApp Business Number', placeholder: '919999999999', icon: MessageCircle, hint: 'Include country code, no + or spaces. Example: 919876543210 for +91 98765 43210', type: 'tel' },
-  { key: 'instagram_url', label: 'Instagram Profile URL', placeholder: 'https://www.instagram.com/wingandweft/', icon: Instagram, type: 'url' },
-  { key: 'facebook_url', label: 'Facebook Page URL', placeholder: 'https://www.facebook.com/wingandweft', icon: Facebook, type: 'url' },
-  { key: 'contact_phone', label: 'Contact Phone (Display)', placeholder: '+91 99999 99999', icon: Phone },
-  { key: 'contact_email', label: 'Support Email', placeholder: 'support@wingandweft.com', icon: MessageCircle },
-  { key: 'ribbon_text', label: 'Ribbon Scrolling Text', placeholder: 'Timeless sarees crafted with uncompromising quality...', icon: AlignLeft, hint: 'This text scrolls below the homepage banner', type: 'textarea' },
+  { key: 'whatsapp_number',   label: 'WhatsApp Business Number',  placeholder: '919999999999',                        icon: MessageCircle, hint: 'Include country code, no + or spaces. Example: 919876543210 for +91 98765 43210', type: 'tel' },
+  { key: 'contact_phone',     label: 'Contact Phone (Display)',    placeholder: '+91 99999 99999',                     icon: Phone },
+  { key: 'contact_email',     label: 'Support Email',              placeholder: 'support@wingandweft.com',             icon: MessageCircle },
+  { key: 'business_hours',    label: 'Business Hours',             placeholder: 'Mon–Sat: 10AM – 7PM',                 icon: Clock,         hint: 'Shown on the Contact page' },
+  { key: 'instagram_url',     label: 'Instagram Profile URL',      placeholder: 'https://www.instagram.com/wingandweft/', icon: Instagram, type: 'url' },
+  { key: 'instagram_handle',  label: 'Instagram Handle (Display)', placeholder: '@wingandweft',                        icon: Instagram,     hint: 'Shown as the link text on the Contact page' },
+  { key: 'facebook_url',      label: 'Facebook Page URL',          placeholder: 'https://www.facebook.com/wingandweft', icon: Facebook, type: 'url' },
+  { key: 'facebook_name',     label: 'Facebook Page Name (Display)', placeholder: 'Wing & Weft',                       icon: Facebook,      hint: 'Shown as the link text on the Contact page' },
+  { key: 'ribbon_text',       label: 'Ribbon Scrolling Text',      placeholder: 'Timeless sarees crafted with uncompromising quality...', icon: AlignLeft, hint: 'This text scrolls below the homepage banner', type: 'textarea' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
