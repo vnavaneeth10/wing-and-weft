@@ -5,23 +5,23 @@ import {
   Search, Instagram, Sun, Moon, Menu, X, ChevronDown,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { useSearchSuggestions, useDebounce } from '../../hooks';
+import { useSearchSuggestions } from '../../hooks';
 import { CATEGORIES, INSTAGRAM_URL } from '../../data/products';
 
 const Navbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [catOpen, setCatOpen] = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [catOpen, setCatOpen]     = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled]   = useState(false);
 
   const suggestions = useSearchSuggestions(searchQuery);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const catRef = useRef<HTMLDivElement>(null);
+  const searchRef   = useRef<HTMLDivElement>(null);
+  const catRef      = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -37,12 +37,8 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
-      if (catRef.current && !catRef.current.contains(e.target as Node)) {
-        setCatOpen(false);
-      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
+      if (catRef.current  && !catRef.current.contains(e.target as Node))  setCatOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -77,59 +73,27 @@ const Navbar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
+
+          {/* ── Logo ── */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0" aria-label="Wing & Weft Home">
-            {/* Logo image placeholder - replace src with actual logo */}
-
-             {/* <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain rounded-full" /> */}
-
-             <img src="/public/Anjana logo 1.svg" alt="Wing & Weft" className="h-40 md:h-28 w-auto object-contain " />
-
-
-            {/* <div
-              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }}
-              aria-hidden="true"
-            >
-              
-              <span
-                style={{
-                  fontFamily: '"Cormorant Garamond", serif',
-                  fontSize: '1.1rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                }}
-              >
-                W&W
-              </span>
-            </div> */}
+            <img src="/Anjana logo 1.svg" alt="Wing & Weft" className="h-10 md:h-12 w-auto object-contain" />
             <div className="hidden sm:block">
               <span
-                style={{
-                  fontFamily: '"Cormorant Garamond", serif',
-                  fontSize: '1.5rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                  lineHeight: 1,
-                }}
+                style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
                 Wing & Weft
               </span>
               <p
-                style={{
-                  fontSize: '0.7rem',
-                  letterSpacing: '0.2em',
-                  fontFamily: '"Raleway", sans-serif',
-                }}
+                style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: '"Raleway", sans-serif' }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
-              > CHEERS TO THE NEW BEGINNINGS
-                
+              >
+                CHEERS TO THE NEW BEGINNINGS
               </p>
             </div>
           </Link>
 
-          {/* Center Nav — Desktop */}
+          {/* ── Center Nav — Desktop ── */}
           <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             <NavLink to="/" label="Home" isDark={isDark} />
 
@@ -142,18 +106,13 @@ const Navbar: React.FC = () => {
                 aria-haspopup="true"
               >
                 Categories
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`}
-                />
+                <ChevronDown size={14} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {catOpen && (
                 <div
                   className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border overflow-hidden z-50 ${
-                    isDark
-                      ? 'bg-dark-card border-dark-border'
-                      : 'bg-white border-brand-cream'
+                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
                   }`}
                   role="menu"
                 >
@@ -169,11 +128,7 @@ const Navbar: React.FC = () => {
                       role="menuitem"
                     >
                       <span className="font-body">{cat.name}</span>
-                      <span
-                        className={`text-xs rounded-full px-2 py-0.5 ${
-                          isDark ? 'bg-brand-red/20 text-brand-orange' : 'bg-brand-cream text-brand-gold'
-                        }`}
-                      >
+                      <span className={`text-xs rounded-full px-2 py-0.5 ${isDark ? 'bg-brand-red/20 text-brand-orange' : 'bg-brand-cream text-brand-gold'}`}>
                         {cat.count}
                       </span>
                     </Link>
@@ -186,8 +141,9 @@ const Navbar: React.FC = () => {
             <NavLink to="/contact" label="Contact" isDark={isDark} />
           </div>
 
-          {/* Right side */}
+          {/* ── Right side ── */}
           <div className="flex items-center gap-2">
+
             {/* Search */}
             <div ref={searchRef} className="relative">
               <button
@@ -231,6 +187,7 @@ const Navbar: React.FC = () => {
                     </div>
                   </form>
 
+                  {/* ── Live suggestions from Supabase ── */}
                   {suggestions.length > 0 && (
                     <div className={`border-t ${isDark ? 'border-dark-border' : 'border-brand-cream'}`}>
                       {suggestions.map((product) => (
@@ -238,29 +195,33 @@ const Navbar: React.FC = () => {
                           key={product.id}
                           to={`/product/${product.id}`}
                           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-                            isDark
-                              ? 'hover:bg-dark-bg text-dark-text'
-                              : 'hover:bg-brand-cream/50 text-stone-700'
+                            isDark ? 'hover:bg-dark-bg text-dark-text' : 'hover:bg-brand-cream/50 text-stone-700'
                           }`}
-                          onClick={() => {
-                            setSearchOpen(false);
-                            setSearchQuery('');
-                          }}
+                          onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                         >
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                            loading="lazy"
-                          />
+                          {product.images?.[0] && (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                              loading="lazy"
+                            />
+                          )}
                           <div>
                             <p className="text-sm font-medium font-body">{product.name}</p>
                             <p className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
-                              {product.category.replace('-', ' ')} · ₹{product.discountPrice || product.price}
+                              {product.category.replace(/-/g, ' ')} · ₹{product.discount_price || product.price}
                             </p>
                           </div>
                         </Link>
                       ))}
+                    </div>
+                  )}
+
+                  {/* No results state */}
+                  {searchQuery.trim().length > 1 && suggestions.length === 0 && (
+                    <div className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
+                      No products found for "{searchQuery}"
                     </div>
                   )}
                 </div>
@@ -306,7 +267,7 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ── */}
       {menuOpen && (
         <div
           className={`md:hidden border-t px-4 py-4 space-y-1 ${
@@ -318,9 +279,7 @@ const Navbar: React.FC = () => {
           <MobileLink to="/" label="Home" isDark={isDark} />
           <div>
             <button
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
-                isDark ? 'text-dark-text' : 'text-stone-800'
-              }`}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
               onClick={() => setCatOpen((v) => !v)}
             >
               Categories
@@ -356,12 +315,8 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
       to={to}
       className={`px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${
         isActive
-          ? isDark
-            ? 'text-brand-orange bg-brand-red/10'
-            : 'text-brand-red bg-brand-red/10'
-          : isDark
-          ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50'
-          : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
+          ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
+          : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
       }`}
     >
       {label}

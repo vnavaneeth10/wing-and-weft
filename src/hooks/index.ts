@@ -1,8 +1,9 @@
 // src/hooks/index.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PRODUCTS } from '../data/products';
+import { Product } from '../types';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 
-// Debounce hook
+// ─── Debounce hook ────────────────────────────────────────────────────────────
 export function useDebounce<T>(value: T, delay: number = 300): T {
   const [debounced, setDebounced] = useState<T>(value);
   useEffect(() => {
@@ -12,9 +13,9 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
   return debounced;
 }
 
-// Search suggestions hook
-export function useSearchSuggestions(query: string) {
-  const [suggestions, setSuggestions] = useState<typeof PRODUCTS>([]);
+// ─── Search suggestions — live from Supabase products ────────────────────────
+export function useSearchSuggestions(query: string): Product[] {
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const debouncedQuery = useDebounce(query, 250);
 
   useEffect(() => {
@@ -22,20 +23,38 @@ export function useSearchSuggestions(query: string) {
       setSuggestions([]);
       return;
     }
-    const q = debouncedQuery.toLowerCase();
-    const results = PRODUCTS.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.fabric.toLowerCase().includes(q)
-    ).slice(0, 6);
-    setSuggestions(results);
+
+    let cancelled = false;
+    const q = debouncedQuery.trim().toLowerCase();
+
+    const search = async () => {
+      try {
+        // Build URL manually — URLSearchParams encodes commas inside or() which breaks Supabase
+        const encoded = encodeURIComponent(q);
+        const url = `${SUPABASE_URL}/rest/v1/products`
+          + `?or=(name.ilike.*${encoded}*,category.ilike.*${encoded}*,fabric.ilike.*${encoded}*)`
+          + `&select=id,name,category,fabric,price,discount_price,images`
+          + `&limit=6`;
+
+        const res = await fetch(url,
+          { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+        );
+        if (!res.ok) return;
+        const data: Product[] = await res.json();
+        if (!cancelled) setSuggestions(data);
+      } catch {
+        // Silently fail — search suggestions are non-critical
+      }
+    };
+
+    search();
+    return () => { cancelled = true; };
   }, [debouncedQuery]);
 
   return suggestions;
 }
 
-// Scroll to top hook
+// ─── Scroll to top hook ───────────────────────────────────────────────────────
 export function useScrollToTop() {
   const [visible, setVisible] = useState(false);
 
@@ -52,7 +71,7 @@ export function useScrollToTop() {
   return { visible, scrollToTop };
 }
 
-// Intersection observer hook for lazy animations
+// ─── Intersection observer hook for lazy animations ───────────────────────────
 export function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
