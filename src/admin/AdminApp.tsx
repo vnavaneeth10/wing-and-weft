@@ -12,6 +12,7 @@ import AdminBanners from './pages/AdminBanners';
 import AdminInquiries from './pages/AdminInquiries';
 import AdminSettings from './pages/AdminSettings';
 import AdminCategories from './pages/AdminCategories';
+import AdminPolicies from './pages/AdminPolicies';
 import { useProducts, useInquiries } from './hooks/useAdminData';
 
 const AdminInner: React.FC = () => {
@@ -34,6 +35,7 @@ const AdminInner: React.FC = () => {
       case 'banners':    return <AdminBanners />;
       case 'categories': return <AdminCategories />;
       case 'inquiries':  return <AdminInquiries />;
+      case 'policies':   return <AdminPolicies />;
       case 'settings':   return <AdminSettings />;
       default:           return null;
     }

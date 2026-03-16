@@ -5,6 +5,8 @@ export interface PolicyData {
   content: string[];
 }
 
+
+// Returns and exchanges are accepted within 7 days of delivery.  - This need changes with exception of videos inclusion and on special scenarios in return and exchange policy
 export const POLICIES: PolicyData[] = [
   {
     id: 'return-exchange',
@@ -45,7 +47,7 @@ export const POLICIES: PolicyData[] = [
     id: 'refund',
     title: 'Refund Policy',
     content: [
-      'Refunds are processed within 5-7 business days of return approval.',
+      'Refunds are processed within 10-15 business days of return approval.',
       'Refunds will be issued to the original payment method or as store credit.',
       'Shipping charges are non-refundable unless the return is due to our error.',
       'Damaged or defective products are eligible for full refunds including shipping.',

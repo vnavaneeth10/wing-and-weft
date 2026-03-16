@@ -1,6 +1,6 @@
 // src/admin/hooks/useAdminData.ts
 import { useState, useEffect, useCallback } from 'react';
-import { dbSelect, dbInsert, dbUpdate, dbDelete, uploadImage, publicFetch } from '../lib/supabase';
+import { dbSelect, dbInsert, dbUpdate, dbDelete, uploadImage, publicFetch, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { useAdminAuth } from '../lib/AdminAuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ export interface DBProduct {
   discount_price: number | null;
   stock:          number;
   colors:         string[];
-  images:         string[];   // ← always full public URLs now
+  images:         string[];
   description:    string;
   saree_fabric:   string;
   saree_length:   string;
@@ -34,7 +34,7 @@ export interface DBBanner {
   subtitle:   string;
   cta_text:   string;
   cta_link:   string;
-  image_url:  string;   // ← full public URL
+  image_url:  string;
   sort_order: number;
   is_active:  boolean;
 }
@@ -43,7 +43,7 @@ export interface DBInquiry {
   id:             string;
   customer_name:  string;
   customer_phone: string;
-  customer_email: string | null;   // ✅ ADD THIS
+  customer_email: string | null;
   product_id:     string | null;
   product_name:   string | null;
   message:        string;
@@ -55,6 +55,26 @@ export interface DBSettings {
   id:    string;
   key:   string;
   value: string;
+}
+
+export interface DBCategory {
+  id:          string;
+  name:        string;
+  image:       string;
+  description: string;
+  count:       number;
+  sort_order:  number;
+  is_active:   boolean;
+  created_at?: string;
+}
+
+export interface DBPolicy {
+  id:          string;
+  title:       string;
+  content:     string[];
+  sort_order:  number;
+  is_active:   boolean;
+  updated_at?: string;
 }
 
 // ─── Helper: generate a unique file path ──────────────────────────────────────
@@ -90,7 +110,6 @@ export function useProducts() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // ── Upload images and return full public URLs ──────────────────────────────
   const uploadProductImages = async (
     productId: string,
     pendingFiles: (File | null)[],
@@ -102,14 +121,14 @@ export function useProducts() {
 
     await Promise.all(
       pendingFiles.map(async (file, i) => {
-        if (!file) return; // no new file for this slot → keep existing URL
-        const path   = `products/${productId}/${uniquePath(`img`, i, file)}`;
+        if (!file) return;
+        const path   = `products/${productId}/${uniquePath('img', i, file)}`;
         const pubUrl = await uploadImage('product-images', path, file, session.access_token);
-        finalUrls[i] = pubUrl;  // ← full https://xxx.supabase.co/... URL
+        finalUrls[i] = pubUrl;
       })
     );
 
-    return finalUrls.filter(Boolean); // remove empty slots
+    return finalUrls.filter(Boolean);
   };
 
   const addProduct = async (
@@ -117,21 +136,12 @@ export function useProducts() {
     pendingFiles: (File | null)[]
   ): Promise<DBProduct> => {
     if (!session) throw new Error('Not authenticated');
-
-    // 1. Insert without images first to get the DB-generated ID
     const [created] = await dbInsert<DBProduct>('products', session.access_token, {
       ...product,
       images: [],
     });
-
-    // 2. Upload images using the real product ID
     const imageUrls = await uploadProductImages(created.id, pendingFiles, []);
-
-    // 3. Update the record with the full image URLs
-    const [updated] = await dbUpdate<DBProduct>(
-      'products', session.access_token, created.id, { images: imageUrls }
-    );
-
+    const [updated] = await dbUpdate<DBProduct>('products', session.access_token, created.id, { images: imageUrls });
     setProducts((prev) => [updated, ...prev]);
     return updated;
   };
@@ -142,20 +152,14 @@ export function useProducts() {
     pendingFiles?: (File | null)[]
   ): Promise<void> => {
     if (!session) throw new Error('Not authenticated');
-
     let finalUpdates = { ...updates };
-
-    // If there are new image files, upload them and merge with existing URLs
     if (pendingFiles && pendingFiles.some(Boolean)) {
-      const existing   = updates.images ?? products.find((p) => p.id === id)?.images ?? [];
-      const imageUrls  = await uploadProductImages(id, pendingFiles, existing);
-      finalUpdates     = { ...finalUpdates, images: imageUrls };
+      const existing  = updates.images ?? products.find((p) => p.id === id)?.images ?? [];
+      const imageUrls = await uploadProductImages(id, pendingFiles, existing);
+      finalUpdates    = { ...finalUpdates, images: imageUrls };
     }
-
     await dbUpdate<DBProduct>('products', session.access_token, id, finalUpdates);
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...finalUpdates } : p))
-    );
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...finalUpdates } : p)));
   };
 
   const deleteProduct = async (id: string): Promise<void> => {
@@ -177,9 +181,6 @@ export function useProducts() {
 }
 
 // ─── Banners ──────────────────────────────────────────────────────────────────
-
-// REPLACE only the useBanners function in src/admin/hooks/useAdminData.ts
-// The uploadBannerImage had (id, file) but was being called with (file, id) — now consistent
 
 export function useBanners() {
   const { session } = useAdminAuth();
@@ -206,14 +207,11 @@ export function useBanners() {
     setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
   };
 
-  // ✅ FIX: argument order is (id, file) — consistent with how AdminBanners.tsx calls it
   const uploadBannerImage = async (id: string, file: File): Promise<string> => {
     if (!session) throw new Error('Not authenticated');
-    const ext = file.name.split('.').pop() ?? 'jpg';
-    const path = `banners/${id}_${Date.now()}.${ext}`;
-    // Returns full public URL
+    const ext    = file.name.split('.').pop() ?? 'jpg';
+    const path   = `banners/${id}_${Date.now()}.${ext}`;
     const pubUrl = await uploadImage('banner-images', path, file, session.access_token);
-    // Save the URL to the database immediately
     await updateBanner(id, { image_url: pubUrl });
     return pubUrl;
   };
@@ -246,9 +244,7 @@ export function useInquiries() {
   const setStatus = async (id: string, status: DBInquiry['status']) => {
     if (!session) throw new Error('Not authenticated');
     await dbUpdate<DBInquiry>('inquiries', session.access_token, id, { status });
-    setInquiries((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, status } : i))
-    );
+    setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
   const newCount = inquiries.filter((i) => i.status === 'new').length;
@@ -271,7 +267,6 @@ export function useSettings() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      // Settings are readable publicly (website needs them)
       const data: DBSettings[] = await publicFetch<DBSettings>('settings');
       const map: Record<string, string> = {};
       (data ?? []).forEach((s) => { map[s.key] = s.value; });
@@ -298,19 +293,7 @@ export function useSettings() {
   return { settings, loading, refresh, saveSetting };
 }
 
-  // ─── ADD THIS to src/admin/hooks/useAdminData.ts ─────────────────────────────
-// Paste this entire block at the bottom of the file, before the closing
-
-export interface DBCategory {
-  id:          string;
-  name:        string;
-  image:       string;
-  description: string;
-  count:       number;
-  sort_order:  number;
-  is_active:   boolean;
-  created_at?: string;
-}
+// ─── Categories ───────────────────────────────────────────────────────────────
 
 export function useCategories() {
   const { session } = useAdminAuth();
@@ -341,14 +324,11 @@ export function useCategories() {
   ): Promise<DBCategory> => {
     if (!session) throw new Error('Not authenticated');
     let imageUrl = category.image;
-
-    // Upload image file if provided
     if (imageFile) {
       const ext  = imageFile.name.split('.').pop() ?? 'jpg';
       const path = `categories/${category.id}_${Date.now()}.${ext}`;
       imageUrl   = await uploadImage('category-images', path, imageFile, session.access_token);
     }
-
     const [created] = await dbInsert<DBCategory>('categories', session.access_token, {
       ...category,
       image: imageUrl,
@@ -364,18 +344,13 @@ export function useCategories() {
   ): Promise<void> => {
     if (!session) throw new Error('Not authenticated');
     let finalUpdates = { ...updates };
-
-    // Upload new image if provided
     if (imageFile) {
       const ext  = imageFile.name.split('.').pop() ?? 'jpg';
       const path = `categories/${id}_${Date.now()}.${ext}`;
       finalUpdates.image = await uploadImage('category-images', path, imageFile, session.access_token);
     }
-
     await dbUpdate<DBCategory>('categories', session.access_token, id, finalUpdates);
-    setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...finalUpdates } : c))
-    );
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...finalUpdates } : c)));
   };
 
   const deleteCategory = async (id: string): Promise<void> => {
@@ -390,4 +365,49 @@ export function useCategories() {
   };
 }
 
+// ─── Policies ─────────────────────────────────────────────────────────────────
 
+export function usePolicies() {
+  const { session } = useAdminAuth();
+  const [policies, setPolicies] = useState<DBPolicy[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Admin sees all; public sees only active ones
+      const data = session
+        ? await dbSelect<DBPolicy>('policies', session.access_token, { order: 'sort_order.asc' })
+        : await publicFetch<DBPolicy>('policies', { order: 'sort_order.asc', is_active: 'eq.true' });
+      // JSONB content may arrive as a parsed array or as a JSON string — normalise both
+      setPolicies(
+        (data ?? []).map((p) => ({
+          ...p,
+          content: Array.isArray(p.content)
+            ? p.content
+            : JSON.parse(p.content as unknown as string),
+        }))
+      );
+    } catch {
+      setPolicies([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const updatePolicy = useCallback(async (
+    id: string,
+    updates: Partial<DBPolicy>
+  ): Promise<void> => {
+    if (!session) throw new Error('Not authenticated');
+    await dbUpdate<DBPolicy>('policies', session.access_token, id, {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    });
+    await refresh();
+  }, [session, refresh]);
+
+  return { policies, loading, refresh, updatePolicy };
+}

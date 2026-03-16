@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Package, Image, MessageSquare,
   Settings, LogOut, Menu, X, ChevronRight,
-  Layers, Tag, type LucideIcon,
+  Layers, Tag, FileText, type LucideIcon,
 } from 'lucide-react';
 import { useAdminAuth } from '../lib/AdminAuthContext';
 import { useAdminTheme } from '../lib/AdminThemeContext';
 import { adminTokens } from '../lib/adminTokens';
 
-export type AdminPage = 'dashboard' | 'products' | 'banners' | 'categories' | 'inquiries' | 'settings';
+export type AdminPage = 'dashboard' | 'products' | 'banners' | 'categories' | 'inquiries' | 'policies' | 'settings';
 
 interface Props {
   activePage: AdminPage;
@@ -23,6 +23,7 @@ const NAV_ITEMS: { id: AdminPage; label: string; icon: LucideIcon }[] = [
   { id: 'banners',    label: 'Banners',    icon: Image },
   { id: 'categories', label: 'Categories', icon: Tag },
   { id: 'inquiries',  label: 'Inquiries',  icon: MessageSquare },
+  { id: 'policies',   label: 'Policies',   icon: FileText },
   { id: 'settings',   label: 'Settings',   icon: Settings },
 ];
 
