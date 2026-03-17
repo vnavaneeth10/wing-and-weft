@@ -71,7 +71,6 @@ const saveNewsletterEmail = async (email: string) => {
   if (!res.ok) throw new Error('Failed to save');
 };
 
-// ─── Fade-in on scroll hook ───────────────────────────────────────────────────
 function useFadeIn() {
   const ref  = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -88,7 +87,6 @@ function useFadeIn() {
   return { ref, visible };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
   const [email, setEmail]                   = useState('');
@@ -103,10 +101,9 @@ const Footer: React.FC = () => {
     whatsapp_number: WHATSAPP_NUMBER,
   });
 
-  // Animate sections
-  const banner    = useFadeIn();
-  const grid      = useFadeIn();
-  const bottom    = useFadeIn();
+  const banner = useFadeIn();
+  const grid   = useFadeIn();
+  const bottom = useFadeIn();
 
   useEffect(() => {
     fetchCategories().then(setCategories).catch(() => {});
@@ -140,7 +137,6 @@ const Footer: React.FC = () => {
   const heading   = isDark ? 'text-brand-cream' : 'text-stone-800';
   const linkClass = `${text} ${isDark ? 'hover:text-brand-orange' : 'hover:text-brand-red'} transition-colors text-sm font-body`;
 
-  // ── Collections hidden for now — will re-enable later ──────────────────────
   const SHOW_COLLECTIONS = false;
 
   return (
@@ -201,27 +197,29 @@ const Footer: React.FC = () => {
 
           {/* ── Footer grid ── */}
           <div ref={grid.ref}>
-            {/* With collections hidden: brand col-span-2, quick links, policies — centred naturally */}
             <div
-              className={`grid mb-10 gap-10 ${
-                SHOW_COLLECTIONS
-                  ? 'grid-cols-2 md:grid-cols-4'
-                  : 'grid-cols-1 sm:grid-cols-3'
-              }`}
+              className={`grid mb-10 gap-10 ${SHOW_COLLECTIONS ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}
               style={fadeStyle(grid.visible, 100)}
             >
-              {/* Brand */}
+              {/* ── Brand — logo image ── */}
               <div className={SHOW_COLLECTIONS ? 'col-span-2 md:col-span-1' : ''}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }}>
-                    <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '0.9rem', fontWeight: 700, color: '#e9e3cb' }}>W&W</span>
-                  </div>
-                  <span className={heading} style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 600 }}>
-                    Wing & Weft
-                  </span>
+                <div className="mb-4">
+                  <picture>
+                    <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+                    <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+                    <img
+                      src="/logo@1x.png"
+                      alt="Wing & Weft"
+                      width={160}
+                      height={90}
+                      className="w-auto object-contain"
+                      style={{ height: '48px' }}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 </div>
-                <p className={`text-sm font-body leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
+                <p className={`text-sm font-body leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
                   Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail. Your heritage, our craft.
                 </p>
               </div>
@@ -233,9 +231,7 @@ const Footer: React.FC = () => {
                 </h4>
                 <ul className="space-y-2.5">
                   {[{ to: '/', label: 'Home' }, { to: '/our-story', label: 'Our Story' }, { to: '/contact', label: 'Contact' }].map((l) => (
-                    <li key={l.to}>
-                      <Link to={l.to} className={linkClass}>{l.label}</Link>
-                    </li>
+                    <li key={l.to}><Link to={l.to} className={linkClass}>{l.label}</Link></li>
                   ))}
                 </ul>
               </div>
@@ -247,11 +243,9 @@ const Footer: React.FC = () => {
                   <ul className="space-y-2.5">
                     {categories.length > 0
                       ? categories.map((cat) => (
-                          <li key={cat.id}>
-                            <Link to={`/category/${cat.id}`} className={linkClass}>{cat.name}</Link>
-                          </li>
+                          <li key={cat.id}><Link to={`/category/${cat.id}`} className={linkClass}>{cat.name}</Link></li>
                         ))
-                      : [1, 2, 3, 4].map((n) => (
+                      : [1,2,3,4].map((n) => (
                           <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
                         ))
                     }
@@ -268,12 +262,10 @@ const Footer: React.FC = () => {
                   {footerPolicies.length > 0
                     ? footerPolicies.map((p) => (
                         <li key={p.id}>
-                          <button onClick={() => setOpenPolicy(p.id)} className={`${linkClass} text-left`}>
-                            {p.title}
-                          </button>
+                          <button onClick={() => setOpenPolicy(p.id)} className={`${linkClass} text-left`}>{p.title}</button>
                         </li>
                       ))
-                    : [1, 2, 3, 4].map((n) => (
+                    : [1,2,3,4].map((n) => (
                         <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
                       ))
                   }
@@ -282,15 +274,14 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className={`saree-divider mb-6 ${isDark ? "" : "opacity-30"}`} />
+          <div className={`saree-divider mb-6 ${isDark ? '' : 'opacity-30'}`} />
 
-          {/* ── Bottom — stacked: social icons → copyright ── */}
+          {/* ── Bottom ── */}
           <div
             ref={bottom.ref}
             className="flex flex-col items-center gap-3"
             style={fadeStyle(bottom.visible, 200)}
           >
-            {/* Social icons row */}
             <div className="flex items-center gap-2.5">
               <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
@@ -299,8 +290,7 @@ const Footer: React.FC = () => {
                 <Instagram size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={settings.facebook_url !== '#' ? settings.facebook_url : '#'}
-                target={settings.facebook_url !== '#' ? '_blank' : undefined}
-                rel="noopener noreferrer"
+                target={settings.facebook_url !== '#' ? '_blank' : undefined} rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
                 style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Facebook">
@@ -314,24 +304,17 @@ const Footer: React.FC = () => {
               </a>
               <a href={`https://wa.me/${settings.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
-                style={{ background: '#25D366' }}
-                aria-label="WhatsApp">
+                style={{ background: '#25D366' }} aria-label="WhatsApp">
                 <MessageCircle size={14} color="white" />
               </a>
             </div>
-
-            {/* Copyright line — centred below icons */}
             <p className={`${text} text-xs font-body text-center`}>
               © 2026 Wing &amp; Weft. All Rights Reserved.
               &nbsp;·&nbsp;
               Crafted with <Heart size={9} className="inline text-brand-red" fill="#bc3d3e" /> by{' '}
-              <a
-                href="https://vnvne.vercel.app/"
-                target="_blank"
-                rel="noopener noreferrer"
+              <a href="https://vnvne.vercel.app/" target="_blank" rel="noopener noreferrer"
                 style={{ color: '#b6893c', fontWeight: 600 }}
-                className="transition-colors hover:text-brand-orange"
-              >
+                className="transition-colors hover:text-brand-orange">
                 Navi
               </a>
               &nbsp;·&nbsp;

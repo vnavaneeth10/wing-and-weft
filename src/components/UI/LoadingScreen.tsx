@@ -7,7 +7,7 @@ interface Props {
 
 const LoadingScreen: React.FC<Props> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
+  const [fadeOut, setFadeOut]   = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -30,8 +30,8 @@ const LoadingScreen: React.FC<Props> = ({ onComplete }) => {
     <div
       className="loading-screen"
       style={{
-        opacity: fadeOut ? 0 : 1,
-        transition: 'opacity 0.6s ease',
+        opacity:       fadeOut ? 0 : 1,
+        transition:    'opacity 0.6s ease',
         pointerEvents: fadeOut ? 'none' : 'all',
       }}
     >
@@ -54,65 +54,59 @@ const LoadingScreen: React.FC<Props> = ({ onComplete }) => {
 
       {/* Center content */}
       <div className="flex flex-col items-center gap-8 relative z-10">
-        {/* Logo placeholder */}
-        <div className="relative">
+
+        {/* ── Logo with spinning ring ── */}
+        <div className="relative flex items-center justify-center">
+          {/* Spinning ring */}
           <div
-            className="w-28 h-28 rounded-full flex items-center justify-center"
+            className="absolute rounded-full"
             style={{
-              background: 'linear-gradient(135deg, #bc3d3e, #b6893c)',
-              boxShadow: '0 0 40px rgba(188,61,62,0.4), 0 0 80px rgba(182,137,60,0.2)',
-            }}
-          >
-            {/* Logo placeholder — replace with actual logo <img> when ready */}
-            <span
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: '2.2rem',
-                fontWeight: 600,
-                color: '#e9e3cb',
-                letterSpacing: '0.05em',
-              }}
-            >
-              W&W
-            </span>
-          </div>
-          {/* Spinning ring around logo */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
+              width: '148px', height: '148px',
               border: '2px solid transparent',
               borderTopColor: '#bc3d3e',
               borderRightColor: '#b6893c',
               animation: 'spin 2s linear infinite',
-              margin: '-6px',
             }}
           />
+          {/* Logo image — sits inside the ring */}
+          <div
+            className="w-28 h-28 rounded-full flex items-center justify-center overflow-hidden"
+            style={{
+              background: 'rgba(26,20,16,0.6)',
+              boxShadow: '0 0 40px rgba(188,61,62,0.35), 0 0 80px rgba(182,137,60,0.15)',
+            }}
+          >
+            <picture>
+              <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+              <img
+                src="/logo@1x.png"
+                alt="Wing & Weft"
+                width={160}
+                height={90}
+                className="w-auto object-contain"
+                style={{ maxWidth: '88px', padding: '12px' }}
+                loading="eager"
+                decoding="sync"
+              />
+            </picture>
+          </div>
         </div>
 
         {/* Brand name */}
         <div className="text-center">
-          <h1
-            style={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontSize: '2.5rem',
-              fontWeight: 600,
-              color: '#e9e3cb',
-              letterSpacing: '0.15em',
-              lineHeight: 1.1,
-            }}
-          >
+          <h1 style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '2.5rem', fontWeight: 600,
+            color: '#e9e3cb', letterSpacing: '0.15em', lineHeight: 1.1,
+          }}>
             Wing & Weft
           </h1>
-          <p
-            style={{
-              fontFamily: '"Raleway", sans-serif',
-              fontSize: '0.7rem',
-              letterSpacing: '0.3em',
-              color: '#b6893c',
-              marginTop: '0.4rem',
-              textTransform: 'uppercase',
-            }}
-          >
+          <p style={{
+            fontFamily: '"Raleway", sans-serif',
+            fontSize: '0.7rem', letterSpacing: '0.3em',
+            color: '#b6893c', marginTop: '0.4rem', textTransform: 'uppercase',
+          }}>
             Timeless Sarees
           </p>
         </div>
@@ -131,15 +125,11 @@ const LoadingScreen: React.FC<Props> = ({ onComplete }) => {
         </div>
 
         {/* Loading text */}
-        <p
-          style={{
-            fontFamily: '"Raleway", sans-serif',
-            fontSize: '0.7rem',
-            letterSpacing: '0.2em',
-            color: 'rgba(233,227,203,0.5)',
-            textTransform: 'uppercase',
-          }}
-        >
+        <p style={{
+          fontFamily: '"Raleway", sans-serif',
+          fontSize: '0.7rem', letterSpacing: '0.2em',
+          color: 'rgba(233,227,203,0.5)', textTransform: 'uppercase',
+        }}>
           Curating Elegance…
         </p>
       </div>

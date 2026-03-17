@@ -76,7 +76,20 @@ const Navbar: React.FC = () => {
 
           {/* ── Logo ── */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0" aria-label="Wing & Weft Home">
-            <img src="/Anjana logo 1.svg" alt="Wing & Weft" className="h-10 md:h-12 w-auto object-contain" />
+            <picture>
+              <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+              <img
+                src="/logo@1x.png"
+                alt="Wing & Weft"
+                width={160}
+                height={90}
+                className="w-auto object-contain transition-opacity duration-300"
+                style={{ height: 'clamp(36px, 4.5vw, 48px)' }}
+                loading="eager"
+                decoding="async"
+              />
+            </picture>
             <div className="hidden sm:block">
               <span
                 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}
