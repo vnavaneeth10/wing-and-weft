@@ -6,7 +6,20 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSearchSuggestions } from '../../hooks';
-import { CATEGORIES, INSTAGRAM_URL } from '../../data/products';
+import { INSTAGRAM_URL } from '../../data/products';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
+
+// ─── Live categories from Supabase ───────────────────────────────────────────
+interface NavCategory { id: string; name: string; }
+
+const fetchNavCategories = async (): Promise<NavCategory[]> => {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/categories?is_active=eq.true&order=sort_order.asc&select=id,name`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  if (!res.ok) throw new Error('Failed');
+  return res.json();
+};
 
 const Navbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -20,6 +33,12 @@ const Navbar: React.FC = () => {
   const [scrolled, setScrolled]   = useState(false);
 
   const suggestions = useSearchSuggestions(searchQuery);
+  const [navCategories, setNavCategories] = useState<NavCategory[]>([]);
+
+  // Fetch live categories on mount
+  useEffect(() => {
+    fetchNavCategories().then(setNavCategories).catch(() => {});
+  }, []);
   const searchRef   = useRef<HTMLDivElement>(null);
   const catRef      = useRef<HTMLDivElement>(null);
 
@@ -124,16 +143,17 @@ const Navbar: React.FC = () => {
 
               {catOpen && (
                 <div
-                  className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border overflow-hidden z-50 ${
+                  className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-y-auto ${
                     isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
                   }`}
                   role="menu"
+                  style={{ maxHeight: '320px' }}
                 >
-                  {CATEGORIES.map((cat) => (
+                  {navCategories.length > 0 ? navCategories.map((cat) => (
                     <Link
                       key={cat.id}
                       to={`/category/${cat.id}`}
-                      className={`flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+                      className={`flex items-center px-4 py-3 text-sm transition-colors ${
                         isDark
                           ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-orange'
                           : 'text-stone-700 hover:bg-brand-cream hover:text-brand-red'
@@ -141,11 +161,15 @@ const Navbar: React.FC = () => {
                       role="menuitem"
                     >
                       <span className="font-body">{cat.name}</span>
-                      <span className={`text-xs rounded-full px-2 py-0.5 ${isDark ? 'bg-brand-red/20 text-brand-orange' : 'bg-brand-cream text-brand-gold'}`}>
-                        {cat.count}
-                      </span>
                     </Link>
-                  ))}
+                  )) : (
+                    // Skeleton while loading
+                    [1,2,3].map(n => (
+                      <div key={n} className="flex items-center px-4 py-3">
+                        <div className={`h-3 w-28 rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -300,7 +324,7 @@ const Navbar: React.FC = () => {
             </button>
             {catOpen && (
               <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-gold'}`}>
-                {CATEGORIES.map((cat) => (
+                {navCategories.length > 0 ? navCategories.map((cat) => (
                   <Link
                     key={cat.id}
                     to={`/category/${cat.id}`}
@@ -308,7 +332,11 @@ const Navbar: React.FC = () => {
                   >
                     {cat.name}
                   </Link>
-                ))}
+                )) : (
+                  [1,2,3].map(n => (
+                    <div key={n} className={`h-3 w-24 rounded animate-pulse my-2.5 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
+                  ))
+                )}
               </div>
             )}
           </div>
