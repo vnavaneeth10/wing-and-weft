@@ -135,10 +135,10 @@ const Footer: React.FC = () => {
     transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
   });
 
-  const bg        = isDark ? 'bg-dark-bg border-dark-border' : 'bg-stone-900 border-stone-800';
-  const text      = 'text-stone-400';
-  const heading   = 'text-brand-cream';
-  const linkClass = `${text} hover:text-brand-orange transition-colors text-sm font-body`;
+  const bg        = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
+  const text      = isDark ? 'text-stone-400' : 'text-stone-500';
+  const heading   = isDark ? 'text-brand-cream' : 'text-stone-800';
+  const linkClass = `${text} ${isDark ? 'hover:text-brand-orange' : 'hover:text-brand-red'} transition-colors text-sm font-body`;
 
   // ── Collections hidden for now — will re-enable later ──────────────────────
   const SHOW_COLLECTIONS = false;
@@ -221,7 +221,7 @@ const Footer: React.FC = () => {
                     Wing & Weft
                   </span>
                 </div>
-                <p className={`${text} text-sm font-body leading-relaxed`}>
+                <p className={`text-sm font-body leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
                   Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail. Your heritage, our craft.
                 </p>
               </div>
@@ -252,7 +252,7 @@ const Footer: React.FC = () => {
                           </li>
                         ))
                       : [1, 2, 3, 4].map((n) => (
-                          <li key={n}><div className="h-3 w-24 rounded bg-stone-700/50 animate-pulse" /></li>
+                          <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
                         ))
                     }
                   </ul>
@@ -274,7 +274,7 @@ const Footer: React.FC = () => {
                         </li>
                       ))
                     : [1, 2, 3, 4].map((n) => (
-                        <li key={n}><div className="h-3 w-24 rounded bg-stone-700/50 animate-pulse" /></li>
+                        <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
                       ))
                   }
                 </ul>
@@ -282,35 +282,35 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="saree-divider mb-6" />
+          <div className={`saree-divider mb-6 ${isDark ? "" : "opacity-30"}`} />
 
-          {/* ── Bottom — compact single row ── */}
+          {/* ── Bottom — stacked: social icons → copyright ── */}
           <div
             ref={bottom.ref}
-            className="flex flex-col sm:flex-row items-center justify-between gap-3"
+            className="flex flex-col items-center gap-3"
             style={fadeStyle(bottom.visible, 200)}
           >
-            {/* Social icons — left on desktop, centred on mobile */}
-            <div className="flex items-center gap-2.5 order-2 sm:order-1">
+            {/* Social icons row */}
+            <div className="flex items-center gap-2.5">
               <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Instagram">
-                <Instagram size={14} color="#e9e3cb" />
+                <Instagram size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={settings.facebook_url !== '#' ? settings.facebook_url : '#'}
                 target={settings.facebook_url !== '#' ? '_blank' : undefined}
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Facebook">
-                <Facebook size={14} color="#e9e3cb" />
+                <Facebook size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={`mailto:${settings.contact_email}`}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Email">
-                <Mail size={14} color="#e9e3cb" />
+                <Mail size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={`https://wa.me/${settings.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
@@ -320,26 +320,25 @@ const Footer: React.FC = () => {
               </a>
             </div>
 
-            {/* Copyright — right on desktop, centred on mobile */}
-            <div className="text-center sm:text-right order-1 sm:order-2">
-              <p className={`${text} text-xs font-body`}>
-                © 2026 Wing &amp; Weft. All Rights Reserved.
-                &nbsp;·&nbsp;
-                Crafted with <Heart size={9} className="inline text-brand-red" fill="#bc3d3e" /> by{' '}
-                <a
-                  href="https://vnvne.vercel.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-brand-orange transition-colors underline underline-offset-2"
-                >
-                  Navi
-                </a>
-                &nbsp;·&nbsp;
-                <a href={`mailto:${settings.contact_email}`} className="hover:text-brand-orange transition-colors">
-                  {settings.contact_email}
-                </a>
-              </p>
-            </div>
+            {/* Copyright line — centred below icons */}
+            <p className={`${text} text-xs font-body text-center`}>
+              © 2026 Wing &amp; Weft. All Rights Reserved.
+              &nbsp;·&nbsp;
+              Crafted with <Heart size={9} className="inline text-brand-red" fill="#bc3d3e" /> by{' '}
+              <a
+                href="https://vnvne.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#b6893c', fontWeight: 600 }}
+                className="transition-colors hover:text-brand-orange"
+              >
+                Navi
+              </a>
+              &nbsp;·&nbsp;
+              <a href={`mailto:${settings.contact_email}`} className="hover:text-brand-orange transition-colors">
+                {settings.contact_email}
+              </a>
+            </p>
           </div>
 
         </div>
