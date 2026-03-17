@@ -167,8 +167,8 @@ const CSS = `
 
 /* ── Logo section ── */
 .cs-logo-wrap {
-  margin-bottom: 1.2rem;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin-bottom: 1.4rem;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .cs-logo-eyebrow {
   display: flex; align-items: center; gap: 12px;
@@ -183,7 +183,7 @@ const CSS = `
   font-size: 0.58rem; letter-spacing: 0.42em;
   text-transform: uppercase; font-weight: 700;
 }
-.cs-logo-img { height: 52px; width: auto; object-fit: contain; }
+.cs-logo-img { height: 72px; width: auto; object-fit: contain; max-width: 280px; }
 
 /* ── Headline ── */
 .cs-headline {
@@ -215,7 +215,7 @@ const CSS = `
 /* ── Ornament rule ── */
 .cs-rule {
   display: flex; align-items: center; justify-content: center;
-  gap: 12px; margin: 1rem auto;
+  gap: 12px; margin: 0.8rem auto;
 }
 .cs-rule-line {
   height: 1px; width: 64px;
@@ -303,9 +303,9 @@ const CSS = `
   position: relative;
   font-family: 'Cormorant Garamond', serif;
   font-size: clamp(2rem, 5vw, 3.4rem);
-  font-weight: 400; color: var(--cream);
+  font-weight: 400; color: #1a1410;
   letter-spacing: -0.02em; line-height: 1;
-  text-shadow: 0 0 30px rgba(233,227,203,0.15);
+  text-shadow: none;
 }
 .cs-unit-label {
   color: rgba(182,137,60,0.85);
