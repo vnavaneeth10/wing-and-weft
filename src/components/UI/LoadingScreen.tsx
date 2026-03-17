@@ -107,7 +107,7 @@ const LoadingScreen: React.FC<Props> = ({ onComplete }) => {
             fontSize: '0.7rem', letterSpacing: '0.3em',
             color: '#b6893c', marginTop: '0.4rem', textTransform: 'uppercase',
           }}>
-            Timeless Sarees
+            CHEERS TO THE NEW BEGINNINGS
           </p>
         </div>
 
