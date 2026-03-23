@@ -17,7 +17,7 @@ export const WhatsAppSection: React.FC = () => {
       style={{
         background: isDark
           ? 'linear-gradient(135deg, #231d17 0%, #2e1a1b 50%, #231d17 100%)'
-          : 'linear-gradient(135deg, #7A1F2E 0%, #5C1520 40%, #9C6F2E 100%)',
+          : 'linear-gradient(135deg, #bc3d3e 0%, #9e3233 50%, #b6893c 100%)',
       }}
       aria-label="Contact us on WhatsApp"
     >
@@ -41,7 +41,7 @@ export const WhatsAppSection: React.FC = () => {
           We're here to help
         </p>
         <h2
-          style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400 }}
+          style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 600 }}
           className="text-brand-cream mb-4"
         >
           Need Help Choosing?
@@ -87,7 +87,7 @@ export const FloatingActions: React.FC = () => {
           visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
         style={{
-          background: 'linear-gradient(135deg, #7A1F2E, #9C6F2E)',
+          background: 'linear-gradient(135deg, #bc3d3e, #b6893c)',
           color: '#e9e3cb',
         }}
         aria-label="Scroll to top"

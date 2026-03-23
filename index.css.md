@@ -3,21 +3,13 @@
 @tailwind utilities;
 
 /* ========== CSS Variables ========== */
-/* CHANGE 1: All color tokens updated to new palette.
-   --cream:  warm pure base (was greenish-yellow #e9e3cb)
-   --red:    deep wine (was flat tomato #bc3d3e)
-   --gold:   deeper, more legible gold (was #b6893c)
-   Added --ink for semantic body text token */
 :root {
-  --cream:    #FAF6EF;
-  --red:      #7A1F2E;
-  --red-hover:#9E3348;
-  --orange:   #B8622A;
-  --gold:     #9C6F2E;
-  --gold-lt:  #C49A4A;
-  --ink:      #1C1109;
-  --dark-bg:  #1a1410;
-  --dark-card:#231d17;
+  --cream: #e9e3cb;
+  --red: #bc3d3e;
+  --orange: #e69358;
+  --gold: #b6893c;
+  --dark-bg: #1a1410;
+  --dark-card: #231d17;
   --transition: all 0.3s ease;
 }
 
@@ -32,16 +24,10 @@ html {
   scroll-behavior: smooth;
 }
 
-/* CHANGE 2: font-family switched from Raleway → DM Sans.
-   DM Sans is more legible at small sizes, better Android rendering,
-   and pairs cleanly with the editorial serif headlines.
-   Raleway is now reserved for ALL-CAPS label/tag text only (font-label class).
-   background-color updated to new warm cream #FAF6EF.
-   color updated to warm ink #1C1109 (not pure #000). */
 body {
-  font-family: "DM Sans", system-ui, sans-serif;
-  background-color: #FAF6EF;
-  color: #1C1109;
+  font-family: "Raleway", sans-serif;
+  background-color: #faf8f2;
+  color: #2a1f1a;
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -61,58 +47,45 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #EDE5D4;
+  background: #f0ebe0;
 }
-/* CHANGE 3: Scrollbar thumb updated to new wine #7A1F2E (was #bc3d3e) */
 ::-webkit-scrollbar-thumb {
-  background: #7A1F2E;
+  background: #bc3d3e;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9E3348;
+  background: #9e3233;
 }
 .dark ::-webkit-scrollbar-track {
   background: #231d17;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #9E3348;
-}
 
 /* ========== Selection ========== */
-/* CHANGE 4: Selection color — was harsh white-on-red (#bc3d3e bg / #fff text).
-   New: warm blush bg with wine text — elegant, readable, on-brand. */
 ::selection {
-  background: #F5E8EB;
-  color: #7A1F2E;
+  background: #bc3d3e;
+  color: #fff;
 }
 
 /* ========== Typography ========== */
-/* CHANGE 5: font-body utility class updated to DM Sans.
-   font-label added for Raleway ALL-CAPS usage. */
 .font-display {
   font-family: "Cormorant Garamond", Georgia, serif;
 }
 .font-accent {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "Playfair Display", serif;
 }
 .font-body {
-  font-family: "DM Sans", system-ui, sans-serif;
-}
-.font-label {
-  font-family: "Raleway", system-ui, sans-serif;
+  font-family: "Raleway", sans-serif;
 }
 
 /* ========== Focus Outline for Accessibility ========== */
-/* CHANGE 6: Focus ring updated to new wine accent */
 :focus-visible {
-  outline: 2px solid #7A1F2E;
+  outline: 2px solid #bc3d3e;
   outline-offset: 2px;
 }
 
 /* ========== Shimmer Effect ========== */
-/* CHANGE 7: Shimmer base color updated to match new cream palette */
 .shimmer {
-  background: linear-gradient(90deg, #EDE5D4 25%, #E4D8C4 50%, #EDE5D4 75%);
+  background: linear-gradient(90deg, #f0ebe0 25%, #e5ddd0 50%, #f0ebe0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -173,7 +146,7 @@ body {
   position: absolute;
   width: 100%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #FAF6EF, transparent);
+  background: linear-gradient(90deg, transparent, #e9e3cb, transparent);
   animation: motifSweep 3s ease-in-out infinite;
 }
 
@@ -191,13 +164,12 @@ body {
   }
 }
 
-/* CHANGE 8: Loader ring updated — top-color to new wine, right-color to new gold */
 .loader-ring {
   width: 70px;
   height: 70px;
-  border: 3px solid rgba(250, 246, 239, 0.15);
-  border-top-color: #7A1F2E;
-  border-right-color: #9C6F2E;
+  border: 3px solid rgba(233, 227, 203, 0.15);
+  border-top-color: #bc3d3e;
+  border-right-color: #b6893c;
   border-radius: 50%;
   animation: spin 1.2s linear infinite;
 }
@@ -242,31 +214,28 @@ body {
 }
 
 /* ========== Decorative ========== */
-/* CHANGE 9: Saree divider updated to new gold/wine palette */
 .saree-divider {
   width: 100%;
   height: 2px;
   background: linear-gradient(
     90deg,
     transparent,
-    #9C6F2E,
-    #7A1F2E,
-    #9C6F2E,
+    #b6893c,
+    #bc3d3e,
+    #b6893c,
     transparent
   );
 }
 
-/* CHANGE 10: Section ornament diamond updated to new gold */
 .section-ornament::before,
 .section-ornament::after {
   content: "◆";
-  color: #9C6F2E;
+  color: #b6893c;
   font-size: 0.5rem;
-  margin: 0 0 0.5rem;
+  margin: 0 0.5rem;
 }
 
 /* ========== Card Hover ========== */
-/* CHANGE 11: Card hover shadow updated to use new wine with low opacity */
 .product-card {
   transition:
     transform 0.3s ease,
@@ -274,7 +243,7 @@ body {
 }
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(122, 31, 46, 0.12);
+  box-shadow: 0 12px 30px rgba(188, 61, 62, 0.15);
 }
 
 /* ========== Accordion ========== */
@@ -298,16 +267,15 @@ body {
 }
 
 /* ========== Glass morphism ========== */
-/* CHANGE 12: Glass background updated to use new cream and gold values */
 .glass {
-  background: rgba(250, 246, 239, 0.08);
+  background: rgba(233, 227, 203, 0.08);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(250, 246, 239, 0.15);
+  border: 1px solid rgba(233, 227, 203, 0.15);
 }
 .dark .glass {
   background: rgba(26, 20, 16, 0.7);
-  border: 1px solid rgba(156, 111, 46, 0.2);
+  border: 1px solid rgba(182, 137, 60, 0.2);
 }
 
 /* ========== Swipe hide scrollbar ========== */
@@ -320,12 +288,11 @@ body {
 }
 
 /* ========== Pattern overlay ========== */
-/* CHANGE 13: Pattern fill color updated to new gold #9C6F2E */
 .pattern-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C6F2E' fill-opacity='0.05'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10S0 14.5 0 20s4.5 10 10 10 10-4.5 10-10zm10-10c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10-4.5-10-10-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b6893c' fill-opacity='0.05'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10S0 14.5 0 20s4.5 10 10 10 10-4.5 10-10zm10-10c-5.5 0-10 4.5-10 10s4.5 10 10 10 10-4.5 10-10-4.5-10-10-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
-/* ========== Fade-in animation ========== */
+/* Fade in animation */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -356,25 +323,22 @@ body {
   opacity: 0;
 }
 
-/* ========== Star rating ========== */
-/* CHANGE 14: Star colors updated to new gold tokens */
+/* Star rating */
 .star-filled {
-  color: #9C6F2E;
+  color: #b6893c;
 }
 .star-empty {
-  color: #C49A4A;
-  opacity: 0.3;
+  color: #d4cdb0;
 }
 
-/* ========== Range slider ========== */
-/* CHANGE 15: Slider track and thumb updated to new wine token */
+/* Range slider */
 input[type="range"] {
   -webkit-appearance: none;
   height: 4px;
   background: linear-gradient(
     to right,
-    #7A1F2E var(--val, 50%),
-    #EDE5D4 var(--val, 50%)
+    #bc3d3e var(--val, 50%),
+    #d4cdb0 var(--val, 50%)
   );
   border-radius: 2px;
   outline: none;
@@ -383,8 +347,8 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  background: #7A1F2E;
+  background: #bc3d3e;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 0 3px rgba(122, 31, 46, 0.2);
+  box-shadow: 0 0 0 3px rgba(188, 61, 62, 0.2);
 }

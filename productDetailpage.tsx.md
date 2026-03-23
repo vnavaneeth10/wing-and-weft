@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle } from 'lucide-react';
-import { getWhatsAppLink, INSTAGRAM_URL } from '../data/products';
+import { getWhatsAppLink, INSTAGRAM_URL } from '../data/products'; // ← keep WhatsApp helper
 import { useTheme } from '../context/ThemeContext';
 import { StarRating } from '../components/Products/ProductCard';
+//import { useProduct } from '../hooks/useProducts'; // ✅ NEW: fetch from Supabase
 import { WHATSAPP_NUMBER } from '../data/products';
 import { useProduct } from '../hooks/useProducts';
 
@@ -12,21 +13,17 @@ const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const { isDark } = useTheme();
 
+  // ✅ CHANGED: fetch single product live from Supabase
   const { product, loading } = useProduct(productId || '');
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>('description');
 
-  // CHANGE 1: bg updated — bg-stone-50 → bg-brand-cream.
-  // Consistent warm cream across all pages. Stone-50 is a cool off-white that makes
-  // warm saree photography look different to how it appeared on the cream homepage.
-  const bg   = isDark ? 'bg-dark-bg'                          : 'bg-brand-cream';
-  const card = isDark ? 'bg-dark-card border-dark-border'     : 'bg-white border-brand-cream-dark';
-
-  // CHANGE 2: textPrimary — text-stone-800 → text-brand-ink (warm ink token)
-  const textPrimary = isDark ? 'text-dark-text' : 'text-brand-ink';
-  const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
+  const bg = isDark ? 'bg-dark-bg' : 'bg-stone-50';
+  const card = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-200';
+  const textPrimary = isDark ? 'text-dark-text' : 'text-stone-800';
+  const textMuted = isDark ? 'text-dark-muted' : 'text-stone-500';
 
   // Loading state
   if (loading) {
@@ -60,12 +57,9 @@ const ProductDetailPage: React.FC = () => {
       <div className={`min-h-screen ${bg} pt-24 flex items-center justify-center`}>
         <div className="text-center">
           <p className="text-6xl mb-4">🕊️</p>
-          {/* CHANGE 3: "Not Found" heading — explicit fontWeight: 400.
-              Cormorant Garamond must always be 400 — browsers default to bold
-              which destroys the elegant hairline serif character. */}
           <h2
             className={textPrimary}
-            style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}
+            style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem' }}
           >
             Product Not Found
           </h2>
@@ -77,10 +71,12 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
+  // ✅ CHANGED: use discount_price (snake_case) instead of discountPrice
   const discount = product.discount_price
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
+  // ✅ CHANGED: build WhatsApp link directly using DB fields (no more product.specifications)
   const whatsappText = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace('-', ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
   const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappText)}`;
 
@@ -97,6 +93,7 @@ const ProductDetailPage: React.FC = () => {
       title: 'Saree Specifications',
       content: (
         <div className="space-y-2">
+          {/* ✅ CHANGED: flat DB fields instead of product.specifications.sareeFabric etc. */}
           {Object.entries({
             'Saree Fabric': product.saree_fabric,
             'Saree Length': product.saree_length,
@@ -106,7 +103,7 @@ const ProductDetailPage: React.FC = () => {
             <div
               key={key}
               className="flex justify-between py-2 border-b last:border-0"
-              style={{ borderColor: isDark ? '#3a2e24' : '#EDE5D4' }}
+              style={{ borderColor: isDark ? '#3a2e24' : '#f0ebe0' }}
             >
               <span className={`text-sm font-semibold font-body ${textPrimary}`}>{key}</span>
               <span className={`text-sm font-body ${textMuted}`}>{val || '—'}</span>
@@ -128,7 +125,6 @@ const ProductDetailPage: React.FC = () => {
             'Free shipping on orders above ₹2000.',
           ].map((item, i) => (
             <li key={i} className="flex gap-2 text-sm font-body">
-              {/* CHANGE 4: Policy bullet updated to new gold token */}
               <span className="text-brand-gold mt-0.5">•</span>
               <span className={textMuted}>{item}</span>
             </li>
@@ -158,7 +154,6 @@ const ProductDetailPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-
           {/* Left — images */}
           <div>
             <div
@@ -206,36 +201,30 @@ const ProductDetailPage: React.FC = () => {
 
           {/* Right — details */}
           <div>
-            {/* Category + fabric eyebrow label */}
-            {/* CHANGE 5: Eyebrow label — font-body → font-label, added tracking-luxury */}
+            {/* Category + fabric */}
             <p
-              className="text-brand-gold text-xs uppercase font-label mb-2"
-              style={{ letterSpacing: '0.22em' }}
+              className="text-brand-gold text-xs uppercase tracking-widest mb-2 font-body"
+              style={{ letterSpacing: '0.2em' }}
             >
               {product.fabric} · {product.category.replace(/-/g, ' ')}
             </p>
 
-            {/* CHANGE 6: Product name — fontWeight 600 → 400.
-                Cormorant Garamond at 400 is elegant; at 600 it loses its signature
-                hairline serif quality and looks like a generic bold heading.
-                This is the most important single change on this page — it immediately
-                signals "luxury editorial" vs "generic storefront". */}
+            {/* Name */}
             <h1
               className={`mb-3 leading-tight ${textPrimary}`}
               style={{
                 fontFamily: '"Cormorant Garamond", serif',
-                fontSize: 'clamp(1.8rem, 3vw, 2.6rem)',
-                fontWeight: 400,
-                lineHeight: 1.1,
+                fontSize: 'clamp(1.8rem, 3vw, 2.5rem)',
+                fontWeight: 600,
               }}
             >
               {product.name}
             </h1>
 
-            {/* Product ID */}
+            {/* ID */}
             <p className={`text-xs mb-4 font-body ${textMuted}`}>Product ID: {product.id}</p>
 
-            {/* Rating */}
+            {/* Rating — ✅ CHANGED: review_count (snake_case) */}
             <div className="flex items-center gap-3 mb-4">
               <StarRating rating={product.rating} size={16} />
               <span className={`text-sm font-body ${textMuted}`}>
@@ -243,16 +232,13 @@ const ProductDetailPage: React.FC = () => {
               </span>
             </div>
 
-            {/* CHANGE 7: Price — text-brand-red → text-brand-gold.
-                Gold pricing = premium product perception.
-                Red pricing subconsciously = sale/discount.
-                For handwoven luxury sarees at ₹3000–₹15000+, gold is the right signal. */}
+            {/* Price — ✅ CHANGED: discount_price (snake_case) */}
             <div className="flex items-center gap-4 mb-4">
               {product.discount_price ? (
                 <>
                   <span
-                    className="font-bold text-brand-gold"
-                    style={{ fontSize: '1.8rem', fontFamily: '"DM Sans", system-ui, sans-serif' }}
+                    className="font-bold text-brand-red"
+                    style={{ fontSize: '1.8rem', fontFamily: '"Raleway", sans-serif' }}
                   >
                     ₹{product.discount_price.toLocaleString()}
                   </span>
@@ -260,30 +246,29 @@ const ProductDetailPage: React.FC = () => {
                     <span className={`text-base line-through font-body ${textMuted}`}>
                       ₹{product.price.toLocaleString()}
                     </span>
-                    <span className="ml-2 text-sm font-semibold font-body text-brand-gold-light">
+                    <span className="ml-2 text-sm font-semibold font-body text-green-500">
                       {discount}% off
                     </span>
                   </div>
                 </>
               ) : (
                 <span
-                  className="font-bold text-brand-gold"
-                  style={{ fontSize: '1.8rem', fontFamily: '"DM Sans", system-ui, sans-serif' }}
+                  className="font-bold text-brand-red"
+                  style={{ fontSize: '1.8rem', fontFamily: '"Raleway", sans-serif' }}
                 >
                   ₹{product.price.toLocaleString()}
                 </span>
               )}
             </div>
 
-            {/* Stock status */}
-            {/* CHANGE 8: Stock text uses brand tokens instead of Tailwind defaults */}
+            {/* Stock */}
             <p
               className={`text-sm font-semibold mb-4 font-body ${
                 product.stock === 0
-                  ? 'text-brand-red'
+                  ? 'text-red-500'
                   : product.stock <= 5
-                  ? 'text-brand-orange'
-                  : 'text-green-600'
+                  ? 'text-orange-500'
+                  : 'text-green-500'
               }`}
             >
               {product.stock === 0
@@ -293,7 +278,7 @@ const ProductDetailPage: React.FC = () => {
                 : '✓ In Stock'}
             </p>
 
-            {/* Color selector */}
+            {/* Colors */}
             <div className="mb-6">
               <p className={`text-sm font-semibold mb-2 font-body ${textPrimary}`}>Color</p>
               <div className="flex gap-2">
@@ -318,7 +303,7 @@ const ProductDetailPage: React.FC = () => {
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`w-full flex items-center justify-center gap-3 py-4 rounded-full font-bold font-body text-sm uppercase transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+                className={`w-full flex items-center justify-center gap-3 py-4 rounded-full font-bold font-body text-sm uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
                   product.stock === 0 ? 'opacity-50 pointer-events-none' : ''
                 }`}
                 style={{
@@ -353,7 +338,7 @@ const ProductDetailPage: React.FC = () => {
                   {openAccordion === acc.id && (
                     <div
                       className={`px-5 pb-4 border-t ${
-                        isDark ? 'border-dark-border' : 'border-brand-cream-dark'
+                        isDark ? 'border-dark-border' : 'border-stone-100'
                       }`}
                     >
                       <div className="pt-3">{acc.content}</div>
@@ -367,20 +352,32 @@ const ProductDetailPage: React.FC = () => {
             <div>
               <p className={`text-sm font-semibold mb-2 font-body ${textPrimary}`}>Share this product</p>
               <div className="flex gap-3">
-                <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                  style={{ background: '#25D366' }} aria-label="Share on WhatsApp">
+                  style={{ background: '#25D366' }}
+                  aria-label="Share on WhatsApp"
+                >
                   <MessageCircle size={16} color="white" />
                 </a>
-                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer"
+                <a
+                  href={INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
                   style={{ background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }}
-                  aria-label="Share on Instagram">
+                  aria-label="Share on Instagram"
+                >
                   <Instagram size={16} color="white" />
                 </a>
-                <a href="#"
+                <a
+                  href="#"
                   className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                  style={{ background: '#1877F2' }} aria-label="Share on Facebook">
+                  style={{ background: '#1877F2' }}
+                  aria-label="Share on Facebook"
+                >
                   <Facebook size={16} color="white" />
                 </a>
               </div>
@@ -390,10 +387,9 @@ const ProductDetailPage: React.FC = () => {
 
         {/* Reviews skeleton */}
         <div className="mt-16">
-          {/* CHANGE 9: Reviews heading — fontWeight 600 → 400 (Cormorant consistency) */}
           <h2
             className={`mb-6 ${textPrimary}`}
-            style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}
+            style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 600 }}
           >
             Customer Reviews
           </h2>

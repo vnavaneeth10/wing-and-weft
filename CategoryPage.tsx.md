@@ -2,10 +2,13 @@
 import React, { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { SlidersHorizontal, X, Search } from 'lucide-react';
-import { CATEGORIES } from '../data/products';
+import { CATEGORIES } from '../data/products'; // ← still used for category meta (name, image, description)
 import { useTheme } from '../context/ThemeContext';
 import ProductCard from '../components/Products/ProductCard';
-import { useProductsByCategory } from '../hooks/useProducts';
+import { useProductsByCategory } from '../hooks/useProducts'; 
+//import { useProductsByCategory } from '../hooks/useProducts'; 
+
+// ✅ NEW: fetch from Supabase
 
 type SortOption = 'featured' | 'rating' | 'az' | 'za' | 'low-high' | 'high-low';
 
@@ -14,15 +17,17 @@ const CategoryPage: React.FC = () => {
   const { isDark } = useTheme();
   const category = CATEGORIES.find((c) => c.id === categoryId);
 
+  // ✅ CHANGED: fetch live products from Supabase instead of filtering static PRODUCTS array
   const { products: allProducts, loading } = useProductsByCategory(categoryId || '');
 
-  const [sortBy, setSortBy]           = useState<SortOption>('featured');
-  const [filterTag, setFilterTag]     = useState('All');
+  const [sortBy, setSortBy] = useState<SortOption>('featured');
+  const [filterTag, setFilterTag] = useState('All');
   const [filterFabrics, setFilterFabrics] = useState<string[]>([]);
-  const [priceRange, setPriceRange]   = useState<[number, number]>([0, 20000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 20000]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterOpen, setFilterOpen]   = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
 
+  // ✅ CHANGED: derive unique fabrics from live products instead of getAllFabrics()
   const allFabrics = useMemo(
     () => [...new Set(allProducts.map((p) => p.fabric))],
     [allProducts]
@@ -30,27 +35,37 @@ const CategoryPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     let products = [...allProducts];
+
+    // Tag — ✅ CHANGED: use DB field names (is_new_arrival, is_best_seller, is_featured)
     if (filterTag === 'Best Sellers') products = products.filter((p) => p.is_best_seller);
     else if (filterTag === 'New Arrivals') products = products.filter((p) => p.is_new_arrival);
     else if (filterTag === 'Featured') products = products.filter((p) => p.is_featured);
+
+    // Fabric
     if (filterFabrics.length > 0) products = products.filter((p) => filterFabrics.includes(p.fabric));
+
+    // Price — ✅ CHANGED: use discount_price (snake_case)
     products = products.filter((p) => {
       const price = p.discount_price || p.price;
       return price >= priceRange[0] && price <= priceRange[1];
     });
+
+    // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       products = products.filter(
         (p) => p.name.toLowerCase().includes(q) || p.fabric.toLowerCase().includes(q)
       );
     }
+
+    // Sort — ✅ CHANGED: use discount_price (snake_case)
     switch (sortBy) {
-      case 'rating':    return [...products].sort((a, b) => b.rating - a.rating);
-      case 'az':        return [...products].sort((a, b) => a.name.localeCompare(b.name));
-      case 'za':        return [...products].sort((a, b) => b.name.localeCompare(a.name));
-      case 'low-high':  return [...products].sort((a, b) => (a.discount_price || a.price) - (b.discount_price || b.price));
-      case 'high-low':  return [...products].sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
-      default:          return products;
+      case 'rating': return [...products].sort((a, b) => b.rating - a.rating);
+      case 'az':     return [...products].sort((a, b) => a.name.localeCompare(b.name));
+      case 'za':     return [...products].sort((a, b) => b.name.localeCompare(a.name));
+      case 'low-high': return [...products].sort((a, b) => (a.discount_price || a.price) - (b.discount_price || b.price));
+      case 'high-low': return [...products].sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
+      default: return products;
     }
   }, [allProducts, sortBy, filterTag, filterFabrics, priceRange, searchQuery]);
 
@@ -60,24 +75,18 @@ const CategoryPage: React.FC = () => {
     );
   };
 
-  // CHANGE 1: bg-stone-50 → bg-brand-cream — consistent warm base across all pages.
-  // Stone-50 is a cool off-white; brand-cream (#FAF6EF) is warm and consistent
-  // with the homepage, so product photography looks the same across browsing.
-  const bg   = isDark ? 'bg-dark-bg'                      : 'bg-brand-cream';
-  // CHANGE 2: card border-stone-200 → border-brand-cream-dark (warm border token)
-  const card = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
-  const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
-  const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
+  const bg = isDark ? 'bg-dark-bg' : 'bg-stone-50';
+  const card = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-200';
+  const textPrimary = isDark ? 'text-dark-text' : 'text-stone-800';
+  const textMuted = isDark ? 'text-dark-muted' : 'text-stone-500';
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
-
       {/* Hero */}
       {category && (
         <div
           className="relative h-48 md:h-64 overflow-hidden"
-          // CHANGE 3: Hero gradient updated to new wine-to-gold palette
-          style={{ background: 'linear-gradient(135deg, #7A1F2E, #9C6F2E)' }}
+          style={{ background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }}
         >
           <img
             src={category.image}
@@ -86,21 +95,15 @@ const CategoryPage: React.FC = () => {
             loading="eager"
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            {/* CHANGE 4: Eyebrow label — font-body → font-label with tracking-luxury */}
             <p
-              className="text-brand-cream/70 text-xs uppercase font-label mb-2"
+              className="text-brand-cream/70 text-xs uppercase tracking-widest mb-2 font-body"
               style={{ letterSpacing: '0.3em' }}
             >
               Browse
             </p>
-            {/* CHANGE 5: Hero H1 — fontWeight 600 → 400 (Cormorant consistency) */}
             <h1
               className="text-brand-cream"
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                fontWeight: 400,
-              }}
+              style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 600 }}
             >
               {category.name}
             </h1>
@@ -110,7 +113,6 @@ const CategoryPage: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           {/* Search */}
@@ -121,7 +123,7 @@ const CategoryPage: React.FC = () => {
               placeholder="Search in this category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm font-body outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors ${card} ${textPrimary}`}
+              className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm font-body outline-none focus:ring-2 focus:ring-brand-red/30 ${card} ${textPrimary}`}
               aria-label="Search products"
             />
           </div>
@@ -142,13 +144,10 @@ const CategoryPage: React.FC = () => {
           </select>
 
           {/* Filter toggle */}
-          {/* CHANGE 6: Active filter button uses bg-brand-red (auto-resolves to #7A1F2E via config) */}
           <button
             onClick={() => setFilterOpen((v) => !v)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold font-body transition-colors ${
-              filterOpen
-                ? 'bg-brand-red text-white border-brand-red'
-                : `${card} ${textPrimary}`
+              filterOpen ? 'bg-brand-red text-white border-brand-red' : `${card} ${textPrimary}`
             }`}
             aria-expanded={filterOpen}
           >
@@ -172,13 +171,12 @@ const CategoryPage: React.FC = () => {
                     <button
                       key={tag}
                       onClick={() => setFilterTag(tag)}
-                      // CHANGE 7: Active filter pill — bg-brand-red auto-resolves to #7A1F2E
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${
                         filterTag === tag
                           ? 'bg-brand-red text-white border-brand-red'
                           : isDark
                           ? 'border-dark-border text-dark-muted hover:border-brand-red hover:text-brand-red'
-                          : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-red hover:text-brand-red'
+                          : 'border-stone-300 text-stone-600 hover:border-brand-red hover:text-brand-red'
                       }`}
                     >
                       {tag}
@@ -195,13 +193,12 @@ const CategoryPage: React.FC = () => {
                     <button
                       key={fabric}
                       onClick={() => toggleFabric(fabric)}
-                      // CHANGE 8: Active fabric pill — bg-brand-gold auto-resolves to #9C6F2E
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${
                         filterFabrics.includes(fabric)
                           ? 'bg-brand-gold text-white border-brand-gold'
                           : isDark
                           ? 'border-dark-border text-dark-muted hover:border-brand-gold hover:text-brand-gold'
-                          : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-gold hover:text-brand-gold'
+                          : 'border-stone-300 text-stone-600 hover:border-brand-gold hover:text-brand-gold'
                       }`}
                     >
                       {fabric}
@@ -254,7 +251,7 @@ const CategoryPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className={`rounded-2xl border overflow-hidden ${card}`}>
-                <div className="shimmer w-full aspect-[3/4]" />
+                <div className="shimmer w-full" style={{ height: '280px' }} />
                 <div className="p-3 space-y-2">
                   <div className="shimmer h-3 rounded w-3/4" />
                   <div className="shimmer h-3 rounded w-1/2" />
@@ -265,10 +262,9 @@ const CategoryPage: React.FC = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-5xl mb-4 animate-float" role="img" aria-label="Empty">🕊️</div>
-            {/* CHANGE 9: Empty state heading — fontWeight 600 → 400 */}
             <h3
               className={`mb-2 ${textPrimary}`}
-              style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}
+              style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem' }}
             >
               Coming Soon
             </h3>

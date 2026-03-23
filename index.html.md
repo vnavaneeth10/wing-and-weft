@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- CHANGE 1: theme-color updated to new deep wine accent #7A1F2E (was flat tomato #bc3d3e) -->
-    <meta name="theme-color" content="#7A1F2E" />
+    <meta name="theme-color" content="#bc3d3e" />
     <meta name="description" content="Wing & Weft – Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail." />
     <meta property="og:title" content="Wing & Weft – Exquisite Sarees" />
     <meta property="og:description" content="Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail." />
@@ -13,10 +12,7 @@
     <meta name="keywords" content="sarees, silk sarees, cotton sarees, indian ethnic wear, wing and weft, handloom sarees" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- CHANGE 2: DM Sans added to Google Fonts import (new body font replacing Raleway for prose).
-         All 4 fonts in a single request — no extra network cost.
-         display=swap already present — good for First Contentful Paint. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>Wing & Weft – Exquisite Sarees</title>
   </head>
   <body>

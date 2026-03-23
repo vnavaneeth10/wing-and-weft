@@ -8,15 +8,16 @@ import WatchShop from '../components/WatchShop/WatchShop';
 import { WhatsAppSection } from '../components/WhatsApp/WhatsAppSection';
 
 // Feature flags — toggle as needed
-const SHOW_INSTAGRAM = true; // set false to hide until threshold
-const SHOW_WATCH_SHOP = true; // set false to hide until threshold
+const SHOW_INSTAGRAM = false; // set false to hide until threshold
+const SHOW_WATCH_SHOP = false; // set false to hide until threshold
+const COLLECTIONS = false;
 
 const HomePage: React.FC = () => {
   return (
     <main>
       <Banner />
       <CategorySection />
-      <Collections />
+      {COLLECTIONS && <Collections />}
       {SHOW_INSTAGRAM && <InstagramSection />}
       {SHOW_WATCH_SHOP && <WatchShop />}
       <WhatsAppSection />

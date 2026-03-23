@@ -7,9 +7,9 @@ import { useTheme } from '../../context/ThemeContext';
 import PolicyModal from '../Policy/PolicyModal';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 
-interface FooterCategory { id: string; name: string; }
-interface FooterPolicy   { id: string; title: string; }
-interface FooterSettings {
+interface FooterCategory  { id: string; name: string; }
+interface FooterPolicy    { id: string; title: string; }
+interface FooterSettings  {
   instagram_url:   string;
   facebook_url:    string;
   contact_email:   string;
@@ -72,7 +72,7 @@ const saveNewsletterEmail = async (email: string) => {
 };
 
 function useFadeIn() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref  = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -132,12 +132,10 @@ const Footer: React.FC = () => {
     transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
   });
 
-  const bg      = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
-  const text    = isDark ? 'text-stone-400' : 'text-stone-500';
-  const heading = isDark ? 'text-brand-cream' : 'text-brand-ink';
-  // CHANGE 1: Footer link hover — hover:text-brand-orange → hover:text-brand-gold-light
-  // Gold-light (#C49A4A) has better contrast on the dark footer than orange (#B8622A)
-  const linkClass = `${text} ${isDark ? 'hover:text-brand-gold-light' : 'hover:text-brand-red'} transition-colors text-sm font-body`;
+  const bg        = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
+  const text      = isDark ? 'text-stone-400' : 'text-stone-500';
+  const heading   = isDark ? 'text-brand-cream' : 'text-stone-800';
+  const linkClass = `${text} ${isDark ? 'hover:text-brand-orange' : 'hover:text-brand-red'} transition-colors text-sm font-body`;
 
   const SHOW_COLLECTIONS = false;
 
@@ -146,24 +144,16 @@ const Footer: React.FC = () => {
       <footer className={`${bg} border-t pt-14 pb-6`} role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
-          {/* Subscribe banner */}
+          {/* ── Subscribe banner ── */}
           <div
             ref={banner.ref}
             className="rounded-2xl p-8 md:p-10 mb-14 relative overflow-hidden"
-            style={{
-              ...fadeStyle(banner.visible),
-              // CHANGE 2: Subscribe banner gradient — #bc3d3e/#b6893c → #7A1F2E/#9C6F2E
-              background: 'linear-gradient(135deg, #7A1F2E, #9C6F2E)',
-            }}
+            style={{ ...fadeStyle(banner.visible), background: 'linear-gradient(135deg, #bc3d3e, #b6893c)' }}
           >
             <div className="absolute inset-0 pattern-overlay opacity-20" />
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
-                {/* CHANGE 3: Banner heading — fontWeight 600 → 400 (Cormorant consistency) */}
-                <h3
-                  className="text-brand-cream mb-1"
-                  style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.8rem', fontWeight: 400 }}
-                >
+                <h3 className="text-brand-cream mb-1" style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.8rem', fontWeight: 600 }}>
                   Stay in the Loop
                 </h3>
                 <p className="text-brand-cream/80 text-sm font-body">
@@ -178,20 +168,15 @@ const Footer: React.FC = () => {
                   placeholder="Your email address"
                   required
                   disabled={emailStatus === 'saving'}
-                  className="flex-1 md:w-64 px-4 py-3 rounded-full text-sm font-body outline-none focus:ring-2 focus:ring-brand-cream/50 disabled:opacity-60"
-                  style={{
-                    background: 'rgba(255,255,255,0.15)',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    color: '#FAF6EF',
-                  }}
+                  className="flex-1 md:w-64 px-4 py-3 rounded-full text-sm font-body outline-none focus:ring-2 focus:ring-brand-cream/50 placeholder-black disabled:opacity-60"
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#e9e3cb' }}
                   aria-label="Email address for newsletter"
                 />
-                {/* CHANGE 4: Subscribe button — bg #e9e3cb/color #bc3d3e → #FAF6EF/#7A1F2E */}
                 <button
                   type="submit"
                   disabled={emailStatus === 'saving'}
                   className="px-5 py-3 rounded-full font-semibold font-body text-sm transition-all hover:scale-105 disabled:opacity-60"
-                  style={{ background: '#FAF6EF', color: '#7A1F2E' }}
+                  style={{ background: '#e9e3cb', color: '#bc3d3e' }}
                   aria-label="Subscribe to newsletter"
                 >
                   {emailStatus === 'saving' ? '...' : emailStatus === 'success' ? '✓' : emailStatus === 'error' ? '✗' : <ArrowRight size={18} />}
@@ -210,21 +195,28 @@ const Footer: React.FC = () => {
             )}
           </div>
 
-          {/* Footer grid */}
+          {/* ── Footer grid ── */}
           <div ref={grid.ref}>
             <div
               className={`grid mb-10 gap-10 ${SHOW_COLLECTIONS ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}
               style={fadeStyle(grid.visible, 100)}
             >
-              {/* Brand */}
+              {/* ── Brand — logo image ── */}
               <div className={SHOW_COLLECTIONS ? 'col-span-2 md:col-span-1' : ''}>
                 <div className="mb-4">
                   <picture>
                     <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
-                    <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"   type="image/png" />
-                    <img src="/logo@1x.png" alt="Wing & Weft" width={160} height={90}
-                      className="w-auto object-contain" style={{ height: '48px' }}
-                      loading="lazy" decoding="async" />
+                    <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+                    <img
+                      src="/logo@1x.png"
+                      alt="Wing & Weft"
+                      width={160}
+                      height={90}
+                      className="w-auto object-contain"
+                      style={{ height: '48px' }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </picture>
                 </div>
                 <p className={`text-sm font-body leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
@@ -234,7 +226,7 @@ const Footer: React.FC = () => {
 
               {/* Quick Links */}
               <div>
-                <h4 className={`${heading} font-semibold font-label text-xs uppercase mb-4`} style={{ letterSpacing: '0.15em' }}>
+                <h4 className={`${heading} font-semibold font-body text-sm uppercase tracking-widest mb-4`} style={{ letterSpacing: '0.15em' }}>
                   Quick Links
                 </h4>
                 <ul className="space-y-2.5">
@@ -244,9 +236,10 @@ const Footer: React.FC = () => {
                 </ul>
               </div>
 
+              {/* Collections — hidden for now */}
               {SHOW_COLLECTIONS && (
                 <div>
-                  <h4 className={`${heading} font-semibold font-label text-xs uppercase mb-4`} style={{ letterSpacing: '0.15em' }}>Collections</h4>
+                  <h4 className={`${heading} font-semibold font-body text-sm uppercase tracking-widest mb-4`} style={{ letterSpacing: '0.15em' }}>Collections</h4>
                   <ul className="space-y-2.5">
                     {categories.length > 0
                       ? categories.map((cat) => (
@@ -262,7 +255,7 @@ const Footer: React.FC = () => {
 
               {/* Policies */}
               <div>
-                <h4 className={`${heading} font-semibold font-label text-xs uppercase mb-4`} style={{ letterSpacing: '0.15em' }}>
+                <h4 className={`${heading} font-semibold font-body text-sm uppercase tracking-widest mb-4`} style={{ letterSpacing: '0.15em' }}>
                   Policies
                 </h4>
                 <ul className="space-y-2.5">
@@ -283,27 +276,31 @@ const Footer: React.FC = () => {
 
           <div className={`saree-divider mb-6 ${isDark ? '' : 'opacity-30'}`} />
 
-          {/* Bottom */}
-          <div ref={bottom.ref} className="flex flex-col items-center gap-3" style={fadeStyle(bottom.visible, 200)}>
+          {/* ── Bottom ── */}
+          <div
+            ref={bottom.ref}
+            className="flex flex-col items-center gap-3"
+            style={fadeStyle(bottom.visible, 200)}
+          >
             <div className="flex items-center gap-2.5">
               <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
                 style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Instagram">
-                <Instagram size={14} color={isDark ? '#FAF6EF' : '#44403c'} />
+                <Instagram size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={settings.facebook_url !== '#' ? settings.facebook_url : '#'}
                 target={settings.facebook_url !== '#' ? '_blank' : undefined} rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
                 style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Facebook">
-                <Facebook size={14} color={isDark ? '#FAF6EF' : '#44403c'} />
+                <Facebook size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={`mailto:${settings.contact_email}`}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
                 style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.12)' }}
                 aria-label="Email">
-                <Mail size={14} color={isDark ? '#FAF6EF' : '#44403c'} />
+                <Mail size={14} color={isDark ? '#e9e3cb' : '#44403c'} />
               </a>
               <a href={`https://wa.me/${settings.whatsapp_number}`} target="_blank" rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 hover:opacity-80"
@@ -314,18 +311,14 @@ const Footer: React.FC = () => {
             <p className={`${text} text-xs font-body text-center`}>
               © 2026 Wing &amp; Weft. All Rights Reserved.
               &nbsp;·&nbsp;
-              {/* CHANGE 5: Heart icon fill — #bc3d3e → #7A1F2E (new wine token) */}
-              Crafted with <Heart size={9} className="inline text-brand-red" fill="#7A1F2E" /> by{' '}
-              {/* CHANGE 6: Navi credit link — #b6893c → #C49A4A (gold-light).
-                  Old gold (#9C6F2E) on dark footer ≈ 3.5:1 contrast.
-                  Gold-light (#C49A4A) gives ≈ 4.8:1 — passes WCAG AA. */}
+              Crafted with <Heart size={9} className="inline text-brand-red" fill="#bc3d3e" /> by{' '}
               <a href="https://vnvne.vercel.app/" target="_blank" rel="noopener noreferrer"
-                style={{ color: '#C49A4A', fontWeight: 600 }}
-                className="transition-colors hover:text-brand-gold">
+                style={{ color: '#b6893c', fontWeight: 600 }}
+                className="transition-colors hover:text-brand-orange">
                 Navi
               </a>
               &nbsp;·&nbsp;
-              <a href={`mailto:${settings.contact_email}`} className="hover:text-brand-gold-light transition-colors">
+              <a href={`mailto:${settings.contact_email}`} className="hover:text-brand-orange transition-colors">
                 {settings.contact_email}
               </a>
             </p>
