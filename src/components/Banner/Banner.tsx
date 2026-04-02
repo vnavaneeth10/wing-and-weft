@@ -24,29 +24,7 @@ const fetchBanners = async (): Promise<BannerSlide[]> => {
   return res.json();
 };
 
-const FALLBACK_SLIDES: BannerSlide[] = [
-  {
-    id: '1', title: 'Threads of Tradition',
-    subtitle: 'Handwoven silk sarees — where every thread carries a story older than time',
-    cta_text: 'Explore Silk', cta_link: '/category/silk-sarees',
-    image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1440&h=900&fit=crop&q=85',
-    is_active: true, sort_order: 1,
-  },
-  {
-    id: '2', title: 'Draped in Elegance',
-    subtitle: 'Premium cotton sarees — refined for the modern woman who honours heritage',
-    cta_text: 'Shop Cotton', cta_link: '/category/cotton-sarees',
-    image_url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=1440&h=900&fit=crop&q=85',
-    is_active: true, sort_order: 2,
-  },
-  {
-    id: '3', title: 'Woven with Love',
-    subtitle: 'Each saree a masterpiece — uncompromising craftsmanship, timeless grace',
-    cta_text: 'View Collection', cta_link: '/category/silk-sarees',
-    image_url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=1440&h=900&fit=crop&q=85',
-    is_active: true, sort_order: 3,
-  },
-];
+// ── No hardcoded fallback slides — banner only shows what's in the database ──
 
 const RIBBON_ITEMS = [
   'Handwoven Heritage', '◆', 'Free Shipping Above ₹2000', '◆',
@@ -100,6 +78,15 @@ const STYLES = `
     0%   { opacity:0; transform:translateX(-20px); }
     100% { opacity:1; transform:translateX(0); }
   }
+  /* Skeleton shimmer */
+  @keyframes bnr-skeleton {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes bnr-skeleton-pulse {
+    0%,100% { opacity: 0.5; }
+    50%     { opacity: 1; }
+  }
 
   .bnr-kb-1 { animation: bnr-kb-1 11s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
   .bnr-kb-2 { animation: bnr-kb-2 10s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
@@ -129,16 +116,130 @@ const STYLES = `
     animation: bnr-grain 8s steps(10) infinite;
     z-index:15;
   }
+
+  /* Loading skeleton */
+  .bnr-skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(26,20,16,0.6) 0%,
+      rgba(60,40,20,0.4) 40%,
+      rgba(182,137,60,0.15) 50%,
+      rgba(60,40,20,0.4) 60%,
+      rgba(26,20,16,0.6) 100%
+    );
+    background-size: 200% 100%;
+    animation: bnr-skeleton 2.2s ease-in-out infinite;
+  }
+  .bnr-skeleton-pulse {
+    animation: bnr-skeleton-pulse 1.8s ease-in-out infinite;
+  }
 `;
 
+// ─── Loading skeleton shown while banners fetch ──────────────────────────────
+const BannerSkeleton: React.FC = () => (
+  <div
+    className="relative w-full flex items-end justify-center overflow-hidden"
+    style={{ height: 'clamp(520px, 88vh, 900px)', background: '#0d0a07' }}
+    aria-label="Loading banner"
+    aria-busy="true"
+  >
+    {/* Animated background shimmer */}
+    <div className="bnr-skeleton-shimmer absolute inset-0" />
+
+    {/* Decorative grain */}
+    <div className="bnr-grain" />
+
+    {/* Brand mark centred */}
+    <div className="relative z-10 flex flex-col items-center pb-24 text-center px-6">
+      {/* Logo skeleton */}
+      <div
+        className="bnr-skeleton-pulse mb-8 rounded-2xl overflow-hidden"
+        style={{ width: '140px', height: '79px', background: 'rgba(182,137,60,0.12)', border: '1px solid rgba(182,137,60,0.2)' }}
+      >
+        <picture>
+          <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+          <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
+          <img
+            src="/logo@1x.png"
+            alt="Wing & Weft"
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px', opacity: 0.7 }}
+            loading="eager"
+            decoding="sync"
+          />
+        </picture>
+      </div>
+
+      {/* Eyebrow lines */}
+      <div className="flex items-center gap-3 mb-5 bnr-skeleton-pulse">
+        <div style={{ width: '32px', height: '1px', background: 'rgba(182,137,60,0.35)' }} />
+        <div style={{ width: '140px', height: '8px', borderRadius: '4px', background: 'rgba(182,137,60,0.2)' }} />
+        <div style={{ width: '32px', height: '1px', background: 'rgba(182,137,60,0.35)' }} />
+      </div>
+
+      {/* Title skeleton lines */}
+      <div className="space-y-3 mb-5 bnr-skeleton-pulse" style={{ animationDelay: '0.2s' }}>
+        <div style={{ width: '320px', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', margin: '0 auto' }} />
+        <div style={{ width: '240px', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.07)', margin: '0 auto' }} />
+      </div>
+
+      {/* Ornament */}
+      <div className="flex items-center gap-3 bnr-skeleton-pulse" style={{ animationDelay: '0.4s' }}>
+        <div style={{ width: '40px', height: '1px', background: 'rgba(182,137,60,0.2)' }} />
+        <div style={{ width: '6px', height: '6px', transform: 'rotate(45deg)', background: 'rgba(182,137,60,0.35)' }} />
+        <div style={{ width: '40px', height: '1px', background: 'rgba(182,137,60,0.2)' }} />
+      </div>
+    </div>
+
+    {/* Bottom gradient */}
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{ background: 'linear-gradient(to top, rgba(4,2,1,0.96) 0%, rgba(4,2,1,0.6) 30%, transparent 70%)' }}
+    />
+  </div>
+);
+
+// ─── Empty state shown if no banners in DB ───────────────────────────────────
+const BannerEmpty: React.FC = () => (
+  <div
+    className="relative w-full flex items-center justify-center overflow-hidden"
+    style={{ height: 'clamp(520px, 88vh, 900px)', background: 'linear-gradient(135deg, #0d0a07, #1a0f06)' }}
+  >
+    <div className="bnr-grain" />
+    <div className="relative z-10 text-center px-6">
+      <picture>
+        <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+        <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
+        <img src="/logo@1x.png" alt="Wing & Weft"
+          style={{ height: '60px', width: 'auto', objectFit: 'contain', margin: '0 auto 24px', display: 'block', opacity: 0.6 }}
+          loading="eager" />
+      </picture>
+      <p style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.65rem', letterSpacing: '0.32em',
+        textTransform: 'uppercase', color: 'rgba(182,137,60,0.6)', marginBottom: '12px' }}>
+        Wing &amp; Weft
+      </p>
+      <p style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: 'clamp(2rem,5vw,3.5rem)',
+        fontWeight: 300, color: 'rgba(255,255,255,0.85)', marginBottom: '8px' }}>
+        Coming Soon
+      </p>
+      <p style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.85rem', fontWeight: 300,
+        color: 'rgba(240,228,208,0.45)', letterSpacing: '0.06em' }}>
+        Our collection is being curated for you.
+      </p>
+    </div>
+  </div>
+);
+
+// ─── Main Banner component ───────────────────────────────────────────────────
 const Banner: React.FC = () => {
-  const { isDark }            = useTheme();
-  const [slides, setSlides]   = useState<BannerSlide[]>(FALLBACK_SLIDES);
-  const [current, setCurrent] = useState(0);
-  const [prev, setPrev]       = useState<number | null>(null);
-  const [animKey, setAnimKey] = useState(0);
-  const [trans, setTrans]     = useState(false);
-  const styleRef              = useRef(false);
+  const { isDark }              = useTheme();
+  const [slides, setSlides]       = useState<BannerSlide[]>([]);
+  const [status, setStatus]       = useState<'loading' | 'ready' | 'empty'>('loading');
+  const [ribbonVisible, setRibbonVisible] = useState(true);
+  const [current, setCurrent]   = useState(0);
+  const [prev, setPrev]         = useState<number | null>(null);
+  const [animKey, setAnimKey]   = useState(0);
+  const [trans, setTrans]       = useState(false);
+  const styleRef                = useRef(false);
 
   useEffect(() => {
     if (styleRef.current) return;
@@ -150,12 +251,25 @@ const Banner: React.FC = () => {
 
   useEffect(() => {
     fetchBanners()
-      .then(d => { const w = d.filter(b => b.image_url); if (w.length) setSlides(w); })
+      .then(data => {
+        const active = data.filter(b => b.image_url?.trim());
+        if (active.length > 0) { setSlides(active); setStatus('ready'); }
+        else { setStatus('empty'); }
+      })
+      .catch(() => setStatus('empty'));
+    // Fetch ribbon visibility setting
+    fetch(`${SUPABASE_URL}/rest/v1/settings?key=eq.ribbon_visible&select=value`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    })
+      .then(r => r.json())
+      .then((rows: { value: string }[]) => {
+        if (rows[0]?.value === 'false') setRibbonVisible(false);
+      })
       .catch(() => {});
   }, []);
 
   const goTo = useCallback((idx: number) => {
-    if (trans) return;
+    if (trans || slides.length < 2) return;
     setTrans(true);
     setPrev(current);
     setCurrent((idx + slides.length) % slides.length);
@@ -166,19 +280,40 @@ const Banner: React.FC = () => {
   const next = useCallback(() => goTo(current + 1), [current, goTo]);
 
   useEffect(() => {
+    if (status !== 'ready' || slides.length < 2) return;
     const t = setInterval(next, 6000);
     return () => clearInterval(t);
-  }, [next]);
+  }, [next, status, slides.length]);
+
+  // ── Render skeleton while loading ──
+  if (status === 'loading') {
+    return (
+      <section aria-label="Featured collection">
+        <BannerSkeleton />
+        {ribbonVisible && <RibbonBar />}
+      </section>
+    );
+  }
+
+  // ── Render empty state if no DB banners ──
+  if (status === 'empty') {
+    return (
+      <section aria-label="Featured collection">
+        <BannerEmpty />
+        {ribbonVisible && <RibbonBar />}
+      </section>
+    );
+  }
 
   const slide = slides[current];
 
   return (
     <section className="relative w-full pt-16 md:pt-20" aria-label="Featured collection">
 
-      {/* Main stage */}
+      {/* ── Main stage ── */}
       <div className="relative w-full overflow-hidden" style={{ height: 'clamp(520px, 88vh, 900px)' }}>
 
-        <div className="bnr-grain" />
+        <div className="bnr-grain" aria-hidden="true" />
 
         {/* Images */}
         {slides.map((s, i) => {
@@ -191,134 +326,128 @@ const Banner: React.FC = () => {
               transition: isLeaving ? 'opacity 0.9s cubic-bezier(0.4,0,0.2,1)' : 'none',
             }}>
               <img
-                src={s.image_url} alt={s.title}
+                src={s.image_url}
+                alt={s.title}
                 className={`w-full h-full object-cover ${isActive ? `bnr-kb-${(i % 3) + 1}` : ''}`}
                 loading={i === 0 ? 'eager' : 'lazy'}
                 style={{ objectPosition: 'center 25%' }}
+                width={1440} height={900}
               />
             </div>
           );
         })}
 
         {/* Gradients */}
-        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(4,2,1,0.96) 0%, rgba(4,2,1,0.78) 28%, rgba(4,2,1,0.35) 55%, rgba(4,2,1,0.08) 75%, transparent 100%)' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, transparent 55%, rgba(4,2,1,0.5) 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }} aria-hidden="true">
+          <div style={{ position:'absolute', inset:0,
+            background:'linear-gradient(to top, rgba(4,2,1,0.96) 0%, rgba(4,2,1,0.78) 28%, rgba(4,2,1,0.35) 55%, rgba(4,2,1,0.08) 75%, transparent 100%)'
+          }}/>
+          <div style={{ position:'absolute', inset:0,
+            background:'radial-gradient(ellipse at center, transparent 55%, rgba(4,2,1,0.5) 100%)'
+          }}/>
         </div>
 
-        {/* Top bar */}
+        {/* Top bar — badge + counter */}
         <div className="hidden md:flex absolute z-20 items-center justify-between"
-          style={{ top: '32px', left: 'clamp(32px,4vw,64px)', right: 'clamp(32px,4vw,64px)' }}>
+          style={{ top:'32px', left:'clamp(32px,4vw,64px)', right:'clamp(32px,4vw,64px)' }}>
+
           <div key={`badge-${animKey}`} className="bnr-badge flex items-center gap-3">
-            <div style={{ width: '28px', height: '1px', background: 'linear-gradient(to right,#9C6F2E,rgba(156,111,46,0.3))' }} />
-            <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.38em', textTransform: 'uppercase', color: 'rgba(240,224,196,0.85)' }}>
+            <div style={{ width:'28px', height:'1px', background:'linear-gradient(to right,#9C6F2E,rgba(156,111,46,0.3))' }} aria-hidden="true"/>
+            <span style={{ fontFamily:'"Raleway",sans-serif', fontSize:'0.58rem', fontWeight:700,
+              letterSpacing:'0.38em', textTransform:'uppercase', color:'rgba(240,224,196,0.85)' }}>
               Wing &amp; Weft — {new Date().getFullYear()} Collection
             </span>
           </div>
 
-          {/* CHANGE 1: Counter number — added textShadow for legibility on light banner images */}
-          <div key={`counter-${animKey}`} className="bnr-counter flex items-center gap-3">
-            <span style={{
-              fontFamily: '"Cormorant Garamond",serif', fontSize: '1.5rem',
-              fontWeight: 400, color: '#f5ede0', lineHeight: 1,
-              textShadow: '0 2px 12px rgba(0,0,0,0.6)',
-            }}>
-              {String(current + 1).padStart(2, '0')}
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ width: '40px', height: '1px', background: 'rgba(250,246,239,0.15)' }}>
-                {/* CHANGE 2: Progress bar — orange/amber gradient → gold palette */}
-                <div key={animKey} style={{
-                  height: '100%',
-                  background: 'linear-gradient(to right, #C49A4A, #F5D78E)',
-                  transformOrigin: 'left',
-                  animation: 'bnr-prog 6s linear forwards',
-                }} />
-              </div>
-              <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.52rem', letterSpacing: '0.2em', color: 'rgba(240,224,196,0.45)' }}>
-                OF {String(slides.length).padStart(2, '0')}
+          {slides.length > 1 && (
+            <div key={`counter-${animKey}`} className="bnr-counter flex items-center gap-3" aria-label={`Slide ${current + 1} of ${slides.length}`}>
+              <span style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:'1.5rem',
+                fontWeight:400, color:'#f5ede0', lineHeight:1, textShadow:'0 2px 12px rgba(0,0,0,0.6)' }}>
+                {String(current + 1).padStart(2,'0')}
               </span>
+              <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+                <div style={{ width:'40px', height:'1px', background:'rgba(250,246,239,0.15)' }}>
+                  <div key={animKey} style={{
+                    height:'100%', background:'linear-gradient(to right, #C49A4A, #F5D78E)',
+                    transformOrigin:'left', animation:'bnr-prog 6s linear forwards',
+                  }} aria-hidden="true"/>
+                </div>
+                <span style={{ fontFamily:'"Raleway",sans-serif', fontSize:'0.52rem',
+                  letterSpacing:'0.2em', color:'rgba(240,224,196,0.45)' }}>
+                  OF {String(slides.length).padStart(2,'0')}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Architectural vertical line */}
-        <div className="hidden md:block absolute z-10 pointer-events-none" style={{
-          left: 'clamp(32px,4vw,64px)', top: '80px', bottom: '100px', width: '1px',
-          background: 'linear-gradient(to bottom,transparent,rgba(156,111,46,0.2) 20%,rgba(156,111,46,0.2) 80%,transparent)',
-        }} />
+        <div className="hidden md:block absolute z-10 pointer-events-none" aria-hidden="true" style={{
+          left:'clamp(32px,4vw,64px)', top:'80px', bottom:'100px', width:'1px',
+          background:'linear-gradient(to bottom,transparent,rgba(156,111,46,0.2) 20%,rgba(156,111,46,0.2) 80%,transparent)',
+        }}/>
 
-        {/* Text block */}
+        {/* TEXT BLOCK — centred, bottom-pinned */}
         <div
           key={`text-${animKey}`}
           className="absolute z-20"
           style={{
-            bottom: 'clamp(80px, 11vh, 120px)',
-            left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '720px',
-            padding: '0 clamp(24px, 4vw, 48px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+            bottom:'clamp(80px, 11vh, 120px)',
+            left:'50%', transform:'translateX(-50%)',
+            width:'100%', maxWidth:'720px',
+            padding:'0 clamp(24px, 4vw, 48px)',
+            display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center',
           }}
         >
           {/* Eyebrow */}
           <div className="bnr-eyebrow flex items-center gap-3 mb-5">
-            <div style={{ width: '32px', height: '1px', background: '#c4855a' }} />
-            <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.42em', textTransform: 'uppercase', color: '#d4956a' }}>
-              {slide?.cta_link?.replace('/category/', '').replace(/-/g, ' ') || 'Featured'}
+            <div style={{ width:'32px', height:'1px', background:'#c4855a' }} aria-hidden="true"/>
+            <span style={{ fontFamily:'"Raleway",sans-serif', fontSize:'0.58rem', fontWeight:700,
+              letterSpacing:'0.42em', textTransform:'uppercase', color:'#d4956a' }}>
+              {slide?.cta_link?.replace('/category/','').replace(/-/g,' ') || 'Featured'}
             </span>
-            <div style={{ width: '32px', height: '1px', background: '#c4855a' }} />
+            <div style={{ width:'32px', height:'1px', background:'#c4855a' }} aria-hidden="true"/>
           </div>
 
-          {/* Title — fontWeight already correct at 400 */}
+          {/* Title */}
           <h2 className="bnr-title" style={{
-            fontFamily: '"Cormorant Garamond",serif',
-            fontSize: 'clamp(2.2rem, 4.5vw, 3.8rem)',
-            fontWeight: 400,
-            lineHeight: 0.92,
-            letterSpacing: '-0.01em',
-            color: '#ffffff',
-            textShadow: '0 6px 40px rgba(0,0,0,0.55)',
-            whiteSpace: 'nowrap',
-            marginBottom: '20px',
+            fontFamily:'"Cormorant Garamond",serif',
+            fontSize:'clamp(2.2rem, 4.5vw, 3.8rem)',
+            fontWeight:400, lineHeight:0.92, letterSpacing:'-0.01em',
+            color:'#ffffff', textShadow:'0 6px 40px rgba(0,0,0,0.55)',
+            whiteSpace:'nowrap', marginBottom:'20px',
           }}>
             {slide?.title}
           </h2>
 
-          {/* Ornament */}
-          <div className="bnr-rule flex items-center gap-3 mb-5">
-            <div style={{ width: '52px', height: '1px', background: 'linear-gradient(to right,transparent,#c8955a)' }} />
-            <span style={{ color: 'rgba(210,175,120,0.85)', fontSize: '0.48rem', letterSpacing: '0.3em' }}>◆</span>
-            <div style={{ width: '52px', height: '1px', background: 'linear-gradient(to left,transparent,#c8955a)' }} />
+          {/* Ornament rule */}
+          <div className="bnr-rule flex items-center gap-3 mb-5" aria-hidden="true">
+            <div style={{ width:'52px', height:'1px', background:'linear-gradient(to right,transparent,#c8955a)' }}/>
+            <span style={{ color:'rgba(210,175,120,0.85)', fontSize:'0.48rem', letterSpacing:'0.3em' }}>◆</span>
+            <div style={{ width:'52px', height:'1px', background:'linear-gradient(to left,transparent,#c8955a)' }}/>
           </div>
 
           {/* Subtitle */}
           <p className="bnr-sub" style={{
-            fontFamily: '"Raleway",sans-serif',
-            fontSize: 'clamp(0.82rem, 1.2vw, 1rem)',
-            fontWeight: 300, letterSpacing: '0.05em', lineHeight: 1.8,
-            color: 'rgba(240,228,208,0.78)', maxWidth: '480px', marginBottom: '0',
+            fontFamily:'"Raleway",sans-serif',
+            fontSize:'clamp(0.82rem, 1.2vw, 1rem)',
+            fontWeight:300, letterSpacing:'0.05em', lineHeight:1.8,
+            color:'rgba(240,228,208,0.78)', maxWidth:'480px', marginBottom:'0',
           }}>
             {slide?.subtitle}
           </p>
 
-          {/* CHANGE 3: CTA button added to banner text block.
-              The slide data has cta_text and cta_link but they were never rendered.
-              This ghost button gives users a clear action from the hero. */}
+          {/* Ghost CTA */}
           {slide?.cta_link && (
             <Link
               to={slide.cta_link}
               className="bnr-sub mt-7 inline-flex items-center gap-2 transition-all duration-300"
               style={{
-                border: '1px solid rgba(250,246,239,0.5)',
-                color: 'rgba(250,246,239,0.9)',
-                padding: '10px 28px',
-                borderRadius: '999px',
-                fontFamily: '"Raleway",sans-serif',
-                fontSize: '0.65rem',
-                fontWeight: 600,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                backdropFilter: 'blur(4px)',
+                border:'1px solid rgba(250,246,239,0.5)', color:'rgba(250,246,239,0.9)',
+                padding:'10px 28px', borderRadius:'999px',
+                fontFamily:'"Raleway",sans-serif', fontSize:'0.65rem',
+                fontWeight:600, letterSpacing:'0.2em', textTransform:'uppercase',
+                backdropFilter:'blur(4px)',
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(250,246,239,0.15)';
@@ -334,65 +463,71 @@ const Banner: React.FC = () => {
           )}
         </div>
 
-        {/* Dot nav */}
-        <div className="absolute z-20 flex flex-col items-center gap-3"
-          style={{ right: 'clamp(16px,2.5vw,32px)', top: '50%', transform: 'translateY(-50%)' }}>
-          {slides.map((_, i) => (
-            <button key={i} onClick={() => goTo(i)}
-              className="bnr-dot" title={`Slide ${i + 1}`}
-              style={{
-                width: '2px',
-                height: i === current ? '36px' : '10px',
-                background: i === current ? 'linear-gradient(to bottom, #C49A4A, #9C6F2E)' : 'rgba(240,228,208,0.28)',
-                border: 'none', padding: 0, cursor: 'pointer', borderRadius: '1px',
-                opacity: i === current ? 1 : 0.55,
-              }}
-              aria-label={`Slide ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Ribbon */}
-      {/* CHANGE 4: Ribbon background gradient — #bc3d3e → #7A1F2E, #9e2f1a → #5C1520.
-          The ribbon is the first color the eye registers below the hero. Wine creates
-          a richer, more velvety band vs the old flat tomato. */}
-      <div className="relative overflow-hidden" style={{
-        background: 'linear-gradient(90deg,#1a0d06 0%,#2a1508 15%,#7A1F2E 35%,#5C1520 50%,#7A1F2E 65%,#2a1508 85%,#1a0d06 100%)',
-        borderTop: '1px solid rgba(156,111,46,0.4)',
-        borderBottom: '1px solid rgba(156,111,46,0.25)',
-      }}>
-        {/* CHANGE 5: Ribbon shimmer line — #b6893c → #9C6F2E (new gold token) */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg,transparent,#9C6F2E 20%,#FAF6EF 50%,#9C6F2E 80%,transparent)', opacity: 0.7 }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg,transparent,rgba(156,111,46,0.4) 30%,rgba(156,111,46,0.4) 70%,transparent)' }} />
-
-        <div style={{ padding: '12px 0', overflow: 'hidden' }}>
-          <div className="bnr-ribbon-track">
-            {[...RIBBON_ITEMS, ...RIBBON_ITEMS, ...RIBBON_ITEMS].map((item, i) => (
-              <span key={i} style={{
-                display: 'inline-flex', alignItems: 'center',
-                padding: `0 ${item === '◆' ? '14px' : '22px'}`,
-                fontFamily: '"Raleway",sans-serif',
-                fontSize: item === '◆' ? '0.42rem' : '0.62rem',
-                fontWeight: item === '◆' ? 400 : 700,
-                letterSpacing: item === '◆' ? 0 : '0.3em',
-                textTransform: 'uppercase',
-                color: item === '◆' ? '#C49A4A' : '#FAF6EF',
-                textShadow: item === '◆' ? 'none' : '0 1px 6px rgba(0,0,0,0.5)',
-                whiteSpace: 'normal',
-              }}>
-                {item}
-              </span>
+        {/* Dot nav — only when multiple slides */}
+        {slides.length > 1 && (
+          <nav
+            className="absolute z-20 flex flex-col items-center gap-3"
+            style={{ right:'clamp(16px,2.5vw,32px)', top:'50%', transform:'translateY(-50%)' }}
+            aria-label="Slide navigation"
+          >
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className="bnr-dot"
+                title={`Go to slide ${i + 1}`}
+                aria-label={`Slide ${i + 1}`}
+                aria-current={i === current ? 'true' : undefined}
+                style={{
+                  width:'2px', height: i === current ? '36px' : '10px',
+                  background: i === current ? 'linear-gradient(to bottom, #C49A4A, #9C6F2E)' : 'rgba(240,228,208,0.28)',
+                  border:'none', padding:0, cursor:'pointer', borderRadius:'1px',
+                  opacity: i === current ? 1 : 0.55,
+                }}
+              />
             ))}
-          </div>
-        </div>
-
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '60px', background: 'linear-gradient(to right,#1a0d06,transparent)', pointerEvents: 'none', zIndex: 2 }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '60px', background: 'linear-gradient(to left,#1a0d06,transparent)', pointerEvents: 'none', zIndex: 2 }} />
+          </nav>
+        )}
       </div>
 
+      {ribbonVisible && <RibbonBar />}
     </section>
   );
 };
+
+// ─── Ribbon — extracted so skeleton and empty state can reuse it ─────────────
+const RibbonBar: React.FC = () => (
+  <div className="relative overflow-hidden" aria-hidden="true" style={{
+    background:'linear-gradient(90deg,#1a0d06 0%,#2a1508 15%,#7A1F2E 35%,#5C1520 50%,#7A1F2E 65%,#2a1508 85%,#1a0d06 100%)',
+    borderTop:'1px solid rgba(156,111,46,0.4)', borderBottom:'1px solid rgba(156,111,46,0.25)',
+  }}>
+    <div style={{ position:'absolute', top:0, left:0, right:0, height:'2px',
+      background:'linear-gradient(90deg,transparent,#9C6F2E 20%,#FAF6EF 50%,#9C6F2E 80%,transparent)', opacity:0.7 }}/>
+    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'1px',
+      background:'linear-gradient(90deg,transparent,rgba(156,111,46,0.4) 30%,rgba(156,111,46,0.4) 70%,transparent)' }}/>
+    <div style={{ padding:'12px 0', overflow:'hidden' }}>
+      <div className="bnr-ribbon-track">
+        {[...RIBBON_ITEMS, ...RIBBON_ITEMS, ...RIBBON_ITEMS].map((item, i) => (
+          <span key={i} style={{
+            display:'inline-flex', alignItems:'center',
+            padding:`0 ${item === '◆' ? '14px' : '22px'}`,
+            fontFamily:'"Raleway",sans-serif',
+            fontSize: item === '◆' ? '0.42rem' : '0.62rem',
+            fontWeight: item === '◆' ? 400 : 700,
+            letterSpacing: item === '◆' ? 0 : '0.3em',
+            textTransform:'uppercase',
+            color: item === '◆' ? '#C49A4A' : '#FAF6EF',
+            textShadow: item === '◆' ? 'none' : '0 1px 6px rgba(0,0,0,0.5)',
+            whiteSpace:'nowrap',
+          }}>{item}</span>
+        ))}
+      </div>
+    </div>
+    <div style={{ position:'absolute', top:0, left:0, bottom:0, width:'60px',
+      background:'linear-gradient(to right,#1a0d06,transparent)', pointerEvents:'none', zIndex:2 }}/>
+    <div style={{ position:'absolute', top:0, right:0, bottom:0, width:'60px',
+      background:'linear-gradient(to left,#1a0d06,transparent)', pointerEvents:'none', zIndex:2 }}/>
+  </div>
+);
 
 export default Banner;

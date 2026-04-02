@@ -1,7 +1,8 @@
 // src/admin/pages/AdminInquiries.tsx
 import React, { useState } from 'react';
-import { MessageSquare, ExternalLink, CheckCheck, Eye, X, Mail, Phone, Clock, Tag, ArrowLeft, Trash2 } from 'lucide-react';
-import { Badge, Spinner, Toast, useAdminTk } from '../components/AdminUI';
+import { MessageSquare, ExternalLink, CheckCheck, Eye, X, Mail, Phone, Clock, Tag, ArrowLeft, Trash2, Download, FileDown } from 'lucide-react';
+import { AdminBtn, Badge, Spinner, Toast, useAdminTk } from '../components/AdminUI';
+import { exportToExcel, exportToPDF } from '../lib/adminExport';
 import { useInquiries, DBInquiry } from '../hooks/useAdminData';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
@@ -245,7 +246,7 @@ const AdminInquiries: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textPrimary }}>Inquiries</h1>
           <p className="text-sm mt-0.5" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>
@@ -253,6 +254,20 @@ const AdminInquiries: React.FC = () => {
               ? `${inquiries.filter(i => i.status === 'new').length} unread messages`
               : 'All caught up!'}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AdminBtn variant="secondary" icon={<Download size={14} />}
+            onClick={() => exportToExcel(inquiries.map(i => ({
+              Name: i.customer_name, Phone: i.customer_phone,
+              Email: (i as any).customer_email ?? '', Message: i.message,
+              Status: i.status, Date: i.created_at,
+            })), 'inquiries')}
+            className="text-xs py-2 px-3">Excel</AdminBtn>
+          <AdminBtn variant="secondary" icon={<FileDown size={14} />}
+            onClick={() => exportToPDF('Inquiries',['Name','Phone','Status','Date'],
+              inquiries.map(i => [i.customer_name, i.customer_phone, i.status, new Date(i.created_at).toLocaleDateString('en-IN')]),
+              'inquiries')}
+            className="text-xs py-2 px-3">PDF</AdminBtn>
         </div>
       </div>
 

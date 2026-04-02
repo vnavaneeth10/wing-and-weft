@@ -26,21 +26,21 @@ const Navbar: React.FC = () => {
   const navigate  = useNavigate();
   const location  = useLocation();
 
-  const [menuOpen, setMenuOpen]       = useState(false);
-  const [catOpen, setCatOpen]         = useState(false);
-  const [searchOpen, setSearchOpen]   = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [catOpen, setCatOpen]     = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [scrolled, setScrolled]       = useState(false);
+  const [scrolled, setScrolled]   = useState(false);
 
-  const suggestions    = useSearchSuggestions(searchQuery);
+  const suggestions = useSearchSuggestions(searchQuery);
   const [navCategories, setNavCategories] = useState<NavCategory[]>([]);
 
+  // Fetch live categories on mount
   useEffect(() => {
     fetchNavCategories().then(setNavCategories).catch(() => {});
   }, []);
-
-  const searchRef = useRef<HTMLDivElement>(null);
-  const catRef    = useRef<HTMLDivElement>(null);
+  const searchRef   = useRef<HTMLDivElement>(null);
+  const catRef      = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -49,6 +49,8 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Scroll to top on every route change — fixes the "stays at footer" navigation bug
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setMenuOpen(false);
     setSearchOpen(false);
     setCatOpen(false);
@@ -72,8 +74,6 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // ── CHANGE 1: navBg — cream auto-resolves to new #FAF6EF via tailwind.config ──
-  // No class changes needed here; updating the token in config is enough.
   const navBg = scrolled
     ? isDark
       ? 'bg-dark-bg/95 border-dark-border shadow-lg'
@@ -82,10 +82,9 @@ const Navbar: React.FC = () => {
     ? 'bg-dark-bg/80 border-transparent'
     : 'bg-brand-cream/80 border-transparent';
 
-  // ── CHANGE 2: hover color on nav links — use brand-red-light instead of brand-orange ──
   const navLink = isDark
-    ? 'text-dark-text hover:text-brand-gold-light'
-    : 'text-brand-ink-soft hover:text-brand-red';
+    ? 'text-dark-text hover:text-brand-orange'
+    : 'text-stone-800 hover:text-brand-red';
 
   return (
     <nav
@@ -113,36 +112,15 @@ const Navbar: React.FC = () => {
               />
             </picture>
             <div className="hidden sm:block">
-              {/*
-                CHANGE 3: Brand name typography
-                - fontWeight: 400  (was 600 — Cormorant is most elegant at regular weight)
-                - letterSpacing: '0.08em'  (was 0.05em — wider tracking reads more like a fashion logotype)
-                - Light mode: text-brand-ink  (was text-stone-800 — uses new warm ink token)
-              */}
               <span
-                style={{
-                  fontFamily: '"Cormorant Garamond", serif',
-                  fontSize: '1.5rem',
-                  fontWeight: 400,
-                  letterSpacing: '0.08em',
-                  lineHeight: 1,
-                }}
-                className={isDark ? 'text-brand-cream' : 'text-brand-ink'}
+                style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}
+                className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
                 Wing & Weft
               </span>
-              {/*
-                CHANGE 4: Tagline
-                - Light mode: text-brand-gold  (was text-stone-800 — gold reads as a luxury detail)
-                - letterSpacing: '0.25em'  (was 0.2em — more air between characters)
-              */}
               <p
-                style={{
-                  fontSize: '0.65rem',
-                  letterSpacing: '0.25em',
-                  fontFamily: '"Raleway", sans-serif',
-                }}
-                className={isDark ? 'text-dark-muted' : 'text-brand-gold'}
+                style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: '"Raleway", sans-serif' }}
+                className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
                 CHEERS TO THE NEW BEGINNINGS
               </p>
@@ -168,7 +146,7 @@ const Navbar: React.FC = () => {
               {catOpen && (
                 <div
                   className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-y-auto ${
-                    isDark ? 'bg-dark-card border-dark-border' : 'bg-brand-cream-pale border-brand-cream-dark'
+                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
                   }`}
                   role="menu"
                   style={{ maxHeight: '320px' }}
@@ -177,19 +155,20 @@ const Navbar: React.FC = () => {
                     <Link
                       key={cat.id}
                       to={`/category/${cat.id}`}
-                      className={`flex items-center px-4 py-3 text-sm transition-colors font-body ${
+                      className={`flex items-center px-4 py-3 text-sm transition-colors ${
                         isDark
-                          ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-gold-light'
-                          : 'text-brand-ink-soft hover:bg-brand-red-pale hover:text-brand-red'
+                          ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-orange'
+                          : 'text-stone-700 hover:bg-brand-cream hover:text-brand-red'
                       }`}
                       role="menuitem"
                     >
-                      {cat.name}
+                      <span className="font-body">{cat.name}</span>
                     </Link>
                   )) : (
-                    [1, 2, 3].map(n => (
+                    // Skeleton while loading
+                    [1,2,3].map(n => (
                       <div key={n} className="flex items-center px-4 py-3">
-                        <div className={`h-3 w-28 rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-brand-cream-dark'}`} />
+                        <div className={`h-3 w-28 rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
                       </div>
                     ))
                   )}
@@ -202,21 +181,14 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* ── Right side ── */}
-          {/*
-            CHANGE 5: All icon buttons — p-2 → p-2.5
-            This increases touch target from ~36px to ~44px (Apple HIG / Material minimum).
-            No visual difference on desktop; prevents mis-taps on mobile.
-          */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
 
             {/* Search */}
             <div ref={searchRef} className="relative">
               <button
                 onClick={() => setSearchOpen((v) => !v)}
-                className={`p-2.5 rounded-lg transition-colors ${
-                  isDark
-                    ? 'text-dark-text hover:text-brand-gold-light hover:bg-dark-card'
-                    : 'text-brand-ink-soft hover:text-brand-red hover:bg-brand-red-pale'
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-700 hover:text-brand-red hover:bg-brand-cream'
                 }`}
                 aria-label="Open search"
               >
@@ -226,7 +198,7 @@ const Navbar: React.FC = () => {
               {searchOpen && (
                 <div
                   className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl border overflow-hidden z-50 ${
-                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark'
+                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
                   }`}
                 >
                   <form onSubmit={handleSearchSubmit} className="p-3">
@@ -240,15 +212,10 @@ const Navbar: React.FC = () => {
                         className={`flex-1 px-3 py-2 rounded-lg text-sm outline-none border transition-colors font-body ${
                           isDark
                             ? 'bg-dark-bg border-dark-border text-dark-text placeholder-dark-muted focus:border-brand-red'
-                            : 'bg-brand-cream border-brand-cream-dark text-brand-ink placeholder-brand-ink-muted focus:border-brand-red'
+                            : 'bg-brand-cream/50 border-brand-cream-dark text-stone-800 placeholder-stone-400 focus:border-brand-red'
                         }`}
                         aria-label="Search products"
                       />
-                      {/*
-                        CHANGE 6: Search submit button
-                        - hover:bg-brand-red-dark  (was hover:bg-brand-red-dark which resolved to old #9e3233)
-                        - Now resolves to new #5C1520 via updated tailwind token — no class change needed
-                      */}
                       <button
                         type="submit"
                         className="p-2 rounded-lg bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
@@ -259,17 +226,15 @@ const Navbar: React.FC = () => {
                     </div>
                   </form>
 
-                  {/* Live suggestions */}
+                  {/* ── Live suggestions from Supabase ── */}
                   {suggestions.length > 0 && (
-                    <div className={`border-t ${isDark ? 'border-dark-border' : 'border-brand-cream-dark'}`}>
+                    <div className={`border-t ${isDark ? 'border-dark-border' : 'border-brand-cream'}`}>
                       {suggestions.map((product) => (
                         <Link
                           key={product.id}
                           to={`/product/${product.id}`}
                           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-                            isDark
-                              ? 'hover:bg-dark-bg text-dark-text'
-                              : 'hover:bg-brand-cream text-brand-ink-soft'
+                            isDark ? 'hover:bg-dark-bg text-dark-text' : 'hover:bg-brand-cream/50 text-stone-700'
                           }`}
                           onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                         >
@@ -282,8 +247,8 @@ const Navbar: React.FC = () => {
                             />
                           )}
                           <div>
-                            <p className="text-sm font-medium font-body text-brand-ink">{product.name}</p>
-                            <p className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-brand-ink-muted'}`}>
+                            <p className="text-sm font-medium font-body">{product.name}</p>
+                            <p className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
                               {product.category.replace(/-/g, ' ')} · ₹{product.discount_price || product.price}
                             </p>
                           </div>
@@ -292,9 +257,9 @@ const Navbar: React.FC = () => {
                     </div>
                   )}
 
-                  {/* No results */}
+                  {/* No results state */}
                   {searchQuery.trim().length > 1 && suggestions.length === 0 && (
-                    <div className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-brand-ink-muted'}`}>
+                    <div className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
                       No products found for "{searchQuery}"
                     </div>
                   )}
@@ -307,10 +272,8 @@ const Navbar: React.FC = () => {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className={`p-2.5 rounded-lg transition-colors ${
-                isDark
-                  ? 'text-dark-text hover:text-brand-gold-light hover:bg-dark-card'
-                  : 'text-brand-ink-soft hover:text-brand-red hover:bg-brand-red-pale'
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-700 hover:text-brand-red hover:bg-brand-cream'
               }`}
               aria-label="Follow us on Instagram"
             >
@@ -320,7 +283,7 @@ const Navbar: React.FC = () => {
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors ${
                 isDark ? 'text-brand-gold hover:bg-dark-card' : 'text-brand-gold hover:bg-brand-cream'
               }`}
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -330,8 +293,8 @@ const Navbar: React.FC = () => {
 
             {/* Mobile menu button */}
             <button
-              className={`md:hidden p-2.5 rounded-lg transition-colors ${
-                isDark ? 'text-dark-text hover:bg-dark-card' : 'text-brand-ink-soft hover:bg-brand-cream'
+              className={`md:hidden p-2 rounded-lg transition-colors ${
+                isDark ? 'text-dark-text hover:bg-dark-card' : 'text-stone-700 hover:bg-brand-cream'
               }`}
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -355,30 +318,25 @@ const Navbar: React.FC = () => {
           <MobileLink to="/" label="Home" isDark={isDark} />
           <div>
             <button
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
-                isDark ? 'text-dark-text' : 'text-brand-ink'
-              }`}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
               onClick={() => setCatOpen((v) => !v)}
             >
               Categories
               <ChevronDown size={14} className={`transition-transform ${catOpen ? 'rotate-180' : ''}`} />
             </button>
             {catOpen && (
-              /* CHANGE 7: border-brand-gold → border-brand-red-pale (gold was too loud as a divider) */
-              <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-red-pale'}`}>
+              <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-gold'}`}>
                 {navCategories.length > 0 ? navCategories.map((cat) => (
                   <Link
                     key={cat.id}
                     to={`/category/${cat.id}`}
-                    className={`block py-2 text-sm font-body ${
-                      isDark ? 'text-dark-muted hover:text-brand-gold-light' : 'text-brand-ink-soft hover:text-brand-red'
-                    }`}
+                    className={`block py-2 text-sm font-body ${isDark ? 'text-dark-muted hover:text-brand-orange' : 'text-stone-600 hover:text-brand-red'}`}
                   >
                     {cat.name}
                   </Link>
                 )) : (
-                  [1, 2, 3].map(n => (
-                    <div key={n} className={`h-3 w-24 rounded animate-pulse my-2.5 ${isDark ? 'bg-white/10' : 'bg-brand-cream-dark'}`} />
+                  [1,2,3].map(n => (
+                    <div key={n} className={`h-3 w-24 rounded animate-pulse my-2.5 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
                   ))
                 )}
               </div>
@@ -392,15 +350,6 @@ const Navbar: React.FC = () => {
   );
 };
 
-// ─── NavLink ──────────────────────────────────────────────────────────────────
-/*
-  CHANGE 8: Active link background
-  - bg-brand-red/10  →  bg-brand-red-pale
-  bg-brand-red/10 on the old red (#BC3D3E) created an orangey tint.
-  bg-brand-red-pale (#F5E8EB) is the crafted warm blush — intentional, not accidental.
-
-  Also: inactive light-mode hover — bg-brand-red/5 → bg-brand-red-pale/50
-*/
 const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
@@ -409,12 +358,8 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
       to={to}
       className={`px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${
         isActive
-          ? isDark
-            ? 'text-brand-gold bg-brand-red/10'
-            : 'text-brand-red bg-brand-red-pale'
-          : isDark
-          ? 'text-dark-text hover:text-brand-gold-light hover:bg-dark-card/50'
-          : 'text-brand-ink-soft hover:text-brand-red hover:bg-brand-red-pale/50'
+          ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
+          : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
       }`}
     >
       {label}
@@ -422,14 +367,11 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
   );
 };
 
-// ─── MobileLink ───────────────────────────────────────────────────────────────
 const MobileLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => (
   <Link
     to={to}
     className={`block px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
-      isDark
-        ? 'text-dark-text hover:text-brand-gold-light hover:bg-dark-card'
-        : 'text-brand-ink hover:text-brand-red hover:bg-brand-red-pale/50'
+      isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-800 hover:text-brand-red hover:bg-white/50'
     }`}
   >
     {label}

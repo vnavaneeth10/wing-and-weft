@@ -1,6 +1,8 @@
 // src/pages/OurStoryPage.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { usePageMeta } from '../hooks/usePageMeta';
+import SEO from '../components/SEO/SEO';
 import { useInView } from '../hooks';
 
 const VALUES = [
@@ -306,10 +308,10 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
   const borderColor = isDark ? '#3a2e24' : '#e9e3cb';
 
   const paras = [
-    'Wing & Weft was born from a deep love for the timeless art of Indian handloom weaving. Founded by a family passionate about preserving the rich textile heritage of India, we set out on a mission to bring authentic, handcrafted sarees to women who appreciate the beauty of tradition.',
-    'Our journey began in the narrow lanes of weaving villages, where we met master craftsmen whose families had been weaving for generations. Inspired by their dedication and artistry, we decided to build a bridge between these gifted artisans and the modern world.',
-    'Today, Wing & Weft is more than just a saree brand — it\'s a movement to celebrate and sustain India\'s living textile heritage. Every saree we offer is a piece of art, a cultural artifact, and a symbol of a woman\'s timeless elegance.',
-    'We believe that when you wear a Wing & Weft saree, you don\'t just wear fabric — you wear a story of skill, culture, and love.',
+    'What began as a friendship in college has continued to grow over the years. One day, while reminiscing and sharing ideas, our conversation turned to entrepreneurship — and today, we are proud to announce the beginning of our own clothing startup.',
+    'Cheers to new beginnings. We believe that every hue tells a story, and through Wing and Weft, we hope to create meaningful stories together with all of you.',
+    'We sincerely appreciate the support and prayers from everyone as we begin this journey.',
+    'A heartfelt thank you to our friends and family for standing by us.',
   ];
 
   return (
@@ -395,6 +397,7 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const OurStoryPage: React.FC = () => {
+  usePageMeta({ title: 'Our Story', description: 'Wing & Weft was born from a love for Indian handloom traditions. Learn about our journey and the master weavers behind every saree.' });
   const { isDark } = useTheme();
   const { ref: heroRef,   inView: heroVisible }   = useInView();
   const { ref: valuesRef, inView: valuesVisible } = useInView();
@@ -408,6 +411,11 @@ const OurStoryPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
+      <SEO
+        title="Our Story"
+        description="Learn about Wing & Weft — born from a love for Indian handloom weaving. Our mission to connect master artisans with modern saree lovers."
+        canonical="https://wingandweft.vercel.app/our-story"
+      />
 
       {/* ── Hero banner ── */}
       <div className="relative h-56 md:h-72 overflow-hidden"

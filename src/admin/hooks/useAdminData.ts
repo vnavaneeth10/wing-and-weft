@@ -5,6 +5,12 @@ import { useAdminAuth } from '../lib/AdminAuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Free-form specification row (key-value pair)
+export interface ProductSpec {
+  key:   string;
+  value: string;
+}
+
 export interface DBProduct {
   id:             string;
   name:           string;
@@ -16,15 +22,29 @@ export interface DBProduct {
   colors:         string[];
   images:         string[];
   description:    string;
+  // Legacy fixed spec columns — kept for backward compatibility, no longer shown in UI
   saree_fabric:   string;
   saree_length:   string;
   blouse_length:  string;
   blouse_fabric:  string;
+  // Free-form specifications (replaces the fixed columns in the UI)
+  specifications: ProductSpec[];
+  // Policy
+  policy_points:  string[];
+  // Tags
   is_best_seller: boolean;
   is_new_arrival: boolean;
   is_featured:    boolean;
+  // Rating — individually controllable per product
+  show_rating:    boolean;
   rating:         number;
   review_count:   number;
+  // Visibility
+  is_visible:     boolean;
+  // Colours visibility
+  show_colors:    boolean;
+  // Care
+  washing_instructions: string[];
   created_at?:    string;
 }
 
@@ -84,6 +104,18 @@ const uniquePath = (prefix: string, index: number, file: File): string => {
   return `${slug}.${ext}`;
 };
 
+// ─── Auto product ID generator ───────────────────────────────────────────────
+export function generateProductId(): string {
+  const date = new Date();
+  const dateStr = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('');
+  const rand = Math.random().toString(36).toUpperCase().slice(2, 6);
+  return `WW-${dateStr}-${rand}`;
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 export function useProducts() {
@@ -96,10 +128,22 @@ export function useProducts() {
     setLoading(true);
     try {
       const token = session?.access_token;
-      const data = token
+      const raw = token
         ? await dbSelect<DBProduct>('products', token, { order: 'created_at.desc' })
         : await publicFetch<DBProduct>('products', { order: 'created_at.desc' });
-      setProducts(data ?? []);
+
+      // Normalise specifications — JSONB may arrive as a parsed array or JSON string
+      const normalised = (raw ?? []).map(p => ({
+        ...p,
+        specifications: Array.isArray(p.specifications)
+          ? p.specifications
+          : (() => { try { return JSON.parse(p.specifications as unknown as string); } catch { return []; } })(),
+        show_rating: p.show_rating ?? true,
+        is_visible:  p.is_visible  ?? true,
+        show_colors: p.show_colors ?? true,
+      }));
+
+      setProducts(normalised);
       setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load products');
@@ -136,8 +180,10 @@ export function useProducts() {
     pendingFiles: (File | null)[]
   ): Promise<DBProduct> => {
     if (!session) throw new Error('Not authenticated');
+    const autoId = generateProductId();
     const [created] = await dbInsert<DBProduct>('products', session.access_token, {
       ...product,
+      id: autoId,
       images: [],
     });
     const imageUrls = await uploadProductImages(created.id, pendingFiles, []);
@@ -375,11 +421,9 @@ export function usePolicies() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      // Admin sees all; public sees only active ones
       const data = session
         ? await dbSelect<DBPolicy>('policies', session.access_token, { order: 'sort_order.asc' })
         : await publicFetch<DBPolicy>('policies', { order: 'sort_order.asc', is_active: 'eq.true' });
-      // JSONB content may arrive as a parsed array or as a JSON string — normalise both
       setPolicies(
         (data ?? []).map((p) => ({
           ...p,

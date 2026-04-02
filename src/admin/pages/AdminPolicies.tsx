@@ -1,8 +1,9 @@
 // src/admin/pages/AdminPolicies.tsx
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, ChevronDown, ChevronUp, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronDown, ChevronUp, Eye, EyeOff, GripVertical, Download, FileDown } from 'lucide-react';
 import { AdminBtn, Field, inputCls, useAdminInputStyle, Spinner, Toast, Badge, useAdminTk } from '../components/AdminUI';
 import { usePolicies, DBPolicy } from '../hooks/useAdminData';
+import { exportToExcel, exportToPDF } from '../lib/adminExport';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
@@ -101,6 +102,21 @@ const AdminPolicies: React.FC = () => {
         <p className="text-sm mt-0.5" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>
           Edit the policy content shown in the footer modal. Changes go live immediately.
         </p>
+      </div>
+
+      {/* Export buttons */}
+      <div className="flex items-center gap-2 justify-end -mt-2">
+        <AdminBtn variant="secondary" icon={<Download size={14} />}
+          onClick={() => exportToExcel(policies.map(p => ({
+            ID: p.id, Title: p.title, Points: p.content.length,
+            Active: p.is_active ? 'Yes':'No',
+          })), 'policies')}
+          className="text-xs py-2 px-3">Excel</AdminBtn>
+        <AdminBtn variant="secondary" icon={<FileDown size={14} />}
+          onClick={() => exportToPDF('Policies',['ID','Title','Points','Status'],
+            policies.map(p => [p.id, p.title, p.content.length, p.is_active ? 'Visible':'Hidden']),
+            'policies')}
+          className="text-xs py-2 px-3">PDF</AdminBtn>
       </div>
 
       {/* Info note */}

@@ -2,6 +2,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { usePageMeta } from '../hooks/usePageMeta';
+import SEO from '../components/SEO/SEO';
 
 const STYLES = `
   @keyframes nf-drift1  { 0%,100%{transform:translate(0,0) rotate(0deg) scale(1)}   33%{transform:translate(30px,-20px) rotate(8deg) scale(1.05)}  66%{transform:translate(-15px,25px) rotate(-5deg) scale(0.97)} }
@@ -201,6 +203,7 @@ interface Particle { id: number; x: number; y: number; angle: number; }
 
 const NotFoundPage: React.FC = () => {
   const { isDark } = useTheme();
+  usePageMeta({ title: 'Page Not Found', description: 'The page you are looking for does not exist. Browse our handwoven saree collection or return to the homepage.' });
   const styleRef   = useRef(false);
   const [mounted, setMounted]     = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
@@ -265,6 +268,11 @@ const NotFoundPage: React.FC = () => {
 
       {/* ── Deep ambient layers ── */}
       <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:0,overflow:'hidden'}}>
+      <SEO
+        title="Page Not Found"
+        description="The page you are looking for does not exist. Return to Wing & Weft to browse our saree collections."
+        noIndex={true}
+      />
         {/* Pulsing rings */}
         {[260,380,500].map((r,i) => (
           <div key={r} style={{

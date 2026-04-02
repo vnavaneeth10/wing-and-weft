@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Phone, Mail, Clock, Instagram, Facebook, MessageCircle, Send, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { usePageMeta } from '../hooks/usePageMeta';
+import SEO from '../components/SEO/SEO';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 
 interface ContactSettings {
@@ -189,6 +191,7 @@ const ThreadLine: React.FC = () => (
 // ─── Main component ───────────────────────────────────────────────────────────
 const ContactPage: React.FC = () => {
   const { isDark } = useTheme();
+  usePageMeta({ title: 'Contact Us', description: 'Get in touch with Wing & Weft. Reach us via WhatsApp, email, or our contact form. We respond within 24 hours.' });
   const styleRef   = useRef(false);
   const [form, setForm]     = useState({ name:'', email:'', whatsapp:'', message:'' });
   const [status, setStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
@@ -254,6 +257,11 @@ const ContactPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
+      <SEO
+        title="Contact Us"
+        description="Get in touch with Wing & Weft. Call, WhatsApp, or email us for saree inquiries. Mon–Sat 10AM–7PM."
+        canonical="https://wingandweft.vercel.app/contact"
+      />
 
       {/* ── Hero ── */}
       <div className="relative h-52 md:h-64 overflow-hidden"

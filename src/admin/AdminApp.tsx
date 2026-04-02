@@ -1,5 +1,5 @@
 // src/admin/AdminApp.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { AdminAuthProvider, useAdminAuth } from './lib/AdminAuthContext';
 import { AdminThemeProvider, useAdminTheme } from './lib/AdminThemeContext';
@@ -16,11 +16,31 @@ import AdminPolicies from './pages/AdminPolicies';
 import { useProducts, useInquiries } from './hooks/useAdminData';
 
 const AdminInner: React.FC = () => {
-  const { session } = useAdminAuth();
+  const { session, signOut } = useAdminAuth();
   const { isDarkAdmin, toggleAdminTheme } = useAdminTheme();
   const tk = isDarkAdmin ? adminTokens.dark : adminTokens.light;
 
-  const [page, setPage] = useState<AdminPage>('dashboard');
+  const [page, setPage]       = useState<AdminPage>('dashboard');
+  const idleTimerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const IDLE_TIMEOUT_MS       = 5 * 60 * 1000; // 5 minutes
+
+  // ── Idle auto-logout ──────────────────────────────────────────────────────
+  const resetIdle = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      signOut();
+    }, IDLE_TIMEOUT_MS);
+  }, [signOut]);
+
+  useEffect(() => {
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }));
+    resetIdle(); // start timer on mount
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetIdle));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [resetIdle]);
   const { products, loading: productsLoading, refresh: refreshProducts } = useProducts();
   const { newCount: newInquiries } = useInquiries();
 

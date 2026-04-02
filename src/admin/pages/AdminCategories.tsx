@@ -1,12 +1,13 @@
 // src/admin/pages/AdminCategories.tsx
 import React, { useState } from 'react';
-import { Plus, Pencil, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X, Eye, EyeOff, Download, FileDown } from 'lucide-react';
 import {
   AdminBtn, Field, inputCls, useAdminInputStyle,
   SingleImageUploader, Spinner, Toast, Badge, ConfirmDialog, useAdminTk,
 } from '../components/AdminUI';
 import { useAdminTheme } from '../lib/AdminThemeContext';
 import { useCategories, DBCategory } from '../hooks/useAdminData';
+import { exportToExcel, exportToPDF } from '../lib/adminExport';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
@@ -146,6 +147,55 @@ const FormModal: React.FC<FormModalProps> = ({ initial, isEdit, saving, onSave, 
   );
 };
 
+// ─── Category image cell — falls back to product images via Supabase ─────────
+const CategoryImageCell: React.FC<{ catId: string; catImage: string; catName: string }> = ({ catId, catImage, catName }) => {
+  const tk = useAdminTk();
+  const [fallbacks, setFallbacks] = React.useState<string[]>([]);
+  const [fbIdx, setFbIdx]         = React.useState(0);
+  const hoverRef                  = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    if (catImage) return; // has own image — no need
+    // Fetch first 4 product images for this category
+    import('../../admin/lib/supabase').then(({ SUPABASE_URL, SUPABASE_ANON_KEY }) => {
+      fetch(`${SUPABASE_URL}/rest/v1/products?category=eq.${encodeURIComponent(catId)}&select=images&limit=4`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      })
+        .then(r => r.json())
+        .then((rows: { images: string[] }[]) => {
+          const imgs = rows.flatMap(r => r.images?.[0] ? [r.images[0]] : []).slice(0, 4);
+          setFallbacks(imgs);
+        })
+        .catch(() => {});
+    });
+  }, [catId, catImage]);
+
+  const startCycle = () => {
+    if (fallbacks.length <= 1) return;
+    hoverRef.current = setInterval(() => setFbIdx(p => (p + 1) % fallbacks.length), 700);
+  };
+  const stopCycle = () => {
+    if (hoverRef.current) { clearInterval(hoverRef.current); hoverRef.current = null; setFbIdx(0); }
+  };
+
+  const src = catImage || fallbacks[fbIdx];
+
+  return (
+    <div className="w-12 h-14 rounded-lg overflow-hidden flex-shrink-0"
+      style={{ border: `1px solid ${tk.border}` }}
+      onMouseEnter={startCycle} onMouseLeave={stopCycle}>
+      {src ? (
+        <img src={src} alt={catName} className="w-full h-full object-cover transition-opacity duration-300" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center" style={{ background: tk.inputBg }}>
+          <span className="text-xs" style={{ color: tk.textMuted }}>No img</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 const AdminCategories: React.FC = () => {
   const tk = useAdminTk();
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
@@ -185,7 +235,20 @@ const AdminCategories: React.FC = () => {
             Manage the saree categories shown on the homepage and navigation
           </p>
         </div>
-        <AdminBtn icon={<Plus size={16} />} onClick={() => { setEditTarget(null); setShowForm(true); }}>Add Category</AdminBtn>
+        <div className="flex items-center gap-2">
+          <AdminBtn variant="secondary" icon={<Download size={14} />}
+            onClick={() => exportToExcel(categories.map(cat => ({
+              ID: cat.id, Name: cat.name, Description: cat.description,
+              Count: cat.count, 'Sort Order': cat.sort_order, Active: cat.is_active ? 'Yes':'No',
+            })), 'categories')}
+            className="text-xs py-2 px-3">Excel</AdminBtn>
+          <AdminBtn variant="secondary" icon={<FileDown size={14} />}
+            onClick={() => exportToPDF('Categories',['ID','Name','Count','Order','Status'],
+              categories.map(cat => [cat.id, cat.name, cat.count, cat.sort_order, cat.is_active ? 'Visible':'Hidden']),
+              'categories')}
+            className="text-xs py-2 px-3">PDF</AdminBtn>
+          <AdminBtn icon={<Plus size={16} />} onClick={() => { setEditTarget(null); setShowForm(true); }}>Add Category</AdminBtn>
+        </div>
       </div>
 
       <div className="flex items-start gap-3 px-5 py-4 rounded-xl" style={{ background: 'rgba(182,137,60,0.08)', border: '1px solid rgba(182,137,60,0.2)' }}>
@@ -217,14 +280,7 @@ const AdminCategories: React.FC = () => {
                   style={{ gridTemplateColumns: '56px 1fr 1fr 80px 80px 80px 100px', borderColor: tk.border }}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = tk.cardBgHover}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
-                  <div className="w-12 h-14 rounded-lg overflow-hidden flex-shrink-0" style={{ border: `1px solid ${tk.border}` }}>
-                    {cat.image
-                      ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center" style={{ background: tk.inputBg }}>
-                          <span className="text-xs" style={{ color: tk.textMuted }}>No img</span>
-                        </div>
-                    }
-                  </div>
+                  <CategoryImageCell catId={cat.id} catImage={cat.image} catName={cat.name} />
                   <div>
                     <p className="text-sm font-semibold" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textPrimary }}>{cat.name}</p>
                     <p className="text-xs mt-0.5" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>{cat.id}</p>

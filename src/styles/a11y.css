@@ -1,0 +1,87 @@
+/* src/styles/a11y.css
+   Global accessibility and performance CSS.
+   Import this in main.tsx or App.tsx:
+   import './styles/a11y.css';
+*/
+
+/* ── Focus rings — visible for keyboard users, invisible for mouse ── */
+:focus-visible {
+  outline: 2px solid #bc3d3e;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove outline for mouse clicks (keeps it for keyboard) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Prefers-reduced-motion — respect user system settings ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Skip to main content link (screen readers + keyboard) ── */
+.skip-to-main {
+  position: absolute;
+  top: -100%;
+  left: 8px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: #bc3d3e;
+  color: #e9e3cb;
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0 0 6px 6px;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* ── Shimmer skeleton animation ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(182,137,60,0.06) 0%,
+    rgba(182,137,60,0.14) 40%,
+    rgba(182,137,60,0.06) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ── Ensure images don't cause layout shift ── */
+img {
+  max-width: 100%;
+  height: auto;
+}
+img[width][height] {
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* ── Screen reader only utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

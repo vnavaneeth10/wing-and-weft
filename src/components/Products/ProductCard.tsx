@@ -5,7 +5,6 @@ import { Star, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { WHATSAPP_NUMBER } from '../../data/products';
 
-// ─── Product type matching Supabase DB schema (snake_case) ───────────────────
 export interface Product {
   id:             string;
   name:           string;
@@ -27,6 +26,7 @@ export interface Product {
   rating:         number;
   review_count:   number;
   created_at?:    string;
+  is_visible?:    boolean;
 }
 
 interface Props {
@@ -34,8 +34,6 @@ interface Props {
   compact?: boolean;
 }
 
-// ─── Star Rating ──────────────────────────────────────────────────────────────
-// CHANGE 1: Star fill color #b6893c → #9C6F2E (new deeper gold token)
 export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 12 }) => (
   <div className="flex gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
     {[1, 2, 3, 4, 5].map((s) => (
@@ -43,19 +41,17 @@ export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating
         key={s}
         size={size}
         className={s <= Math.round(rating) ? 'star-filled' : 'star-empty'}
-        fill={s <= Math.round(rating) ? '#9C6F2E' : 'none'}
+        fill={s <= Math.round(rating) ? '#b6893c' : 'none'}
       />
     ))}
   </div>
 );
 
-// ─── WhatsApp link builder ────────────────────────────────────────────────────
 const buildWhatsAppLink = (product: Product): string => {
   const text = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g, ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 };
 
-// ─── Product Card ─────────────────────────────────────────────────────────────
 const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const { isDark } = useTheme();
 
@@ -69,7 +65,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     window.open(buildWhatsAppLink(product), '_blank', 'noopener,noreferrer');
   };
 
-  // ── Compact card (used in Collections tabs) ──────────────────────────────
+  // ── Compact card ──────────────────────────────────────────────────────────
   if (compact) {
     return (
       <Link
@@ -78,101 +74,52 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
         style={{ width: '200px' }}
         aria-label={`View ${product.name}`}
       >
-        {/*
-          CHANGE 2: Image container — aspect-[3/4] instead of fixed height.
-          Forces all compact cards to the same image ratio regardless of upload
-          dimensions, so the grid never looks uneven.
-        */}
-        <div className="relative overflow-hidden aspect-[3/4]">
+        {/* Strict 3:4 image box */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
           <img
             src={product.images[0]}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
-
-          {/* CHANGE 3: New Arrival badge — #bc3d3e/#e9e3cb → brand-red-pale/brand-red tokens */}
           {product.is_new_arrival && (
             <span
-              className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-label font-semibold"
-              style={{ background: '#F5E8EB', color: '#7A1F2E', letterSpacing: '0.08em' }}
+              className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
+              style={{ background: '#bc3d3e', color: '#e9e3cb' }}
             >
               New
             </span>
           )}
-
-          {/* CHANGE 4: Discount badge — #b6893c/#e9e3cb → new gold with white text (better contrast) */}
           {discount > 0 && (
             <span
-              className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-label font-semibold"
-              style={{ background: '#9C6F2E', color: '#FFFFFF', letterSpacing: '0.06em' }}
+              className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
+              style={{ background: '#b6893c', color: '#e9e3cb' }}
             >
               -{discount}%
             </span>
           )}
-
-          {/*
-            CHANGE 5: Out-of-stock overlay — added opacity-60 to the card wrapper
-            so unavailable items are visually subdued in the grid.
-            (Applied at wrapper level below for the full card; here just the overlay.)
-          */}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span className="text-white font-semibold font-body text-sm">Out of Stock</span>
             </div>
           )}
         </div>
-
-        {/*
-          CHANGE 6: Card body background — bg-white → bg-brand-cream-pale
-          Consistent warm cream instead of stark white under the image.
-        */}
-        <div className={`p-3 ${isDark ? 'bg-dark-card' : 'bg-brand-cream-pale'}`}>
-
-          {/*
-            CHANGE 7: Category label — font-body → font-label (Raleway for ALL-CAPS)
-            text-brand-gold → text-brand-ink-muted (category is metadata, not a CTA)
-            Added tracking-luxury for the small-caps label treatment.
-          */}
-          <p
-            className="text-xs mb-0.5 font-label text-brand-ink-muted uppercase tracking-luxury"
-          >
+        <div className={`p-3 ${isDark ? 'bg-dark-card' : 'bg-white'}`}>
+          <p className="text-xs mb-0.5 font-body text-brand-gold" style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {product.category.replace(/-/g, ' ')}
           </p>
-
-          {/*
-            CHANGE 8: Product name — font-body font-semibold → font-accent font-normal
-            Playfair Display at regular weight reads as editorial luxury.
-            Raleway/semibold reads like an app listing.
-          */}
-          <h3
-            className={`text-sm font-normal mb-1 line-clamp-2 leading-tight ${
-              isDark ? 'text-dark-text' : 'text-brand-ink'
-            }`}
-            style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-          >
+          <h3 className={`text-sm font-semibold mb-1 line-clamp-2 leading-tight ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
+            style={{ fontFamily: '"Raleway", sans-serif' }}>
             {product.name}
           </h3>
-
-          {/*
-            CHANGE 9: Price color — text-brand-red → text-brand-gold
-            Gold pricing signals premium/luxury product.
-            Red pricing subconsciously reads as "on sale / discounted."
-          */}
           <div className="flex items-center gap-2 mt-1">
             {product.discount_price ? (
               <>
-                <span className="font-semibold text-brand-gold font-body text-sm">
-                  ₹{product.discount_price.toLocaleString()}
-                </span>
-                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-brand-ink-muted'}`}>
-                  ₹{product.price.toLocaleString()}
-                </span>
+                <span className="font-bold text-brand-red font-body text-sm">₹{product.discount_price.toLocaleString()}</span>
+                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>₹{product.price.toLocaleString()}</span>
               </>
             ) : (
-              <span className="font-semibold text-brand-gold font-body text-sm">
-                ₹{product.price.toLocaleString()}
-              </span>
+              <span className="font-bold text-brand-red font-body text-sm">₹{product.price.toLocaleString()}</span>
             )}
           </div>
         </div>
@@ -180,64 +127,35 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     );
   }
 
-  // ── Full card (category / search pages) ────────────────────────────────────
+  // ── Full card ─────────────────────────────────────────────────────────────
   return (
-    /*
-      CHANGE 10: Out-of-stock full card wrapper — add opacity-60 so unavailable
-      products are visually subdued alongside in-stock items in the grid.
-      border-stone-100 → border-brand-cream-dark for warm consistency.
-    */
-    <div
-      className={`product-card group rounded-xl overflow-hidden border transition-all duration-300 ${
-        product.stock === 0 ? 'opacity-60' : ''
-      } ${
-        isDark ? 'bg-dark-card border-dark-border' : 'bg-brand-cream-pale border-brand-cream-dark'
-      }`}
-    >
+    <div className={`product-card group rounded-xl overflow-hidden border ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100'}`}>
       <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-        {/*
-          CHANGE 11: Image container — fixed height 280px → aspect-[3/4]
-          Consistent image ratio across all cards regardless of upload dimensions.
-        */}
-        <div className="relative overflow-hidden aspect-[3/4]">
+        {/* KEY FIX: strict 3:4 aspect ratio container with absolute-positioned image */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
           <img
             src={product.images[0]}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
 
-          {/* CHANGE 12: Badges — hardcoded hex → new palette tokens */}
+          {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1">
             {product.is_new_arrival && (
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-label font-semibold"
-                style={{ background: '#F5E8EB', color: '#7A1F2E', letterSpacing: '0.08em' }}
-              >
+              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#bc3d3e', color: '#e9e3cb' }}>
                 New Arrival
               </span>
             )}
             {product.is_best_seller && (
-              /*
-                CHANGE 13: Best Seller badge
-                Old: #b6893c bg / #e9e3cb text → contrast ratio ~2.8:1 (fails WCAG)
-                New: #9C6F2E bg / #FFFFFF text → contrast ratio ~4.2:1 (passes WCAG AA)
-              */
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-label font-semibold"
-                style={{ background: '#9C6F2E', color: '#FFFFFF', letterSpacing: '0.08em' }}
-              >
+              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#b6893c', color: '#e9e3cb' }}>
                 Best Seller
               </span>
             )}
           </div>
 
-          {/* CHANGE 14: Discount badge — #e69358 → #9C6F2E (consistent gold across all badges) */}
           {discount > 0 && (
-            <span
-              className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-label font-semibold"
-              style={{ background: '#9C6F2E', color: '#FFFFFF', letterSpacing: '0.06em' }}
-            >
+            <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#e69358', color: '#fff' }}>
               -{discount}%
             </span>
           )}
@@ -248,7 +166,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </div>
           )}
 
-          {/* Quick WhatsApp share on hover */}
+          {/* Quick share */}
           <button
             onClick={handleShare}
             className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
@@ -261,103 +179,46 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
       </Link>
 
       <div className="p-4">
-        {/*
-          CHANGE 15: Fabric label
-          font-body → font-label (Raleway for ALL-CAPS small caps)
-          text-brand-gold → text-brand-ink-muted (fabric is metadata, not a highlight)
-          tracking-wide → tracking-luxury (more intentional letter spacing)
-        */}
-        <p className="text-xs mb-1 font-label uppercase tracking-luxury text-brand-ink-muted">
-          {product.fabric}
-        </p>
-
-        {/*
-          CHANGE 16: Product name heading
-          font-body font-semibold → font-accent font-normal (Playfair Display, regular weight)
-          text-stone-800 → text-brand-ink
-          hover:text-brand-red stays — that interaction is correct
-        */}
+        <p className="text-xs mb-1 font-body uppercase tracking-wide text-brand-gold">{product.fabric}</p>
         <Link to={`/product/${product.id}`}>
-          <h3
-            className={`font-normal mb-2 line-clamp-2 hover:text-brand-red transition-colors ${
-              isDark ? 'text-dark-text' : 'text-brand-ink'
-            }`}
-            style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '0.95rem', lineHeight: 1.4 }}
-          >
+          <h3 className={`font-semibold mb-2 line-clamp-2 font-body hover:text-brand-red transition-colors ${isDark ? 'text-dark-text' : 'text-stone-800'}`}>
             {product.name}
           </h3>
         </Link>
 
-        {/* Rating */}
         <div className="flex items-center gap-2 mb-2">
           <StarRating rating={product.rating} />
-          <span className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-brand-ink-muted'}`}>
-            ({product.review_count})
-          </span>
+          <span className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}>({product.review_count})</span>
         </div>
 
-        {/* Color swatches */}
-        <div className="flex gap-1 mb-3">
-          {product.colors.map((c) => (
-            <div
-              key={c}
-              className="w-4 h-4 rounded-full border border-white/20 shadow-sm"
-              style={{ background: c }}
-              aria-label={`Color: ${c}`}
-            />
-          ))}
-        </div>
+        {/* Colors — only render if colors exist and have actual values */}
+        {product.colors && product.colors.length > 0 && (
+          <div className="flex gap-1 mb-3">
+            {product.colors.map((c) => (
+              <div key={c} className="w-4 h-4 rounded-full border border-white/20" style={{ background: c }} aria-label={`Color: ${c}`} />
+            ))}
+          </div>
+        )}
 
-        {/* Price + stock status + Buy button */}
         <div className="flex items-center justify-between">
           <div>
-            {/*
-              CHANGE 17: Price — text-brand-red → text-brand-gold font-semibold
-              Gold pricing = premium product perception.
-              Red pricing = sale/discount perception. Wrong signal for luxury sarees.
-            */}
             {product.discount_price ? (
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-brand-gold font-body">
-                  ₹{product.discount_price.toLocaleString()}
-                </span>
-                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-brand-ink-muted'}`}>
-                  ₹{product.price.toLocaleString()}
-                </span>
+                <span className="font-bold text-brand-red font-body">₹{product.discount_price.toLocaleString()}</span>
+                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>₹{product.price.toLocaleString()}</span>
               </div>
             ) : (
-              <span className="font-semibold text-brand-gold font-body">
-                ₹{product.price.toLocaleString()}
-              </span>
+              <span className="font-bold text-brand-red font-body">₹{product.price.toLocaleString()}</span>
             )}
-
-            {/* Stock status */}
-            <p
-              className={`text-xs mt-0.5 font-body ${
-                product.stock === 0
-                  ? 'text-brand-red'
-                  : product.stock <= 5
-                  ? 'text-brand-orange'
-                  : isDark ? 'text-dark-muted' : 'text-brand-ink-muted'
-              }`}
-            >
-              {product.stock === 0
-                ? 'Out of Stock'
-                : product.stock <= 5
-                ? `Only ${product.stock} left`
-                : 'In Stock'}
+            <p className={`text-xs mt-0.5 font-body ${product.stock === 0 ? 'text-red-500' : product.stock <= 5 ? 'text-orange-500' : isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
+              {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
             </p>
           </div>
 
-          {/* WhatsApp Buy button — green stays, it's the WhatsApp brand color */}
-          <a
-            href={buildWhatsAppLink(product)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105 hover:shadow-md"
+          <a href={buildWhatsAppLink(product)} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105"
             style={{ background: '#25D366', color: '#fff' }}
-            aria-label={`Buy ${product.name} on WhatsApp`}
-          >
+            aria-label={`Buy ${product.name} on WhatsApp`}>
             <MessageCircle size={12} />
             Buy
           </a>

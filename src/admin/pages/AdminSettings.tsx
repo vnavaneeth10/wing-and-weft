@@ -18,7 +18,8 @@ const SETTING_FIELDS: SettingField[] = [
   { key: 'instagram_handle', label: 'Instagram Handle (Display)',   placeholder: '@wingandweft',                          icon: Instagram, hint: 'Shown as link text on Contact page' },
   { key: 'facebook_url',     label: 'Facebook Page URL',            placeholder: 'https://www.facebook.com/wingandweft',  icon: Facebook, type: 'url' },
   { key: 'facebook_name',    label: 'Facebook Page Name (Display)', placeholder: 'Wing & Weft',                           icon: Facebook, hint: 'Shown as link text on Contact page' },
-  { key: 'ribbon_text',      label: 'Ribbon Scrolling Text',        placeholder: 'Timeless sarees...',                    icon: AlignLeft, hint: 'Scrolls below the homepage banner', type: 'textarea' },
+  { key: 'ribbon_text',      label: 'Ribbon Scrolling Text',        placeholder: 'Timeless sarees...',                    icon: AlignLeft, hint: 'Scrolls below the homepage banner — use the toggle to show/hide', type: 'textarea' },
+  { key: 'ribbon_visible',   label: 'Ribbon Visibility',            placeholder: 'true',                                  icon: AlignLeft, hint: 'Set to "true" to show ribbon, "false" to hide it' },
 ];
 
 const parseJson = <T,>(val: string, fallback: T[]): T[] => {
@@ -155,6 +156,36 @@ const AdminSettings: React.FC = () => {
               <h2 className="font-semibold text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textPrimary }}>Brand & Social Links</h2>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+              {/* Ribbon visibility toggle — standalone visual control */}
+              <div className="md:col-span-2 mb-2">
+                <div className="flex items-center justify-between p-4 rounded-xl"
+                  style={{ background: tk.cardBgHover, border: `1px solid ${tk.border}` }}>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ fontFamily:'"Raleway",sans-serif', color:tk.textPrimary }}>
+                      Ribbon Banner Visibility
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ fontFamily:'"Raleway",sans-serif', color:tk.textMuted }}>
+                      Show or hide the scrolling ribbon below the homepage banner
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const current = values['ribbon_visible'];
+                      const next = (current === 'false') ? 'true' : 'false';
+                      handleChange('ribbon_visible', next);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                    style={{
+                      background: values['ribbon_visible'] === 'false' ? 'rgba(120,113,108,0.12)' : 'rgba(34,197,94,0.12)',
+                      border: `1px solid ${values['ribbon_visible'] === 'false' ? tk.border : 'rgba(34,197,94,0.3)'}`,
+                      color: values['ribbon_visible'] === 'false' ? tk.textMuted : '#4ade80',
+                      fontFamily: '"Raleway",sans-serif',
+                    }}>
+                    {values['ribbon_visible'] === 'false' ? '🚫 Hidden' : '👁 Visible'}
+                  </button>
+                </div>
+              </div>
+
               {SETTING_FIELDS.map(({ key, label, placeholder, icon: Icon, hint, type = 'text' }) => (
                 <div key={key} className={type === 'textarea' ? 'md:col-span-2' : ''}>
                   <Field label={label} hint={hint}>

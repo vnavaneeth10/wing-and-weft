@@ -14,7 +14,7 @@ const COLLECTIONS = false;
 
 const HomePage: React.FC = () => {
   return (
-    <main>
+    <main id="main-content">
       <Banner />
       <CategorySection />
       {COLLECTIONS && <Collections />}

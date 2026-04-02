@@ -1,11 +1,12 @@
 // src/admin/pages/AdminBanners.tsx
 import React, { useState } from 'react';
-import { Image, Eye, EyeOff, Save } from 'lucide-react';
+import { Image, Eye, EyeOff, Save, Download, FileDown } from 'lucide-react';
 import {
   AdminBtn, Field, inputCls, useAdminInputStyle,
   SingleImageUploader, Spinner, Toast, Badge, useAdminTk,
 } from '../components/AdminUI';
 import { useBanners, DBBanner } from '../hooks/useAdminData';
+import { exportToExcel, exportToPDF, downloadImage } from '../lib/adminExport';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
@@ -81,6 +82,22 @@ const AdminBanners: React.FC = () => {
         </div>
       </div>
 
+      {/* Export */}
+      <div className="flex items-center gap-2 justify-end">
+        <AdminBtn variant="secondary" icon={<Download size={14} />}
+          onClick={() => exportToExcel(banners.map(b => ({
+            ID: b.id, Title: b.title, Subtitle: b.subtitle,
+            'CTA Text': b.cta_text, 'CTA Link': b.cta_link,
+            'Image URL': b.image_url, Active: b.is_active ? 'Yes':'No',
+          })), 'banners')}
+          className="text-xs py-2 px-3">Excel</AdminBtn>
+        <AdminBtn variant="secondary" icon={<FileDown size={14} />}
+          onClick={() => exportToPDF('Banners',['ID','Title','Active'],
+            banners.map(b => [b.id, b.title, b.is_active ? 'Visible':'Hidden']),
+            'banners')}
+          className="text-xs py-2 px-3">PDF</AdminBtn>
+      </div>
+
       {loading ? <Spinner /> : (
         <div className="space-y-6">
           {banners.map((banner, idx) => (
@@ -112,34 +129,101 @@ const AdminBanners: React.FC = () => {
               {/* Banner content */}
               <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-3"
-                    style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.12em', color: tk.textSecondary }}>
-                    Banner Image
-                    <span className="normal-case font-normal ml-2" style={{ letterSpacing: '0', color: tk.textMuted }}>(1440 × 900 px recommended)</span>
-                  </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold uppercase tracking-widest"
+                      style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.12em', color: tk.textSecondary }}>
+                      Banner Image
+                      <span className="normal-case font-normal ml-2" style={{ letterSpacing: '0', color: tk.textMuted }}>(1440 × 900 px recommended)</span>
+                    </p>
+                    {banner.image_url && (
+                      <button onClick={() => downloadImage(banner.image_url, `banner-${idx + 1}.jpg`)}
+                        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
+                        style={{ background: 'rgba(182,137,60,0.1)', border:'1px solid rgba(182,137,60,0.25)', color: tk.textMuted, fontFamily:'"Raleway",sans-serif' }}>
+                        <Download size={11} /> Download
+                      </button>
+                    )}
+                  </div>
                   <SingleImageUploader value={String(getField(banner, 'image_url') || '')}
                     onChange={(url, file) => handleImageChange(banner.id, url, file)}
                     label={`Banner ${idx + 1}`} aspectRatio="16/10" />
                 </div>
 
                 <div>
-                  <Field label="Headline" required>
-                    <input className={inputCls} style={is} placeholder="e.g. Threads of Tradition"
-                      value={String(getField(banner, 'title') || '')} onChange={(e) => setField(banner.id, 'title', e.target.value)} />
-                  </Field>
-                  <Field label="Subtitle">
-                    <input className={inputCls} style={is} placeholder="e.g. Handwoven silk sarees where every thread carries a story"
-                      value={String(getField(banner, 'subtitle') || '')} onChange={(e) => setField(banner.id, 'subtitle', e.target.value)} />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Button Text">
+                  {/* ── Headline with show/hide toggle ── */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                      Headline
+                    </label>
+                    <button type="button"
+                      onClick={() => setField(banner.id, 'title', getField(banner,'title') ? '' : 'Headline')}
+                      className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
+                      style={{
+                        background: getField(banner,'title') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner,'title') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner,'title') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily:'"Raleway",sans-serif',
+                      }}>
+                      {getField(banner,'title') ? '👁 Visible' : '🚫 Hidden'}
+                    </button>
+                  </div>
+                  <input className={inputCls} style={{ ...is, marginBottom:'16px', opacity: getField(banner,'title') ? 1 : 0.4 }}
+                    placeholder="e.g. Threads of Tradition"
+                    value={String(getField(banner, 'title') || '')}
+                    onChange={e => setField(banner.id, 'title', e.target.value)} />
+
+                  {/* ── Subtitle with show/hide toggle ── */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                      Subtitle
+                    </label>
+                    <button type="button"
+                      onClick={() => setField(banner.id, 'subtitle', getField(banner,'subtitle') ? '' : 'Subtitle text')}
+                      className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
+                      style={{
+                        background: getField(banner,'subtitle') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner,'subtitle') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner,'subtitle') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily:'"Raleway",sans-serif',
+                      }}>
+                      {getField(banner,'subtitle') ? '👁 Visible' : '🚫 Hidden'}
+                    </button>
+                  </div>
+                  <input className={inputCls} style={{ ...is, marginBottom:'16px', opacity: getField(banner,'subtitle') ? 1 : 0.4 }}
+                    placeholder="e.g. Handwoven silk sarees where every thread carries a story"
+                    value={String(getField(banner, 'subtitle') || '')}
+                    onChange={e => setField(banner.id, 'subtitle', e.target.value)} />
+
+                  {/* ── CTA (Button) with show/hide toggle ── */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                      Button (CTA)
+                    </label>
+                    <button type="button"
+                      onClick={() => {
+                        setField(banner.id, 'cta_text', getField(banner,'cta_text') ? '' : 'Explore');
+                        setField(banner.id, 'cta_link', getField(banner,'cta_link') ? '' : '/');
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
+                      style={{
+                        background: getField(banner,'cta_text') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner,'cta_text') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner,'cta_text') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily:'"Raleway",sans-serif',
+                      }}>
+                      {getField(banner,'cta_text') ? '👁 Visible' : '🚫 Hidden'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4" style={{ opacity: getField(banner,'cta_text') ? 1 : 0.4 }}>
+                    <div>
                       <input className={inputCls} style={is} placeholder="e.g. Explore Silk"
-                        value={String(getField(banner, 'cta_text') || '')} onChange={(e) => setField(banner.id, 'cta_text', e.target.value)} />
-                    </Field>
-                    <Field label="Button Link">
+                        value={String(getField(banner, 'cta_text') || '')}
+                        onChange={e => setField(banner.id, 'cta_text', e.target.value)} />
+                    </div>
+                    <div>
                       <input className={inputCls} style={is} placeholder="/category/silk-sarees"
-                        value={String(getField(banner, 'cta_link') || '')} onChange={(e) => setField(banner.id, 'cta_link', e.target.value)} />
-                    </Field>
+                        value={String(getField(banner, 'cta_link') || '')}
+                        onChange={e => setField(banner.id, 'cta_link', e.target.value)} />
+                    </div>
                   </div>
 
                   {/* Live preview — always dark (it's a banner preview) */}
