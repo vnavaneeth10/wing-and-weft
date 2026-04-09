@@ -176,7 +176,7 @@ const Navbar: React.FC = () => {
               )}
             </div>
 
-            <NavLink to="/our-story" label="Our Story" isDark={isDark} />
+            <NavLink to="/our-story" label="About Us" isDark={isDark} />
             <NavLink to="/contact" label="Contact" isDark={isDark} />
           </div>
 
@@ -342,7 +342,7 @@ const Navbar: React.FC = () => {
               </div>
             )}
           </div>
-          <MobileLink to="/our-story" label="Our Story" isDark={isDark} />
+          <MobileLink to="/our-story" label="About Us" isDark={isDark} />
           <MobileLink to="/contact" label="Contact" isDark={isDark} />
         </div>
       )}

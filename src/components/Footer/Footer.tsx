@@ -238,7 +238,7 @@ const Footer: React.FC = () => {
                   Quick Links
                 </h4>
                 <ul className="space-y-2.5">
-                  {[{ to: '/', label: 'Home' }, { to: '/our-story', label: 'Our Story' }, { to: '/contact', label: 'Contact' }].map((l) => (
+                  {[{ to: '/', label: 'Home' }, { to: '/our-story', label: 'About Us' }, { to: '/contact', label: 'Contact' }].map((l) => (
                     <li key={l.to}><Link to={l.to} className={linkClass}>{l.label}</Link></li>
                   ))}
                 </ul>

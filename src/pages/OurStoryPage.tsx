@@ -425,7 +425,7 @@ const OurStoryPage: React.FC = () => {
           <div>
             <p className="text-brand-cream/60 text-xs uppercase tracking-widest mb-3 font-body"
               style={{ letterSpacing: '0.35em', animation: 'os-slide-up 0.6s ease 0.1s both' }}>
-              Our Heritage
+              Our Story
             </p>
             <h1 className="text-brand-cream"
               style={{
@@ -433,7 +433,7 @@ const OurStoryPage: React.FC = () => {
                 fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 600,
                 animation: 'os-slide-up 0.7s ease 0.25s both',
               }}>
-              Our Story
+              About Us
             </h1>
             {/* Animated gold rule */}
             <div style={{
