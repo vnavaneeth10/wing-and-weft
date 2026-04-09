@@ -8,11 +8,11 @@ import PolicyModal from '../Policy/PolicyModal';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 
 interface FooterCategory { id: string; name: string; }
-interface FooterPolicy   { id: string; title: string; }
+interface FooterPolicy { id: string; title: string; }
 interface FooterSettings {
-  instagram_url:   string;
-  facebook_url:    string;
-  contact_email:   string;
+  instagram_url: string;
+  facebook_url: string;
+  contact_email: string;
   whatsapp_number: string;
 }
 
@@ -44,9 +44,9 @@ const fetchFooterSettings = async (): Promise<FooterSettings> => {
   const map: Record<string, string> = {};
   rows.forEach((r) => { if (r.key && r.value) map[r.key] = r.value; });
   return {
-    instagram_url:   map['instagram_url']   || INSTAGRAM_URL,
-    facebook_url:    map['facebook_url']    || '#',
-    contact_email:   map['contact_email']   || 'support@wingandweft.com',
+    instagram_url: map['instagram_url'] || INSTAGRAM_URL,
+    facebook_url: map['facebook_url'] || '#',
+    contact_email: map['contact_email'] || 'support@wingandweft.com',
     whatsapp_number: map['whatsapp_number'] || WHATSAPP_NUMBER,
   };
 };
@@ -56,16 +56,16 @@ const saveNewsletterEmail = async (email: string) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      apikey:         SUPABASE_ANON_KEY,
-      Authorization:  `Bearer ${SUPABASE_ANON_KEY}`,
-      Prefer:         'return=minimal',
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Prefer: 'return=minimal',
     },
     body: JSON.stringify({
-      customer_name:  'Newsletter Subscriber',
+      customer_name: 'Newsletter Subscriber',
       customer_phone: 'N/A',
       customer_email: email,
-      message:        '📧 Subscribed to newsletter from footer.',
-      status:         'new',
+      message: '📧 Subscribed to newsletter from footer.',
+      status: 'new',
     }),
   });
   if (!res.ok) throw new Error('Failed to save');
@@ -89,26 +89,26 @@ function useFadeIn() {
 
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
-  const [email, setEmail]                   = useState('');
-  const [emailStatus, setEmailStatus]       = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-  const [openPolicy, setOpenPolicy]         = useState<string | null>(null);
-  const [categories, setCategories]         = useState<FooterCategory[]>([]);
+  const [email, setEmail] = useState('');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [openPolicy, setOpenPolicy] = useState<string | null>(null);
+  const [categories, setCategories] = useState<FooterCategory[]>([]);
   const [footerPolicies, setFooterPolicies] = useState<FooterPolicy[]>([]);
-  const [settings, setSettings]             = useState<FooterSettings>({
-    instagram_url:   INSTAGRAM_URL,
-    facebook_url:    '#',
-    contact_email:   'support@wingandweft.com',
+  const [settings, setSettings] = useState<FooterSettings>({
+    instagram_url: INSTAGRAM_URL,
+    facebook_url: '#',
+    contact_email: 'support@wingandweft.com',
     whatsapp_number: WHATSAPP_NUMBER,
   });
 
   const banner = useFadeIn();
-  const grid   = useFadeIn();
+  const grid = useFadeIn();
   const bottom = useFadeIn();
 
   useEffect(() => {
-    fetchCategories().then(setCategories).catch(() => {});
-    fetchFooterSettings().then(setSettings).catch(() => {});
-    fetchPolicies().then(setFooterPolicies).catch(() => {});
+    fetchCategories().then(setCategories).catch(() => { });
+    fetchFooterSettings().then(setSettings).catch(() => { });
+    fetchPolicies().then(setFooterPolicies).catch(() => { });
   }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -127,13 +127,13 @@ const Footer: React.FC = () => {
   };
 
   const fadeStyle = (visible: boolean, delay = 0): React.CSSProperties => ({
-    opacity:    visible ? 1 : 0,
-    transform:  visible ? 'translateY(0)' : 'translateY(20px)',
+    opacity: visible ? 1 : 0,
+    transform: visible ? 'translateY(0)' : 'translateY(20px)',
     transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
   });
 
-  const bg      = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
-  const text    = isDark ? 'text-stone-400' : 'text-stone-500';
+  const bg = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
+  const text = isDark ? 'text-stone-400' : 'text-stone-500';
   const heading = isDark ? 'text-brand-cream' : 'text-brand-ink';
   // CHANGE 1: Footer link hover — hover:text-brand-orange → hover:text-brand-gold-light
   // Gold-light (#C49A4A) has better contrast on the dark footer than orange (#B8622A)
@@ -221,14 +221,14 @@ const Footer: React.FC = () => {
                 <div className="mb-4">
                   <picture>
                     <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
-                    <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"   type="image/png" />
+                    <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
                     <img src="/logo@1x.png" alt="Wing & Weft" width={160} height={90}
                       className="w-auto object-contain" style={{ height: '48px' }}
                       loading="lazy" decoding="async" />
                   </picture>
                 </div>
                 <p className={`text-sm font-body leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
-                  Timeless sarees crafted with uncompromising quality, elegance, and attention to every detail. Your heritage, our craft.
+                  Sarees crafted with uncompromising quality, elegance, and attention to every detail. Your heritage, our craft.
                 </p>
               </div>
 
@@ -250,11 +250,11 @@ const Footer: React.FC = () => {
                   <ul className="space-y-2.5">
                     {categories.length > 0
                       ? categories.map((cat) => (
-                          <li key={cat.id}><Link to={`/category/${cat.id}`} className={linkClass}>{cat.name}</Link></li>
-                        ))
-                      : [1,2,3,4].map((n) => (
-                          <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
-                        ))
+                        <li key={cat.id}><Link to={`/category/${cat.id}`} className={linkClass}>{cat.name}</Link></li>
+                      ))
+                      : [1, 2, 3, 4].map((n) => (
+                        <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
+                      ))
                     }
                   </ul>
                 </div>
@@ -268,13 +268,13 @@ const Footer: React.FC = () => {
                 <ul className="space-y-2.5">
                   {footerPolicies.length > 0
                     ? footerPolicies.map((p) => (
-                        <li key={p.id}>
-                          <button onClick={() => setOpenPolicy(p.id)} className={`${linkClass} text-left`}>{p.title}</button>
-                        </li>
-                      ))
-                    : [1,2,3,4].map((n) => (
-                        <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
-                      ))
+                      <li key={p.id}>
+                        <button onClick={() => setOpenPolicy(p.id)} className={`${linkClass} text-left`}>{p.title}</button>
+                      </li>
+                    ))
+                    : [1, 2, 3, 4].map((n) => (
+                      <li key={n}><div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-stone-700/50' : 'bg-stone-300/70'}`} /></li>
+                    ))
                   }
                 </ul>
               </div>

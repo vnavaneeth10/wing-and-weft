@@ -6,10 +6,10 @@ import SEO from '../components/SEO/SEO';
 import { useInView } from '../hooks';
 
 const VALUES = [
-  { icon: '✦', title: 'Authenticity',   description: 'Every saree in our collection is sourced directly from master weavers, ensuring genuine craftsmanship and fair trade.' },
-  { icon: '♡', title: 'Craftsmanship',  description: 'We believe in preserving centuries-old weaving traditions by supporting artisan communities across India.' },
+  { icon: '✦', title: 'Authenticity', description: 'Every saree in our collection is sourced directly from master weavers, ensuring genuine craftsmanship and fair trade.' },
+  { icon: '♡', title: 'Craftsmanship', description: 'We believe in preserving centuries-old weaving traditions by supporting artisan communities across India.' },
   { icon: '❧', title: 'Sustainability', description: 'Handloom weaving uses minimal electricity and supports eco-friendly, slow fashion principles.' },
-  { icon: '◆', title: 'Quality',        description: 'Each saree undergoes rigorous quality checks before reaching you — because you deserve only the finest.' },
+  { icon: '◆', title: 'Quality', description: 'Each saree undergoes rigorous quality checks before reaching you — because you deserve only the finest.' },
 ];
 
 const STYLES = `
@@ -130,33 +130,33 @@ const ThreadDivider: React.FC<{ isDark: boolean }> = ({ isDark }) => (
     <path d="M0,30 C60,8 100,52 160,28 C220,4 260,48 320,24 C380,0 430,44 500,28"
       stroke={isDark ? 'url(#tg-dark)' : 'url(#tg-light)'} strokeWidth="1.5"
       strokeLinecap="round" strokeDasharray="400"
-      style={{ animation: 'os-thread-draw 1.8s ease 0.3s both' }}/>
+      style={{ animation: 'os-thread-draw 1.8s ease 0.3s both' }} />
     <path d="M0,38 C70,16 115,56 175,36 C235,16 265,52 325,32 C385,12 440,50 500,36"
       stroke={isDark ? 'url(#tg-dark2)' : 'url(#tg-light2)'} strokeWidth="0.8"
       strokeLinecap="round" strokeDasharray="400" opacity="0.5"
-      style={{ animation: 'os-thread-draw 1.8s ease 0.6s both' }}/>
+      style={{ animation: 'os-thread-draw 1.8s ease 0.6s both' }} />
     <defs>
       <linearGradient id="tg-dark" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0"/>
-        <stop offset="35%"  stopColor="#bc3d3e"/>
-        <stop offset="65%"  stopColor="#b6893c"/>
-        <stop offset="100%" stopColor="#b6893c" stopOpacity="0"/>
+        <stop offset="0%" stopColor="#bc3d3e" stopOpacity="0" />
+        <stop offset="35%" stopColor="#bc3d3e" />
+        <stop offset="65%" stopColor="#b6893c" />
+        <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
       </linearGradient>
       <linearGradient id="tg-dark2" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#e69358" stopOpacity="0"/>
-        <stop offset="50%"  stopColor="#e69358"/>
-        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0"/>
+        <stop offset="0%" stopColor="#e69358" stopOpacity="0" />
+        <stop offset="50%" stopColor="#e69358" />
+        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
       </linearGradient>
       <linearGradient id="tg-light" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0"/>
-        <stop offset="35%"  stopColor="#bc3d3e"/>
-        <stop offset="65%"  stopColor="#b6893c"/>
-        <stop offset="100%" stopColor="#b6893c" stopOpacity="0"/>
+        <stop offset="0%" stopColor="#bc3d3e" stopOpacity="0" />
+        <stop offset="35%" stopColor="#bc3d3e" />
+        <stop offset="65%" stopColor="#b6893c" />
+        <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
       </linearGradient>
       <linearGradient id="tg-light2" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#e69358" stopOpacity="0"/>
-        <stop offset="50%"  stopColor="#e69358"/>
-        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0"/>
+        <stop offset="0%" stopColor="#e69358" stopOpacity="0" />
+        <stop offset="50%" stopColor="#e69358" />
+        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
       </linearGradient>
     </defs>
   </svg>
@@ -190,7 +190,7 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             border: `1px solid ${isDark ? 'rgba(188,61,62,0.1)' : 'rgba(188,61,62,0.08)'}`,
             animation: `os-ring-breathe ${8 + i * 2}s ease-in-out ${i * 1.8}s infinite`,
             pointerEvents: 'none',
-          }}/>
+          }} />
         ))}
 
         {/* Ambient glow */}
@@ -203,24 +203,24 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             : 'radial-gradient(circle, rgba(188,61,62,0.1) 0%, transparent 65%)',
           animation: 'os-glow-pulse 5s ease-in-out infinite',
           pointerEvents: 'none',
-        }}/>
+        }} />
 
         {/* Orbiting dots */}
         {[
-          { size: 8,  color: '#bc3d3e', r: 155, dur: '5s',  delay: '0s',    cw: true },
-          { size: 5,  color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s',  cw: false },
-          { size: 6,  color: '#e69358', r: 140, dur: '4.2s', delay: '-1.5s', cw: true },
-          { size: 3,  color: '#bc3d3e', r: 190, dur: '9s',   delay: '-4s',  cw: false },
+          { size: 8, color: '#bc3d3e', r: 155, dur: '5s', delay: '0s', cw: true },
+          { size: 5, color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s', cw: false },
+          { size: 6, color: '#e69358', r: 140, dur: '4.2s', delay: '-1.5s', cw: true },
+          { size: 3, color: '#bc3d3e', r: 190, dur: '9s', delay: '-4s', cw: false },
         ].map((d, i) => (
           <div key={i} className="os-orbit-dot" style={{
             width: d.size, height: d.size,
             background: d.color, opacity: 0.75,
-            marginLeft: -d.size/2, marginTop: -d.size/2,
+            marginLeft: -d.size / 2, marginTop: -d.size / 2,
             '--r': `${d.r}px`,
             '--anim': d.cw ? 'os-orbit-cw' : 'os-orbit-ccw',
             '--dur': d.dur, '--delay': d.delay,
             boxShadow: `0 0 ${d.size * 2}px ${d.color}`,
-          } as React.CSSProperties}/>
+          } as React.CSSProperties} />
         ))}
 
         {/* Main logo box */}
@@ -255,29 +255,29 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             aria-hidden="true"
           >
             {/* Top-left */}
-            <line x1="14" y1="14" x2="46" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-            <line x1="14" y1="14" x2="14" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+            <line x1="14" y1="14" x2="46" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="14" y1="14" x2="14" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
             {/* Top-right */}
-            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 46)" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 14)" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 46)" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 14)" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
             {/* Bottom-left */}
-            <line x1="14" y1="calc(100% - 14)" x2="46" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-            <line x1="14" y1="calc(100% - 14)" x2="14" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+            <line x1="14" y1="calc(100% - 14)" x2="46" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="14" y1="calc(100% - 14)" x2="14" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
             {/* Bottom-right */}
-            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 46)" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
-            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 14)" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8"/>
+            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 46)" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 14)" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
             {/* Inner corner dots */}
-            <circle cx="14" cy="14" r="2" fill="#b6893c" opacity="0.6"/>
-            <circle cx="calc(100% - 14)" cy="14" r="2" fill="#b6893c" opacity="0.6"/>
-            <circle cx="14" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6"/>
-            <circle cx="calc(100% - 14)" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6"/>
+            <circle cx="14" cy="14" r="2" fill="#b6893c" opacity="0.6" />
+            <circle cx="calc(100% - 14)" cy="14" r="2" fill="#b6893c" opacity="0.6" />
+            <circle cx="14" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6" />
+            <circle cx="calc(100% - 14)" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6" />
           </svg>
 
           {/* Logo image */}
           <div className="os-logo-shimmer">
             <picture>
               <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
-              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
               <img
                 src="/logo@1x.png"
                 alt="Wing & Weft"
@@ -304,7 +304,7 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
 // ─── Animated story text ──────────────────────────────────────────────────────
 const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, visible }) => {
   const textPrimary = isDark ? '#f0e8d6' : '#1a1410';
-  const textMuted   = isDark ? 'rgba(240,232,214,0.6)' : 'rgba(26,20,16,0.6)';
+  const textMuted = isDark ? 'rgba(240,232,214,0.6)' : 'rgba(26,20,16,0.6)';
   const borderColor = isDark ? '#3a2e24' : '#e9e3cb';
 
   const paras = [
@@ -329,7 +329,7 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
         transformOrigin: 'left',
         transition: 'opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s',
       }}>
-        <div style={{ width: '28px', height: '1px', background: '#bc3d3e' }}/>
+        <div style={{ width: '28px', height: '1px', background: '#bc3d3e' }} />
         <p style={{
           color: '#b6893c', fontSize: '0.6rem',
           letterSpacing: '0.38em', textTransform: 'uppercase',
@@ -399,13 +399,13 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
 const OurStoryPage: React.FC = () => {
   usePageMeta({ title: 'Our Story', description: 'Wing & Weft was born from a love for Indian handloom traditions. Learn about our journey and the master weavers behind every saree.' });
   const { isDark } = useTheme();
-  const { ref: heroRef,   inView: heroVisible }   = useInView();
+  const { ref: heroRef, inView: heroVisible } = useInView();
   const { ref: valuesRef, inView: valuesVisible } = useInView();
 
-  const bg          = isDark ? 'bg-dark-bg'    : 'bg-stone-50';
+  const bg = isDark ? 'bg-dark-bg' : 'bg-stone-50';
   const textPrimary = isDark ? 'text-dark-text' : 'text-stone-800';
-  const textMuted   = isDark ? 'text-dark-muted' : 'text-stone-600';
-  const card        = isDark
+  const textMuted = isDark ? 'text-dark-muted' : 'text-stone-600';
+  const card = isDark
     ? 'bg-dark-card border-dark-border'
     : 'bg-white border-stone-200';
 
@@ -441,9 +441,9 @@ const OurStoryPage: React.FC = () => {
               justifyContent: 'center', marginTop: '16px',
               animation: 'os-slide-up 0.6s ease 0.45s both',
             }}>
-              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.7))', transformOrigin: 'left', animation: 'os-line-grow 0.5s ease 0.7s both' }}/>
-              <div style={{ width: '6px', height: '6px', background: '#b6893c', transform: 'rotate(45deg)', animation: 'os-diamond-spin 3s ease-in-out 1s infinite' }}/>
-              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.7))', transformOrigin: 'right', animation: 'os-line-grow 0.5s ease 0.7s both' }}/>
+              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.7))', transformOrigin: 'left', animation: 'os-line-grow 0.5s ease 0.7s both' }} />
+              <div style={{ width: '6px', height: '6px', background: '#b6893c', transform: 'rotate(45deg)', animation: 'os-diamond-spin 3s ease-in-out 1s infinite' }} />
+              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.7))', transformOrigin: 'right', animation: 'os-line-grow 0.5s ease 0.7s both' }} />
             </div>
           </div>
         </div>
@@ -455,7 +455,7 @@ const OurStoryPage: React.FC = () => {
         {/* Story section */}
         <div ref={heroRef} className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center mb-24">
           <LogoDisplay isDark={isDark} visible={heroVisible} />
-          <StoryText  isDark={isDark} visible={heroVisible} />
+          <StoryText isDark={isDark} visible={heroVisible} />
         </div>
 
         {/* Values section */}
