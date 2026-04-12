@@ -26,22 +26,55 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 const ACTIVE_HERO_THEME = 'mysoreViolet'; // ← change this line to swap themes
 
 // ─── Theme definitions ────────────────────────────────────────────────────────
-// Each theme controls:
-//   background     — CSS gradient string for the hero banner
-//   radialGlow     — inner ambient glow colour
-//   threadPrimary  — colour of the primary animated SVG thread
-//   threadAccent   — colour of the secondary SVG thread
-//   eyebrow        — small ALL-CAPS label above the h1  (≥ 0.85 opacity for WCAG AA)
-//   h1             — main page heading colour
-//   tagline        — tagline/subtext below the diamond rule (≥ 0.70 for WCAG AA)
-//   diamond        — the rotating ◆ divider element + scroll indicator
-//   rule           — the short horizontal lines flanking the diamond
+//
+//  NEW FIELDS (propagate colour throughout the entire page):
+//
+//  threadColor1 / threadColor2
+//    Colours used in the ThreadLine SVG inside the cards. Replaces the
+//    previously hardcoded crimson/gold so the divider matches the hero palette.
+//
+//  iconBg
+//    CSS gradient string for the icon box background inside each detail row.
+//    Replaces the hardcoded rgba(188,61,62,0.1) / rgba(182,137,60,0.1) pair.
+//
+//  iconBorder
+//    CSS colour string for the icon box border.
+//
+//  iconColor
+//    Colour of the Lucide icon SVG stroke inside the icon box.
+//
+//  infoRowHoverDark / infoRowHoverLight
+//    Background colour applied to a detail row on hover, for dark and light
+//    mode respectively.  Fine-tuned per theme so hover always feels coherent.
+//
+//  linkHover
+//    Colour of a clickable contact value (phone, email, etc.) on hover.
+//
+//  inputUnderline1 / inputUnderline2
+//    Start and end colours of the focus-underline gradient on form inputs.
+//
+//  submitBg
+//    Full CSS background string for the Send Message button.
+//
+//  submitShadow
+//    box-shadow colour token (rgba string) for the submit button glow.
+//
+//  submitText
+//    Text/icon colour on the submit button.
+//
+//  cardDividerDark / cardDividerLight
+//    Border colour for the horizontal rule above the WhatsApp CTA, and for
+//    other thin dividers inside the cards.
+//
+//  pageBgAccentDark / pageBgAccentLight
+//    Subtle tint applied to the page background section in dark/light mode so
+//    the area below the hero feels connected to the palette rather than neutral.
 
 const HERO_THEMES = {
 
   // A · Silk Dusk — deep charcoal → burnt amber
-  // Bold, dramatic, classic "heritage craft" feel.
   silkDusk: {
+    // ── Hero ──
     background:    'linear-gradient(135deg, #2a1f1a 0%, #bc3d3e 55%, #b6893c 100%)',
     radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(180,90,30,0.22) 0%, transparent 70%)',
     threadPrimary: '#d4924a',
@@ -52,11 +85,29 @@ const HERO_THEMES = {
     diamond:       '#b6893c',
     rule:          'rgba(182,137,60,0.80)',
     ringColor:     'rgba(233,227,203,0.10)',
+    // ── Cards / page ──
+    threadColor1:  '#bc3d3e',
+    threadColor2:  '#b6893c',
+    iconBg:        'linear-gradient(135deg, rgba(188,61,62,0.12), rgba(182,137,60,0.10))',
+    iconBorder:    'rgba(182,137,60,0.28)',
+    iconColor:     '#b6893c',
+    infoRowHoverDark:  'rgba(182,137,60,0.07)',
+    infoRowHoverLight: 'rgba(188,61,62,0.05)',
+    linkHover:     '#bc3d3e',
+    inputUnderline1: '#bc3d3e',
+    inputUnderline2: '#b6893c',
+    submitBg:      'linear-gradient(115deg, #bc3d3e 0%, #a8322f 40%, #b6893c 100%)',
+    submitShadow:  'rgba(188,61,62,0.35)',
+    submitText:    '#f5ead8',
+    cardDividerDark:  'rgba(182,137,60,0.15)',
+    cardDividerLight: 'rgba(188,61,62,0.12)',
+    pageBgAccentDark:  'rgba(42,31,26,0.6)',
+    pageBgAccentLight: 'rgba(188,61,62,0.03)',
   },
 
   // B · Ocean Indigo — deep navy → teal
-  // Cooler, modern luxury. Inspired by traditional indigo dyeing.
   oceanIndigo: {
+    // ── Hero ──
     background:    'linear-gradient(135deg, #0a1628 0%, #1a5c72 55%, #1b7a7a 100%)',
     radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(26,122,122,0.22) 0%, transparent 70%)',
     threadPrimary: '#4ab0c8',
@@ -67,11 +118,29 @@ const HERO_THEMES = {
     diamond:       '#7ecec4',
     rule:          'rgba(126,206,196,0.80)',
     ringColor:     'rgba(180,220,210,0.10)',
+    // ── Cards / page ──
+    threadColor1:  '#2a7aaa',
+    threadColor2:  '#4ab0c8',
+    iconBg:        'linear-gradient(135deg, rgba(26,92,114,0.14), rgba(74,176,200,0.10))',
+    iconBorder:    'rgba(74,176,200,0.30)',
+    iconColor:     '#4ab0c8',
+    infoRowHoverDark:  'rgba(74,176,200,0.07)',
+    infoRowHoverLight: 'rgba(26,92,114,0.05)',
+    linkHover:     '#1a5c72',
+    inputUnderline1: '#2a7aaa',
+    inputUnderline2: '#4ab0c8',
+    submitBg:      'linear-gradient(115deg, #1a5c72 0%, #0d3d50 40%, #1b7a7a 100%)',
+    submitShadow:  'rgba(26,92,114,0.38)',
+    submitText:    '#e8f5f2',
+    cardDividerDark:  'rgba(74,176,200,0.15)',
+    cardDividerLight: 'rgba(26,92,114,0.12)',
+    pageBgAccentDark:  'rgba(10,22,40,0.6)',
+    pageBgAccentLight: 'rgba(26,92,114,0.03)',
   },
 
   // C · Sandalwood Dusk — near-black → warm sandalwood gold
-  // Quieter, understated, very premium. Great for high-end positioning.
   sandalwoodDusk: {
+    // ── Hero ──
     background:    'linear-gradient(135deg, #0d0a06 0%, #5c3d1a 55%, #8c6030 100%)',
     radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(92,61,26,0.18) 0%, transparent 70%)',
     threadPrimary: '#c8a86a',
@@ -82,11 +151,29 @@ const HERO_THEMES = {
     diamond:       '#c8a86a',
     rule:          'rgba(200,168,106,0.80)',
     ringColor:     'rgba(220,196,150,0.10)',
+    // ── Cards / page ──
+    threadColor1:  '#8c6030',
+    threadColor2:  '#c8a86a',
+    iconBg:        'linear-gradient(135deg, rgba(140,96,48,0.14), rgba(200,168,106,0.10))',
+    iconBorder:    'rgba(200,168,106,0.30)',
+    iconColor:     '#c8a86a',
+    infoRowHoverDark:  'rgba(200,168,106,0.07)',
+    infoRowHoverLight: 'rgba(140,96,48,0.05)',
+    linkHover:     '#8c6030',
+    inputUnderline1: '#8c6030',
+    inputUnderline2: '#c8a86a',
+    submitBg:      'linear-gradient(115deg, #8c6030 0%, #5c3d1a 40%, #c8a86a 100%)',
+    submitShadow:  'rgba(140,96,48,0.38)',
+    submitText:    '#f7efde',
+    cardDividerDark:  'rgba(200,168,106,0.15)',
+    cardDividerLight: 'rgba(140,96,48,0.12)',
+    pageBgAccentDark:  'rgba(13,10,6,0.6)',
+    pageBgAccentLight: 'rgba(140,96,48,0.03)',
   },
 
   // D · Rose Silk — midnight maroon → rose pink
-  // Feminine, festive, Banarasi-inspired. Great for bridal / gifting.
   roseSilk: {
+    // ── Hero ──
     background:    'linear-gradient(135deg, #280a18 0%, #8c1a4a 55%, #b52260 100%)',
     radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(140,26,74,0.22) 0%, transparent 70%)',
     threadPrimary: '#f0a0bc',
@@ -97,11 +184,29 @@ const HERO_THEMES = {
     diamond:       '#f0a0bc',
     rule:          'rgba(240,160,188,0.80)',
     ringColor:     'rgba(255,192,210,0.10)',
+    // ── Cards / page ──
+    threadColor1:  '#b52260',
+    threadColor2:  '#f0a0bc',
+    iconBg:        'linear-gradient(135deg, rgba(140,26,74,0.14), rgba(240,160,188,0.10))',
+    iconBorder:    'rgba(240,160,188,0.30)',
+    iconColor:     '#d06090',
+    infoRowHoverDark:  'rgba(240,160,188,0.07)',
+    infoRowHoverLight: 'rgba(140,26,74,0.05)',
+    linkHover:     '#b52260',
+    inputUnderline1: '#b52260',
+    inputUnderline2: '#f0a0bc',
+    submitBg:      'linear-gradient(115deg, #8c1a4a 0%, #6a1038 40%, #b52260 100%)',
+    submitShadow:  'rgba(181,34,96,0.38)',
+    submitText:    '#fdeef4',
+    cardDividerDark:  'rgba(240,160,188,0.15)',
+    cardDividerLight: 'rgba(140,26,74,0.12)',
+    pageBgAccentDark:  'rgba(40,10,24,0.6)',
+    pageBgAccentLight: 'rgba(140,26,74,0.03)',
   },
 
   // E · Mysore Violet — midnight blue → rich violet
-  // Regal and distinctive. Inspired by Mysore silk heritage.
   mysoreViolet: {
+    // ── Hero ──
     background:    'linear-gradient(135deg, #0e0e28 0%, #2e2a7c 55%, #4a3aaa 100%)',
     radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(46,42,124,0.26) 0%, transparent 70%)',
     threadPrimary: '#a090e0',
@@ -112,17 +217,33 @@ const HERO_THEMES = {
     diamond:       '#a090e0',
     rule:          'rgba(160,144,224,0.80)',
     ringColor:     'rgba(196,188,255,0.10)',
+    // ── Cards / page ──
+    threadColor1:  '#6050b8',
+    threadColor2:  '#a090e0',
+    iconBg:        'linear-gradient(135deg, rgba(46,42,124,0.16), rgba(160,144,224,0.10))',
+    iconBorder:    'rgba(160,144,224,0.30)',
+    iconColor:     '#9080d0',
+    infoRowHoverDark:  'rgba(160,144,224,0.07)',
+    infoRowHoverLight: 'rgba(46,42,124,0.05)',
+    linkHover:     '#6050b8',
+    inputUnderline1: '#6050b8',
+    inputUnderline2: '#a090e0',
+    submitBg:      'linear-gradient(115deg, #2e2a7c 0%, #1e1a5c 40%, #4a3aaa 100%)',
+    submitShadow:  'rgba(74,58,170,0.38)',
+    submitText:    '#f0eeff',
+    cardDividerDark:  'rgba(160,144,224,0.15)',
+    cardDividerLight: 'rgba(46,42,124,0.12)',
+    pageBgAccentDark:  'rgba(14,14,40,0.6)',
+    pageBgAccentLight: 'rgba(46,42,124,0.03)',
   },
 
 } as const;
 
 // Active theme — resolved from the key above.
-// All hero banner references use `theme.*` so swapping the key is the only edit needed.
 const theme = HERO_THEMES[ACTIVE_HERO_THEME];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Everything below this line is unchanged design logic.
-// You should not need to edit anything below to change the hero colours.
+// Data / API
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ContactSettings {
@@ -187,26 +308,36 @@ const saveInquiry = async (data: {
   if (!res.ok) throw new Error('Failed');
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//  NOTE: The input focus-underline gradient is injected as a CSS custom
+//  property at runtime (see the useEffect in ContactPage) so it can use
+//  `theme.inputUnderline1` / `theme.inputUnderline2`.  The pseudo-element
+//  rule here reads that property.
+//
+//  The submit-button hover shadow and the info-row hover colour are applied
+//  via inline onMouseEnter/Leave handlers (not here) so they can reference
+//  `theme.*` tokens directly.
+
 const STYLES = `
   @keyframes cp-slide-up   { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
   @keyframes cp-slide-left { from{opacity:0;transform:translateX(-32px)} to{opacity:1;transform:translateX(0)} }
   @keyframes cp-slide-right{ from{opacity:0;transform:translateX(32px)} to{opacity:1;transform:translateX(0)} }
   @keyframes cp-fade       { from{opacity:0} to{opacity:1} }
   @keyframes cp-line-grow  { from{transform:scaleX(0);opacity:0} to{transform:scaleX(1);opacity:1} }
-  @keyframes cp-diamond    { 0%,100%{transform:rotate(45deg) scale(1);box-shadow:0 0 6px rgba(182,137,60,0.4)} 50%{transform:rotate(225deg) scale(1.3);box-shadow:0 0 18px rgba(182,137,60,0.9)} }
+  @keyframes cp-diamond    { 0%,100%{transform:rotate(45deg) scale(1)} 50%{transform:rotate(225deg) scale(1.3)} }
   @keyframes cp-thread     { from{stroke-dashoffset:400;opacity:0} to{stroke-dashoffset:0;opacity:1} }
   @keyframes cp-row-in     { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
   @keyframes cp-pulse-glow { 0%,100%{box-shadow:0 6px 28px rgba(37,211,102,0.3)} 50%{box-shadow:0 8px 40px rgba(37,211,102,0.55),0 0 60px rgba(37,211,102,0.15)} }
-  @keyframes cp-btn-shimmer { 0%{left:-100%} 100%{left:120%} }
   @keyframes cp-success-pop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.06)} 100%{transform:scale(1);opacity:1} }
-  @keyframes cp-input-focus { from{width:0} to{width:100%} }
 
-  .cp-card-left  { opacity:0; animation: cp-slide-left  0.8s cubic-bezier(0.22,1,0.36,1) 0.1s forwards; }
+  .cp-card-left  { opacity:0; animation: cp-slide-left  0.8s cubic-bezier(0.22,1,0.36,1) 0.1s  forwards; }
   .cp-card-right { opacity:0; animation: cp-slide-right 0.8s cubic-bezier(0.22,1,0.36,1) 0.25s forwards; }
 
   .cp-info-row {
-    opacity:0;
+    opacity: 0;
     animation: cp-row-in 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
     transition: background 0.3s ease, transform 0.3s ease;
     border-radius: 12px;
@@ -214,16 +345,13 @@ const STYLES = `
     margin: 0 -12px;
   }
 
-  /* FIX: hover lift only on pointer devices — prevents stuck state on mobile tap */
+  /* Hover states only on pointer devices */
   @media (hover: hover) {
     .cp-info-row:hover { transform: translateX(4px); }
-    .cp-info-row:hover .cp-icon-wrap {
-      transform: scale(1.15) rotate(5deg);
-    }
+    .cp-info-row:hover .cp-icon-wrap { transform: scale(1.15) rotate(5deg); }
     .cp-submit-btn:hover:not(:disabled) {
       transform: translateY(-3px);
       letter-spacing: 0.22em;
-      box-shadow: 0 12px 36px rgba(188,61,62,0.45);
     }
     .cp-submit-btn:hover:not(:disabled)::before { left: 130%; }
     .cp-wa-btn:hover {
@@ -238,19 +366,19 @@ const STYLES = `
     transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
   }
 
-  /* Input underline focus effect */
+  /* Input focus underline — colour injected via CSS variable at runtime */
   .cp-input-wrap { position: relative; }
   .cp-input-wrap::after {
     content: '';
     position: absolute; bottom: 0; left: 0;
     height: 2px; width: 0;
-    background: linear-gradient(90deg, #bc3d3e, #b6893c);
+    background: linear-gradient(90deg, var(--cp-underline-1, #bc3d3e), var(--cp-underline-2, #b6893c));
     border-radius: 2px;
     transition: width 0.35s cubic-bezier(0.22,1,0.36,1);
   }
   .cp-input-wrap:focus-within::after { width: 100%; }
 
-  /* Submit button */
+  /* Submit button shimmer */
   .cp-submit-btn {
     position: relative; overflow: hidden;
     transition: transform 0.35s cubic-bezier(0.22,1,0.36,1),
@@ -264,7 +392,7 @@ const STYLES = `
   }
   .cp-submit-btn:active:not(:disabled) { transform: translateY(-1px) scale(0.98); }
 
-  /* WhatsApp button */
+  /* WhatsApp button shimmer */
   .cp-wa-btn {
     position: relative; overflow: hidden;
     transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease;
@@ -302,44 +430,70 @@ function useVisible(threshold = 0.12) {
 }
 
 // ─── Animated thread SVG ──────────────────────────────────────────────────────
-// Thread colours are fixed to the brand crimson/gold — these sit inside the
-// content cards (not the hero) so they don't need to change per theme.
-const ThreadLine: React.FC = () => (
-  <svg viewBox="0 0 460 50" fill="none"
-    style={{ width:'100%', maxWidth:'420px', height:'32px', overflow:'visible', margin:'0 auto', display:'block' }}
-    aria-hidden="true">
-    <path d="M0,25 C55,6 90,44 150,22 C210,0 240,42 300,20 C360,-2 400,38 460,22"
-      stroke="url(#cp-tg)" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="400"
-      style={{ animation:'cp-thread 1.6s ease 0.4s both' }}/>
+//  Now accepts theme colours so the divider inside each card matches the active
+//  hero palette instead of always rendering in hardcoded crimson/gold.
+const ThreadLine: React.FC<{ color1: string; color2: string }> = ({ color1, color2 }) => (
+  <svg
+    viewBox="0 0 460 50"
+    fill="none"
+    style={{ width: '100%', maxWidth: '420px', height: '32px', overflow: 'visible', margin: '0 auto', display: 'block' }}
+    aria-hidden="true"
+  >
     <defs>
       <linearGradient id="cp-tg" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0"/>
-        <stop offset="30%"  stopColor="#bc3d3e"/>
-        <stop offset="70%"  stopColor="#b6893c"/>
-        <stop offset="100%" stopColor="#b6893c" stopOpacity="0"/>
+        <stop offset="0%"   stopColor={color1} stopOpacity="0" />
+        <stop offset="30%"  stopColor={color1} />
+        <stop offset="70%"  stopColor={color2} />
+        <stop offset="100%" stopColor={color2} stopOpacity="0" />
       </linearGradient>
     </defs>
+    <path
+      d="M0,25 C55,6 90,44 150,22 C210,0 240,42 300,20 C360,-2 400,38 460,22"
+      stroke="url(#cp-tg)"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeDasharray="400"
+      style={{ animation: 'cp-thread 1.6s ease 0.4s both' }}
+    />
   </svg>
 );
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const ContactPage: React.FC = () => {
   const { isDark } = useTheme();
-  usePageMeta({ title: 'Contact Us', description: 'Get in touch with Wing & Weft. Reach us via WhatsApp, email, or our contact form. We respond within 24 hours.' });
-  const styleRef   = useRef(false);
-  const [form, setForm]     = useState({ name:'', email:'', whatsapp:'', message:'' });
-  const [status, setStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
+  usePageMeta({
+    title: 'Contact Us',
+    description: 'Get in touch with Wing & Weft. Reach us via WhatsApp, email, or our contact form. We respond within 24 hours.',
+  });
+
+  const styleRef = useRef(false);
+  const [form, setForm]     = useState({ name: '', email: '', whatsapp: '', message: '' });
+  const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [info, setInfo]     = useState<ContactSettings>(DEFAULTS);
-  const heroVis  = useVisible(0.05);
-  const gridVis  = useVisible(0.06);
+  const heroVis = useVisible(0.05);
+  const gridVis = useVisible(0.06);
 
   useEffect(() => {
+    // Inject shared animation styles once
     if (!styleRef.current) {
       const tag = document.createElement('style');
       tag.textContent = STYLES;
       document.head.appendChild(tag);
       styleRef.current = true;
     }
+
+    // Inject theme-specific CSS custom properties for pseudo-element colours.
+    // This is necessary because pseudo-elements cannot read JS variables directly.
+    const themeVars = document.createElement('style');
+    themeVars.id = 'cp-theme-vars';
+    const existing = document.getElementById('cp-theme-vars');
+    if (existing) existing.remove();
+    themeVars.textContent = `:root {
+      --cp-underline-1: ${theme.inputUnderline1};
+      --cp-underline-2: ${theme.inputUnderline2};
+    }`;
+    document.head.appendChild(themeVars);
+
     fetchContactSettings().then(setInfo).catch(() => {});
   }, []);
 
@@ -351,11 +505,20 @@ const ContactPage: React.FC = () => {
     if (!form.name.trim() || !form.message.trim()) return;
     setStatus('saving');
     try {
-      await saveInquiry({ customer_name: form.name, customer_email: form.email, customer_phone: form.whatsapp, message: form.message });
+      await saveInquiry({
+        customer_name:  form.name,
+        customer_email: form.email,
+        customer_phone: form.whatsapp,
+        message:        form.message,
+      });
       setStatus('success');
-      setForm({ name:'', email:'', whatsapp:'', message:'' });
+      setForm({ name: '', email: '', whatsapp: '', message: '' });
       const text = `*New Contact Form Message*\n\nName: ${form.name}\nEmail: ${form.email}\nWhatsApp: ${form.whatsapp}\nMessage: ${form.message}`;
-      window.open(`https://wa.me/${info.whatsapp_number}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      window.open(
+        `https://wa.me/${info.whatsapp_number}?text=${encodeURIComponent(text)}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
       setTimeout(() => setStatus('idle'), 4000);
     } catch {
       setStatus('error');
@@ -363,31 +526,46 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  const bg         = isDark ? 'bg-dark-bg'     : 'bg-stone-50';
-  const textP      = isDark ? 'text-dark-text'  : 'text-stone-800';
-  const textM      = isDark ? 'text-dark-muted' : 'text-stone-600';
+  // ── Tailwind / style helpers ──────────────────────────────────────────────
+  const bg    = isDark ? 'bg-dark-bg'     : 'bg-stone-50';
+  const textP = isDark ? 'text-dark-text'  : 'text-stone-800';
+  const textM = isDark ? 'text-dark-muted' : 'text-stone-600';
+
+  // Card background gets a very faint theme tint in dark mode so the section
+  // below the hero doesn't feel completely disconnected from the palette.
+  const cardBgDark  = `color-mix(in srgb, ${theme.pageBgAccentDark} 30%, rgba(26,18,12,0.92))`;
+  const cardBgLight = '#ffffff';
+
   const cardStyle: React.CSSProperties = {
-    background:   isDark ? 'rgba(26,18,12,0.9)' : '#ffffff',
-    border:       `1px solid ${isDark ? 'rgba(182,137,60,0.18)' : 'rgba(182,137,60,0.2)'}`,
+    background:   isDark ? cardBgDark : cardBgLight,
+    border:       `1px solid ${isDark ? theme.cardDividerDark : theme.cardDividerLight}`,
     borderRadius: '20px',
     boxShadow:    isDark
       ? '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)'
       : '0 8px 40px rgba(26,20,16,0.08)',
     padding: 'clamp(24px,4vw,40px)',
   };
+
+  // Input field classes — focus border colour is theme-driven via the CSS
+  // variable set in useEffect; Tailwind class `focus:border-brand-red` is
+  // replaced by the underline pseudo-element so we just keep the base border.
   const inputCls = `w-full px-4 py-3 rounded-xl border text-sm font-body outline-none transition-all ${
     isDark
-      ? 'bg-dark-bg border-dark-border text-dark-text placeholder-dark-muted focus:border-brand-red'
-      : 'bg-stone-50 border-stone-200 text-stone-800 placeholder-stone-400 focus:border-brand-red'
+      ? 'bg-dark-bg border-dark-border text-dark-text placeholder-dark-muted'
+      : 'bg-stone-50 border-stone-200 text-stone-800 placeholder-stone-400'
   }`;
 
+  // ── Contact details array ─────────────────────────────────────────────────
   const DETAILS = [
-    { icon: Phone,     label: 'Phone',         value: info.contact_phone,    href: `tel:${info.contact_phone.replace(/\s+/g,'')}` },
+    { icon: Phone,     label: 'Phone',         value: info.contact_phone,    href: `tel:${info.contact_phone.replace(/\s+/g, '')}` },
     { icon: Mail,      label: 'Email',          value: info.contact_email,    href: `mailto:${info.contact_email}` },
     { icon: Clock,     label: 'Business Hours', value: info.business_hours,   href: null },
     { icon: Instagram, label: 'Instagram',      value: info.instagram_handle, href: info.instagram_url },
     { icon: Facebook,  label: 'Facebook',       value: info.facebook_name,    href: info.facebook_url !== '#' ? info.facebook_url : null },
   ];
+
+  // Divider colour inside cards (above WhatsApp button, etc.)
+  const cardDivider = isDark ? theme.cardDividerDark : theme.cardDividerLight;
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
@@ -398,16 +576,14 @@ const ContactPage: React.FC = () => {
       />
 
       {/* ── Hero banner ──────────────────────────────────────────────────────── */}
-      {/* All colours below come from `theme.*` — change ACTIVE_HERO_THEME at    */}
-      {/* the very top of this file and every hero colour updates automatically.  */}
       <div
         className="relative overflow-hidden"
         style={{
           minHeight: 'clamp(200px, 25vw, 260px)',
-          background: theme.background, // ← theme-controlled
+          background: theme.background,
         }}
       >
-        {/* Woven texture overlay — same as OurStoryPage for visual consistency */}
+        {/* Woven texture overlay */}
         <div
           aria-hidden="true"
           style={{
@@ -420,16 +596,13 @@ const ContactPage: React.FC = () => {
           }}
         />
 
-        {/* Radial centre glow — theme-controlled */}
+        {/* Radial glow */}
         <div
           aria-hidden="true"
-          style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            background: theme.radialGlow, // ← theme-controlled
-          }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: theme.radialGlow }}
         />
 
-        {/* Animated thread SVG lines — colours are theme-controlled */}
+        {/* Animated thread lines */}
         <svg
           aria-hidden="true"
           viewBox="0 0 800 260"
@@ -449,14 +622,12 @@ const ContactPage: React.FC = () => {
               <stop offset="100%" stopColor={theme.threadAccent} stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* Primary thread */}
           <path
             d="M80,130 C180,95 280,165 380,118 C480,72 560,148 680,118"
             stroke="url(#cp-hero-thread-1)"
             strokeWidth="1" fill="none" strokeLinecap="round" strokeDasharray="500"
             style={{ animation: 'cp-thread 2s ease 0.4s both' }}
           />
-          {/* Secondary thread */}
           <path
             d="M80,145 C190,118 290,172 390,130 C490,90 570,155 680,130"
             stroke="url(#cp-hero-thread-2)"
@@ -464,61 +635,51 @@ const ContactPage: React.FC = () => {
             opacity="0.5"
             style={{ animation: 'cp-thread 2s ease 0.8s both' }}
           />
-          {/* Bottom border rule */}
           <line x1="0" y1="259" x2="800" y2="259" stroke="rgba(212,160,96,0.25)" strokeWidth="1" />
         </svg>
 
-        {/* Animated rings — colour is theme-controlled */}
+        {/* Ambient rings */}
         {[200, 300, 420].map((s, i) => (
           <div key={s} style={{
             position: 'absolute', top: '50%', left: '50%',
             width: s, height: s, borderRadius: '50%',
-            border: `1px solid ${theme.ringColor}`, // ← theme-controlled
+            border: `1px solid ${theme.ringColor}`,
             transform: 'translate(-50%,-50%)',
             animation: `cp-fade 0.6s ease ${0.1 + i * 0.15}s both`,
             pointerEvents: 'none',
           }} />
         ))}
 
-        {/* Hero text content */}
+        {/* Hero text */}
         <div
-          className="absolute inset-0 flex items-center justify-center text-center px-4"
           ref={heroVis.ref}
+          className="absolute inset-0 flex items-center justify-center text-center px-4"
         >
           <div>
-            {/* Eyebrow — theme-controlled colour (≥ 0.85 opacity for WCAG AA) */}
-            <p
-              className="font-body uppercase"
-              style={{
-                fontSize: '0.6rem', letterSpacing: '0.38em',
-                color: theme.eyebrow, // ← theme-controlled
-                marginBottom: '12px', marginTop: 0,
-                opacity:   heroVis.vis ? 1 : 0,
-                transform: heroVis.vis ? 'translateY(0)' : 'translateY(16px)',
-                transition: 'all 0.6s ease 0.1s',
-              }}
-            >
+            <p className="font-body uppercase" style={{
+              fontSize: '0.6rem', letterSpacing: '0.38em',
+              color: theme.eyebrow,
+              marginBottom: '12px', marginTop: 0,
+              opacity:   heroVis.vis ? 1 : 0,
+              transform: heroVis.vis ? 'translateY(0)' : 'translateY(16px)',
+              transition: 'all 0.6s ease 0.1s',
+            }}>
               Get in Touch
             </p>
 
-            {/* H1 — theme-controlled colour */}
-            <h1
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: 'clamp(2.2rem, 5vw, 3.2rem)',
-                fontWeight: 600,
-                color: theme.h1, // ← theme-controlled
-                lineHeight: 1.1,
-                margin: 0,
-                opacity:   heroVis.vis ? 1 : 0,
-                transform: heroVis.vis ? 'translateY(0)' : 'translateY(20px)',
-                transition: 'all 0.7s ease 0.25s',
-              }}
-            >
+            <h1 style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: 'clamp(2.2rem, 5vw, 3.2rem)',
+              fontWeight: 600,
+              color: theme.h1,
+              lineHeight: 1.1, margin: 0,
+              opacity:   heroVis.vis ? 1 : 0,
+              transform: heroVis.vis ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'all 0.7s ease 0.25s',
+            }}>
               Contact Us
             </h1>
 
-            {/* Diamond rule — theme-controlled colours */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: '10px', marginTop: '14px',
@@ -527,55 +688,55 @@ const ContactPage: React.FC = () => {
             }}>
               <div style={{
                 width: '36px', height: '1px',
-                background: `linear-gradient(to right, transparent, ${theme.rule})`, // ← theme-controlled
+                background: `linear-gradient(to right, transparent, ${theme.rule})`,
                 transformOrigin: 'right',
                 animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none',
               }} />
               <div style={{
                 width: '6px', height: '6px',
-                background: theme.diamond, // ← theme-controlled
+                background: theme.diamond,
                 transform: 'rotate(45deg)',
                 animation: 'cp-diamond 3s ease-in-out 0.8s infinite',
               }} />
               <div style={{
                 width: '36px', height: '1px',
-                background: `linear-gradient(to left, transparent, ${theme.rule})`, // ← theme-controlled
+                background: `linear-gradient(to left, transparent, ${theme.rule})`,
                 transformOrigin: 'left',
                 animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none',
               }} />
             </div>
 
-            {/* Optional tagline — theme-controlled colour */}
-            <p
-              className="font-body uppercase"
-              style={{
-                fontSize: '0.6rem', letterSpacing: '0.22em',
-                color: theme.tagline, // ← theme-controlled (≥ 0.70 opacity for WCAG AA)
-                marginTop: '12px', marginBottom: 0,
-                opacity:   heroVis.vis ? 1 : 0,
-                transform: heroVis.vis ? 'translateY(0)' : 'translateY(10px)',
-                transition: 'all 0.6s ease 0.65s',
-              }}
-            >
+            <p className="font-body uppercase" style={{
+              fontSize: '0.6rem', letterSpacing: '0.22em',
+              color: theme.tagline,
+              marginTop: '12px', marginBottom: 0,
+              opacity:   heroVis.vis ? 1 : 0,
+              transform: heroVis.vis ? 'translateY(0)' : 'translateY(10px)',
+              transition: 'all 0.6s ease 0.65s',
+            }}>
               We respond within 24 hours
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Grid ── */}
+      {/* ── Main grid ─────────────────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
         <div ref={gridVis.ref} className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-          {/* ── Left: Contact info ── */}
+          {/* ── Left card: Contact information ── */}
           <div className={`cp-card-left ${gridVis.vis ? '' : 'opacity-0'}`} style={cardStyle}>
 
             <div style={{ marginBottom: '28px' }}>
-              <h2 className={textP} style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}>
+              <h2
+                className={textP}
+                style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}
+              >
                 Contact Information
               </h2>
+              {/* Thread divider — uses theme colours */}
               <div style={{ opacity: gridVis.vis ? 1 : 0, transition: 'opacity 0.5s ease 0.4s' }}>
-                <ThreadLine />
+                <ThreadLine color1={theme.threadColor1} color2={theme.threadColor2} />
               </div>
             </div>
 
@@ -588,27 +749,32 @@ const ContactPage: React.FC = () => {
                   style={{ animationDelay: `${0.3 + i * 0.1}s`, background: 'transparent' }}
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLDivElement).style.background = isDark
-                      ? 'rgba(182,137,60,0.06)' : 'rgba(182,137,60,0.05)';
+                      ? theme.infoRowHoverDark
+                      : theme.infoRowHoverLight;
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLDivElement).style.background = 'transparent';
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                    {/* Icon box — theme-coloured gradient background */}
                     <div
                       className="cp-icon-wrap"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(188,61,62,0.1), rgba(182,137,60,0.1))',
-                        border: '1px solid rgba(182,137,60,0.22)',
+                        background:   theme.iconBg,
+                        border:       `1px solid ${theme.iconBorder}`,
                         width: '40px', height: '40px', borderRadius: '10px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}
                     >
-                      <Icon size={17} style={{ color: '#b6893c' }} />
+                      <Icon size={17} style={{ color: theme.iconColor }} />
                     </div>
+
                     <div>
-                      <p className={`text-xs uppercase font-semibold font-body ${textM}`}
-                        style={{ letterSpacing: '0.18em', marginBottom: '3px' }}>
+                      <p
+                        className={`text-xs uppercase font-semibold font-body ${textM}`}
+                        style={{ letterSpacing: '0.18em', marginBottom: '3px' }}
+                      >
                         {label}
                       </p>
                       {href ? (
@@ -618,7 +784,7 @@ const ContactPage: React.FC = () => {
                           rel="noopener noreferrer"
                           className={`text-sm font-body transition-colors ${textP}`}
                           style={{ textDecoration: 'none' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#bc3d3e'}
+                          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.linkHover}
                           onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
                         >
                           {value}
@@ -633,10 +799,11 @@ const ContactPage: React.FC = () => {
             </div>
 
             {/* WhatsApp CTA */}
-            <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: `1px solid ${isDark ? 'rgba(182,137,60,0.15)' : 'rgba(182,137,60,0.15)'}` }}>
+            <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: `1px solid ${cardDivider}` }}>
               <a
                 href={`https://wa.me/${info.whatsapp_number}?text=${encodeURIComponent('Hi! I need help with Wing & Weft.')}`}
-                target="_blank" rel="noopener noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="cp-wa-btn"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -655,15 +822,19 @@ const ContactPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Right: Form ── */}
+          {/* ── Right card: Contact form ── */}
           <div className={`cp-card-right ${gridVis.vis ? '' : 'opacity-0'}`} style={cardStyle}>
 
             <div style={{ marginBottom: '28px' }}>
-              <h2 className={textP} style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}>
+              <h2
+                className={textP}
+                style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}
+              >
                 Send Us a Message
               </h2>
+              {/* Thread divider — uses theme colours */}
               <div style={{ opacity: gridVis.vis ? 1 : 0, transition: 'opacity 0.5s ease 0.5s' }}>
-                <ThreadLine />
+                <ThreadLine color1={theme.threadColor1} color2={theme.threadColor2} />
               </div>
             </div>
 
@@ -671,67 +842,104 @@ const ContactPage: React.FC = () => {
 
               {/* Name */}
               <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.35s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Name *</label>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>
+                  Name *
+                </label>
                 <div className="cp-input-wrap">
-                  <input type="text" name="name" required value={form.name} onChange={handleChange}
-                    placeholder="Your full name" className={inputCls} />
+                  <input
+                    type="text" name="name" required
+                    value={form.name} onChange={handleChange}
+                    placeholder="Your full name"
+                    className={inputCls}
+                  />
                 </div>
               </div>
 
               {/* Email */}
               <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.45s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Email *</label>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>
+                  Email *
+                </label>
                 <div className="cp-input-wrap">
-                  <input type="email" name="email" required value={form.email} onChange={handleChange}
-                    placeholder="your@email.com" className={inputCls} />
+                  <input
+                    type="email" name="email" required
+                    value={form.email} onChange={handleChange}
+                    placeholder="your@email.com"
+                    className={inputCls}
+                  />
                 </div>
               </div>
 
               {/* WhatsApp */}
               <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.55s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>WhatsApp Number</label>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>
+                  WhatsApp Number
+                </label>
                 <div className="cp-input-wrap">
-                  <input type="tel" name="whatsapp" value={form.whatsapp} onChange={handleChange}
-                    placeholder="+91 XXXXX XXXXX" className={inputCls} />
+                  <input
+                    type="tel" name="whatsapp"
+                    value={form.whatsapp} onChange={handleChange}
+                    placeholder="+91 XXXXX XXXXX"
+                    className={inputCls}
+                  />
                 </div>
               </div>
 
               {/* Message */}
               <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.65s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Message *</label>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>
+                  Message *
+                </label>
                 <div className="cp-input-wrap">
-                  <textarea name="message" required rows={5} value={form.message} onChange={handleChange}
-                    placeholder="How can we help you?" className={`${inputCls} resize-none`} />
+                  <textarea
+                    name="message" required rows={5}
+                    value={form.message} onChange={handleChange}
+                    placeholder="How can we help you?"
+                    className={`${inputCls} resize-none`}
+                  />
                 </div>
               </div>
 
               {/* Status messages */}
               {status === 'success' && (
-                <div className="cp-success-msg flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
-                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                <div
+                  className="cp-success-msg flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
+                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}
+                >
                   <Check size={16} /> Message saved! WhatsApp is opening…
                 </div>
               )}
               {status === 'error' && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
-                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                <div
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}
+                >
                   <AlertCircle size={16} /> Something went wrong. Please try again.
                 </div>
               )}
 
-              {/* Submit */}
+              {/* Submit button — theme-coloured gradient */}
               <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.75s' }}>
                 <button
                   type="submit"
                   disabled={status === 'saving'}
                   className="cp-submit-btn w-full flex items-center justify-center gap-2 py-4 rounded-full font-bold font-body text-sm uppercase"
                   style={{
-                    background: 'linear-gradient(115deg, #bc3d3e 0%, #a8322f 40%, #b6893c 100%)',
-                    color: '#e9e3cb',
+                    background:    theme.submitBg,
+                    color:         theme.submitText,
                     letterSpacing: '0.18em',
-                    boxShadow: '0 6px 28px rgba(188,61,62,0.35)',
-                    opacity: status === 'saving' ? 0.65 : 1,
-                    cursor: status === 'saving' ? 'not-allowed' : 'pointer',
+                    boxShadow:     `0 6px 28px ${theme.submitShadow}`,
+                    opacity:       status === 'saving' ? 0.65 : 1,
+                    cursor:        status === 'saving' ? 'not-allowed' : 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    if (status !== 'saving')
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                        `0 12px 36px ${theme.submitShadow.replace('0.35', '0.55').replace('0.38', '0.55')}`;
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      `0 6px 28px ${theme.submitShadow}`;
                   }}
                 >
                   <Send size={15} />
