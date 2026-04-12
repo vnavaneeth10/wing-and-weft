@@ -6,6 +6,125 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import SEO from '../components/SEO/SEO';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO THEME SWITCHER
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//  HOW TO SWITCH THEMES
+//  ────────────────────
+//  Change the value of ACTIVE_HERO_THEME (line below) to one of:
+//    'silkDusk'       → A · deep charcoal → amber         (default)
+//    'oceanIndigo'    → B · deep navy → teal
+//    'sandalwoodDusk' → C · near-black → warm sandalwood
+//    'roseSilk'       → D · midnight maroon → rose pink
+//    'mysoreViolet'   → E · midnight blue → violet
+//
+//  Keep this value in sync with OurStoryPage.tsx so both pages match.
+//  That's it — nothing else needs to change.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACTIVE_HERO_THEME = 'mysoreViolet'; // ← change this line to swap themes
+
+// ─── Theme definitions ────────────────────────────────────────────────────────
+// Each theme controls:
+//   background     — CSS gradient string for the hero banner
+//   radialGlow     — inner ambient glow colour
+//   threadPrimary  — colour of the primary animated SVG thread
+//   threadAccent   — colour of the secondary SVG thread
+//   eyebrow        — small ALL-CAPS label above the h1  (≥ 0.85 opacity for WCAG AA)
+//   h1             — main page heading colour
+//   tagline        — tagline/subtext below the diamond rule (≥ 0.70 for WCAG AA)
+//   diamond        — the rotating ◆ divider element + scroll indicator
+//   rule           — the short horizontal lines flanking the diamond
+
+const HERO_THEMES = {
+
+  // A · Silk Dusk — deep charcoal → burnt amber
+  // Bold, dramatic, classic "heritage craft" feel.
+  silkDusk: {
+    background:    'linear-gradient(135deg, #2a1f1a 0%, #bc3d3e 55%, #b6893c 100%)',
+    radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(180,90,30,0.22) 0%, transparent 70%)',
+    threadPrimary: '#d4924a',
+    threadAccent:  '#bc3d3e',
+    eyebrow:       'rgba(233,227,203,0.92)',
+    h1:            '#f5ead8',
+    tagline:       'rgba(245,234,216,0.72)',
+    diamond:       '#b6893c',
+    rule:          'rgba(182,137,60,0.80)',
+    ringColor:     'rgba(233,227,203,0.10)',
+  },
+
+  // B · Ocean Indigo — deep navy → teal
+  // Cooler, modern luxury. Inspired by traditional indigo dyeing.
+  oceanIndigo: {
+    background:    'linear-gradient(135deg, #0a1628 0%, #1a5c72 55%, #1b7a7a 100%)',
+    radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(26,122,122,0.22) 0%, transparent 70%)',
+    threadPrimary: '#4ab0c8',
+    threadAccent:  '#2a7aaa',
+    eyebrow:       'rgba(180,220,210,0.92)',
+    h1:            '#e8f5f2',
+    tagline:       'rgba(232,245,242,0.72)',
+    diamond:       '#7ecec4',
+    rule:          'rgba(126,206,196,0.80)',
+    ringColor:     'rgba(180,220,210,0.10)',
+  },
+
+  // C · Sandalwood Dusk — near-black → warm sandalwood gold
+  // Quieter, understated, very premium. Great for high-end positioning.
+  sandalwoodDusk: {
+    background:    'linear-gradient(135deg, #0d0a06 0%, #5c3d1a 55%, #8c6030 100%)',
+    radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(92,61,26,0.18) 0%, transparent 70%)',
+    threadPrimary: '#c8a86a',
+    threadAccent:  '#8c6030',
+    eyebrow:       'rgba(220,196,150,0.92)',
+    h1:            '#f7efde',
+    tagline:       'rgba(247,239,222,0.72)',
+    diamond:       '#c8a86a',
+    rule:          'rgba(200,168,106,0.80)',
+    ringColor:     'rgba(220,196,150,0.10)',
+  },
+
+  // D · Rose Silk — midnight maroon → rose pink
+  // Feminine, festive, Banarasi-inspired. Great for bridal / gifting.
+  roseSilk: {
+    background:    'linear-gradient(135deg, #280a18 0%, #8c1a4a 55%, #b52260 100%)',
+    radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(140,26,74,0.22) 0%, transparent 70%)',
+    threadPrimary: '#f0a0bc',
+    threadAccent:  '#b52260',
+    eyebrow:       'rgba(255,192,210,0.92)',
+    h1:            '#fdeef4',
+    tagline:       'rgba(253,238,244,0.72)',
+    diamond:       '#f0a0bc',
+    rule:          'rgba(240,160,188,0.80)',
+    ringColor:     'rgba(255,192,210,0.10)',
+  },
+
+  // E · Mysore Violet — midnight blue → rich violet
+  // Regal and distinctive. Inspired by Mysore silk heritage.
+  mysoreViolet: {
+    background:    'linear-gradient(135deg, #0e0e28 0%, #2e2a7c 55%, #4a3aaa 100%)',
+    radialGlow:    'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(46,42,124,0.26) 0%, transparent 70%)',
+    threadPrimary: '#a090e0',
+    threadAccent:  '#6050b8',
+    eyebrow:       'rgba(196,188,255,0.92)',
+    h1:            '#f0eeff',
+    tagline:       'rgba(240,238,255,0.72)',
+    diamond:       '#a090e0',
+    rule:          'rgba(160,144,224,0.80)',
+    ringColor:     'rgba(196,188,255,0.10)',
+  },
+
+} as const;
+
+// Active theme — resolved from the key above.
+// All hero banner references use `theme.*` so swapping the key is the only edit needed.
+const theme = HERO_THEMES[ACTIVE_HERO_THEME];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Everything below this line is unchanged design logic.
+// You should not need to edit anything below to change the hero colours.
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface ContactSettings {
   contact_phone:    string;
   contact_email:    string;
@@ -94,15 +213,29 @@ const STYLES = `
     padding: 10px 12px;
     margin: 0 -12px;
   }
-  .cp-info-row:hover {
-    transform: translateX(4px);
+
+  /* FIX: hover lift only on pointer devices — prevents stuck state on mobile tap */
+  @media (hover: hover) {
+    .cp-info-row:hover { transform: translateX(4px); }
+    .cp-info-row:hover .cp-icon-wrap {
+      transform: scale(1.15) rotate(5deg);
+    }
+    .cp-submit-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      letter-spacing: 0.22em;
+      box-shadow: 0 12px 36px rgba(188,61,62,0.45);
+    }
+    .cp-submit-btn:hover:not(:disabled)::before { left: 130%; }
+    .cp-wa-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 36px rgba(37,211,102,0.45);
+      animation: cp-pulse-glow 2s ease-in-out infinite;
+    }
+    .cp-wa-btn:hover::before { left: 130%; }
   }
 
   .cp-icon-wrap {
     transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
-  }
-  .cp-info-row:hover .cp-icon-wrap {
-    transform: scale(1.15) rotate(5deg);
   }
 
   /* Input underline focus effect */
@@ -129,12 +262,6 @@ const STYLES = `
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
     transition: left 0.55s ease;
   }
-  .cp-submit-btn:hover:not(:disabled) {
-    transform: translateY(-3px);
-    letter-spacing: 0.22em;
-    box-shadow: 0 12px 36px rgba(188,61,62,0.45);
-  }
-  .cp-submit-btn:hover:not(:disabled)::before { left: 130%; }
   .cp-submit-btn:active:not(:disabled) { transform: translateY(-1px) scale(0.98); }
 
   /* WhatsApp button */
@@ -147,10 +274,15 @@ const STYLES = `
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
     transition: left 0.55s ease;
   }
-  .cp-wa-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(37,211,102,0.45); animation: cp-pulse-glow 2s ease-in-out infinite; }
-  .cp-wa-btn:hover::before { left: 130%; }
 
   .cp-success-msg { animation: cp-success-pop 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
 `;
 
 // ─── Scroll-triggered hook ────────────────────────────────────────────────────
@@ -170,6 +302,8 @@ function useVisible(threshold = 0.12) {
 }
 
 // ─── Animated thread SVG ──────────────────────────────────────────────────────
+// Thread colours are fixed to the brand crimson/gold — these sit inside the
+// content cards (not the hero) so they don't need to change per theme.
 const ThreadLine: React.FC = () => (
   <svg viewBox="0 0 460 50" fill="none"
     style={{ width:'100%', maxWidth:'420px', height:'32px', overflow:'visible', margin:'0 auto', display:'block' }}
@@ -229,8 +363,8 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  const bg         = isDark ? 'bg-dark-bg'    : 'bg-stone-50';
-  const textP      = isDark ? 'text-dark-text' : 'text-stone-800';
+  const bg         = isDark ? 'bg-dark-bg'     : 'bg-stone-50';
+  const textP      = isDark ? 'text-dark-text'  : 'text-stone-800';
   const textM      = isDark ? 'text-dark-muted' : 'text-stone-600';
   const cardStyle: React.CSSProperties = {
     background:   isDark ? 'rgba(26,18,12,0.9)' : '#ffffff',
@@ -239,7 +373,7 @@ const ContactPage: React.FC = () => {
     boxShadow:    isDark
       ? '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)'
       : '0 8px 40px rgba(26,20,16,0.08)',
-    padding:      'clamp(24px,4vw,40px)',
+    padding: 'clamp(24px,4vw,40px)',
   };
   const inputCls = `w-full px-4 py-3 rounded-xl border text-sm font-body outline-none transition-all ${
     isDark
@@ -248,11 +382,11 @@ const ContactPage: React.FC = () => {
   }`;
 
   const DETAILS = [
-    { icon: Phone,     label: 'Phone',          value: info.contact_phone,    href: `tel:${info.contact_phone.replace(/\s+/g,'')}` },
-    { icon: Mail,      label: 'Email',           value: info.contact_email,    href: `mailto:${info.contact_email}` },
-    { icon: Clock,     label: 'Business Hours',  value: info.business_hours,   href: null },
-    { icon: Instagram, label: 'Instagram',       value: info.instagram_handle, href: info.instagram_url },
-    { icon: Facebook,  label: 'Facebook',        value: info.facebook_name,    href: info.facebook_url !== '#' ? info.facebook_url : null },
+    { icon: Phone,     label: 'Phone',         value: info.contact_phone,    href: `tel:${info.contact_phone.replace(/\s+/g,'')}` },
+    { icon: Mail,      label: 'Email',          value: info.contact_email,    href: `mailto:${info.contact_email}` },
+    { icon: Clock,     label: 'Business Hours', value: info.business_hours,   href: null },
+    { icon: Instagram, label: 'Instagram',      value: info.instagram_handle, href: info.instagram_url },
+    { icon: Facebook,  label: 'Facebook',       value: info.facebook_name,    href: info.facebook_url !== '#' ? info.facebook_url : null },
   ];
 
   return (
@@ -263,45 +397,168 @@ const ContactPage: React.FC = () => {
         canonical="https://wingandweft.vercel.app/contact"
       />
 
-      {/* ── Hero ── */}
-      <div className="relative h-52 md:h-64 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #2a1f1a 0%, #bc3d3e 55%, #b6893c 100%)' }}>
-        <div className="absolute inset-0 pattern-overlay opacity-20" />
+      {/* ── Hero banner ──────────────────────────────────────────────────────── */}
+      {/* All colours below come from `theme.*` — change ACTIVE_HERO_THEME at    */}
+      {/* the very top of this file and every hero colour updates automatically.  */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          minHeight: 'clamp(200px, 25vw, 260px)',
+          background: theme.background, // ← theme-controlled
+        }}
+      >
+        {/* Woven texture overlay — same as OurStoryPage for visual consistency */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: `
+              repeating-linear-gradient(45deg,  rgba(212,160,96,0.05) 0, rgba(212,160,96,0.05) 1px, transparent 0, transparent 50%),
+              repeating-linear-gradient(-45deg, rgba(212,160,96,0.05) 0, rgba(212,160,96,0.05) 1px, transparent 0, transparent 50%)
+            `,
+            backgroundSize: '12px 12px',
+          }}
+        />
 
-        {/* Animated rings */}
-        {[200,300,420].map((s,i) => (
+        {/* Radial centre glow — theme-controlled */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: theme.radialGlow, // ← theme-controlled
+          }}
+        />
+
+        {/* Animated thread SVG lines — colours are theme-controlled */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 800 260"
+          preserveAspectRatio="none"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        >
+          <defs>
+            <linearGradient id="cp-hero-thread-1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor={theme.threadPrimary} stopOpacity="0" />
+              <stop offset="40%"  stopColor={theme.threadPrimary} />
+              <stop offset="70%"  stopColor={theme.threadPrimary} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={theme.threadPrimary} stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="cp-hero-thread-2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor={theme.threadAccent} stopOpacity="0" />
+              <stop offset="50%"  stopColor={theme.threadAccent} />
+              <stop offset="100%" stopColor={theme.threadAccent} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* Primary thread */}
+          <path
+            d="M80,130 C180,95 280,165 380,118 C480,72 560,148 680,118"
+            stroke="url(#cp-hero-thread-1)"
+            strokeWidth="1" fill="none" strokeLinecap="round" strokeDasharray="500"
+            style={{ animation: 'cp-thread 2s ease 0.4s both' }}
+          />
+          {/* Secondary thread */}
+          <path
+            d="M80,145 C190,118 290,172 390,130 C490,90 570,155 680,130"
+            stroke="url(#cp-hero-thread-2)"
+            strokeWidth="0.6" fill="none" strokeLinecap="round" strokeDasharray="500"
+            opacity="0.5"
+            style={{ animation: 'cp-thread 2s ease 0.8s both' }}
+          />
+          {/* Bottom border rule */}
+          <line x1="0" y1="259" x2="800" y2="259" stroke="rgba(212,160,96,0.25)" strokeWidth="1" />
+        </svg>
+
+        {/* Animated rings — colour is theme-controlled */}
+        {[200, 300, 420].map((s, i) => (
           <div key={s} style={{
-            position:'absolute', top:'50%', left:'50%',
-            width:s, height:s, borderRadius:'50%',
-            border:'1px solid rgba(233,227,203,0.1)',
-            transform:'translate(-50%,-50%)',
-            animation:`cp-fade 0.6s ease ${0.1+i*0.15}s both`,
-            pointerEvents:'none',
-          }}/>
+            position: 'absolute', top: '50%', left: '50%',
+            width: s, height: s, borderRadius: '50%',
+            border: `1px solid ${theme.ringColor}`, // ← theme-controlled
+            transform: 'translate(-50%,-50%)',
+            animation: `cp-fade 0.6s ease ${0.1 + i * 0.15}s both`,
+            pointerEvents: 'none',
+          }} />
         ))}
 
-        <div className="absolute inset-0 flex items-center justify-center text-center px-4">
-          <div ref={heroVis.ref}>
-            <p className="text-brand-cream/60 text-xs uppercase tracking-widest mb-3 font-body"
-              style={{ letterSpacing:'0.38em', opacity: heroVis.vis ? 1:0, transform: heroVis.vis ? 'translateY(0)':'translateY(16px)', transition:'all 0.6s ease 0.1s' }}>
+        {/* Hero text content */}
+        <div
+          className="absolute inset-0 flex items-center justify-center text-center px-4"
+          ref={heroVis.ref}
+        >
+          <div>
+            {/* Eyebrow — theme-controlled colour (≥ 0.85 opacity for WCAG AA) */}
+            <p
+              className="font-body uppercase"
+              style={{
+                fontSize: '0.6rem', letterSpacing: '0.38em',
+                color: theme.eyebrow, // ← theme-controlled
+                marginBottom: '12px', marginTop: 0,
+                opacity:   heroVis.vis ? 1 : 0,
+                transform: heroVis.vis ? 'translateY(0)' : 'translateY(16px)',
+                transition: 'all 0.6s ease 0.1s',
+              }}
+            >
               Get in Touch
             </p>
-            <h1 className="text-brand-cream"
-              style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:'clamp(2.2rem,5vw,3.2rem)', fontWeight:600,
-                opacity: heroVis.vis ? 1:0, transform: heroVis.vis ? 'translateY(0)':'translateY(20px)',
-                transition:'all 0.7s ease 0.25s' }}>
+
+            {/* H1 — theme-controlled colour */}
+            <h1
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: 'clamp(2.2rem, 5vw, 3.2rem)',
+                fontWeight: 600,
+                color: theme.h1, // ← theme-controlled
+                lineHeight: 1.1,
+                margin: 0,
+                opacity:   heroVis.vis ? 1 : 0,
+                transform: heroVis.vis ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'all 0.7s ease 0.25s',
+              }}
+            >
               Contact Us
             </h1>
-            {/* Gold rule */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', marginTop:'14px',
-              opacity: heroVis.vis ? 1:0, transition:'opacity 0.6s ease 0.5s' }}>
-              <div style={{ width:'36px', height:'1px', background:'linear-gradient(to right,transparent,rgba(182,137,60,0.8))',
-                transformOrigin:'right', animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none' }}/>
-              <div style={{ width:'6px', height:'6px', background:'#b6893c', transform:'rotate(45deg)',
-                animation:'cp-diamond 3s ease-in-out 0.8s infinite' }}/>
-              <div style={{ width:'36px', height:'1px', background:'linear-gradient(to left,transparent,rgba(182,137,60,0.8))',
-                transformOrigin:'left', animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none' }}/>
+
+            {/* Diamond rule — theme-controlled colours */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '10px', marginTop: '14px',
+              opacity: heroVis.vis ? 1 : 0,
+              transition: 'opacity 0.6s ease 0.5s',
+            }}>
+              <div style={{
+                width: '36px', height: '1px',
+                background: `linear-gradient(to right, transparent, ${theme.rule})`, // ← theme-controlled
+                transformOrigin: 'right',
+                animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none',
+              }} />
+              <div style={{
+                width: '6px', height: '6px',
+                background: theme.diamond, // ← theme-controlled
+                transform: 'rotate(45deg)',
+                animation: 'cp-diamond 3s ease-in-out 0.8s infinite',
+              }} />
+              <div style={{
+                width: '36px', height: '1px',
+                background: `linear-gradient(to left, transparent, ${theme.rule})`, // ← theme-controlled
+                transformOrigin: 'left',
+                animation: heroVis.vis ? 'cp-line-grow 0.5s ease 0.6s both' : 'none',
+              }} />
             </div>
+
+            {/* Optional tagline — theme-controlled colour */}
+            <p
+              className="font-body uppercase"
+              style={{
+                fontSize: '0.6rem', letterSpacing: '0.22em',
+                color: theme.tagline, // ← theme-controlled (≥ 0.70 opacity for WCAG AA)
+                marginTop: '12px', marginBottom: 0,
+                opacity:   heroVis.vis ? 1 : 0,
+                transform: heroVis.vis ? 'translateY(0)' : 'translateY(10px)',
+                transition: 'all 0.6s ease 0.65s',
+              }}
+            >
+              We respond within 24 hours
+            </p>
           </div>
         </div>
       </div>
@@ -313,24 +570,22 @@ const ContactPage: React.FC = () => {
           {/* ── Left: Contact info ── */}
           <div className={`cp-card-left ${gridVis.vis ? '' : 'opacity-0'}`} style={cardStyle}>
 
-            {/* Header */}
-            <div style={{ marginBottom:'28px' }}>
-              <h2 className={textP} style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:'1.9rem', fontWeight:600, marginBottom:'6px' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <h2 className={textP} style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}>
                 Contact Information
               </h2>
-              <div style={{ opacity: gridVis.vis ? 1:0, transition:'opacity 0.5s ease 0.4s' }}>
+              <div style={{ opacity: gridVis.vis ? 1 : 0, transition: 'opacity 0.5s ease 0.4s' }}>
                 <ThreadLine />
               </div>
             </div>
 
             {/* Detail rows */}
-            <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {DETAILS.map(({ icon: Icon, label, value, href }, i) => (
-                <div key={label} className="cp-info-row"
-                  style={{
-                    animationDelay: `${0.3 + i * 0.1}s`,
-                    background: 'transparent',
-                  }}
+                <div
+                  key={label}
+                  className="cp-info-row"
+                  style={{ animationDelay: `${0.3 + i * 0.1}s`, background: 'transparent' }}
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLDivElement).style.background = isDark
                       ? 'rgba(182,137,60,0.06)' : 'rgba(182,137,60,0.05)';
@@ -339,29 +594,33 @@ const ContactPage: React.FC = () => {
                     (e.currentTarget as HTMLDivElement).style.background = 'transparent';
                   }}
                 >
-                  <div style={{ display:'flex', alignItems:'flex-start', gap:'14px' }}>
-                    <div className="cp-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                    <div
+                      className="cp-icon-wrap"
                       style={{
                         background: 'linear-gradient(135deg, rgba(188,61,62,0.1), rgba(182,137,60,0.1))',
                         border: '1px solid rgba(182,137,60,0.22)',
-                        width:'40px', height:'40px', borderRadius:'10px',
-                        display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-                      }}>
-                      <Icon size={17} style={{ color:'#b6893c' }} />
+                        width: '40px', height: '40px', borderRadius: '10px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={17} style={{ color: '#b6893c' }} />
                     </div>
                     <div>
                       <p className={`text-xs uppercase font-semibold font-body ${textM}`}
-                        style={{ letterSpacing:'0.18em', marginBottom:'3px' }}>
+                        style={{ letterSpacing: '0.18em', marginBottom: '3px' }}>
                         {label}
                       </p>
                       {href ? (
-                        <a href={href}
+                        <a
+                          href={href}
                           target={href.startsWith('http') ? '_blank' : undefined}
                           rel="noopener noreferrer"
                           className={`text-sm font-body transition-colors ${textP}`}
-                          style={{ textDecoration:'none' }}
+                          style={{ textDecoration: 'none' }}
                           onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#bc3d3e'}
-                          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}>
+                          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
+                        >
                           {value}
                         </a>
                       ) : (
@@ -374,21 +633,22 @@ const ContactPage: React.FC = () => {
             </div>
 
             {/* WhatsApp CTA */}
-            <div style={{ marginTop:'28px', paddingTop:'24px', borderTop:`1px solid ${isDark?'rgba(182,137,60,0.15)':'rgba(182,137,60,0.15)'}` }}>
+            <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: `1px solid ${isDark ? 'rgba(182,137,60,0.15)' : 'rgba(182,137,60,0.15)'}` }}>
               <a
                 href={`https://wa.me/${info.whatsapp_number}?text=${encodeURIComponent('Hi! I need help with Wing & Weft.')}`}
                 target="_blank" rel="noopener noreferrer"
                 className="cp-wa-btn"
                 style={{
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  gap:'10px', width:'100%', padding:'14px',
-                  background:'#25D366', color:'#fff',
-                  borderRadius:'100px',
-                  fontFamily:'"Raleway",sans-serif', fontWeight:700,
-                  fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase',
-                  textDecoration:'none',
-                  boxShadow:'0 6px 28px rgba(37,211,102,0.3)',
-                }}>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '10px', width: '100%', padding: '14px',
+                  background: '#25D366', color: '#fff',
+                  borderRadius: '100px',
+                  fontFamily: '"Raleway",sans-serif', fontWeight: 700,
+                  fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  boxShadow: '0 6px 28px rgba(37,211,102,0.3)',
+                }}
+              >
                 <MessageCircle size={17} />
                 Chat on WhatsApp
               </a>
@@ -398,21 +658,20 @@ const ContactPage: React.FC = () => {
           {/* ── Right: Form ── */}
           <div className={`cp-card-right ${gridVis.vis ? '' : 'opacity-0'}`} style={cardStyle}>
 
-            {/* Header */}
-            <div style={{ marginBottom:'28px' }}>
-              <h2 className={textP} style={{ fontFamily:'"Cormorant Garamond",serif', fontSize:'1.9rem', fontWeight:600, marginBottom:'6px' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <h2 className={textP} style={{ fontFamily: '"Cormorant Garamond",serif', fontSize: '1.9rem', fontWeight: 600, marginBottom: '6px' }}>
                 Send Us a Message
               </h2>
-              <div style={{ opacity: gridVis.vis ? 1:0, transition:'opacity 0.5s ease 0.5s' }}>
+              <div style={{ opacity: gridVis.vis ? 1 : 0, transition: 'opacity 0.5s ease 0.5s' }}>
                 <ThreadLine />
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }} noValidate>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} noValidate>
 
               {/* Name */}
-              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition:'all 0.5s ease 0.35s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing:'0.15em' }}>Name *</label>
+              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.35s' }}>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Name *</label>
                 <div className="cp-input-wrap">
                   <input type="text" name="name" required value={form.name} onChange={handleChange}
                     placeholder="Your full name" className={inputCls} />
@@ -420,8 +679,8 @@ const ContactPage: React.FC = () => {
               </div>
 
               {/* Email */}
-              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition:'all 0.5s ease 0.45s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing:'0.15em' }}>Email *</label>
+              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.45s' }}>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Email *</label>
                 <div className="cp-input-wrap">
                   <input type="email" name="email" required value={form.email} onChange={handleChange}
                     placeholder="your@email.com" className={inputCls} />
@@ -429,8 +688,8 @@ const ContactPage: React.FC = () => {
               </div>
 
               {/* WhatsApp */}
-              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition:'all 0.5s ease 0.55s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing:'0.15em' }}>WhatsApp Number</label>
+              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.55s' }}>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>WhatsApp Number</label>
                 <div className="cp-input-wrap">
                   <input type="tel" name="whatsapp" value={form.whatsapp} onChange={handleChange}
                     placeholder="+91 XXXXX XXXXX" className={inputCls} />
@@ -438,8 +697,8 @@ const ContactPage: React.FC = () => {
               </div>
 
               {/* Message */}
-              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition:'all 0.5s ease 0.65s' }}>
-                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing:'0.15em' }}>Message *</label>
+              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.65s' }}>
+                <label className={`block text-xs font-semibold font-body uppercase tracking-wide mb-1.5 ${textM}`} style={{ letterSpacing: '0.15em' }}>Message *</label>
                 <div className="cp-input-wrap">
                   <textarea name="message" required rows={5} value={form.message} onChange={handleChange}
                     placeholder="How can we help you?" className={`${inputCls} resize-none`} />
@@ -449,20 +708,22 @@ const ContactPage: React.FC = () => {
               {/* Status messages */}
               {status === 'success' && (
                 <div className="cp-success-msg flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
-                  style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', color:'#4ade80' }}>
+                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
                   <Check size={16} /> Message saved! WhatsApp is opening…
                 </div>
               )}
               {status === 'error' && (
                 <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-body"
-                  style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#fca5a5' }}>
+                  style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5' }}>
                   <AlertCircle size={16} /> Something went wrong. Please try again.
                 </div>
               )}
 
               {/* Submit */}
-              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition:'all 0.5s ease 0.75s' }}>
-                <button type="submit" disabled={status === 'saving'}
+              <div style={{ opacity: gridVis.vis ? 1:0, transform: gridVis.vis ? 'translateY(0)':'translateY(12px)', transition: 'all 0.5s ease 0.75s' }}>
+                <button
+                  type="submit"
+                  disabled={status === 'saving'}
                   className="cp-submit-btn w-full flex items-center justify-center gap-2 py-4 rounded-full font-bold font-body text-sm uppercase"
                   style={{
                     background: 'linear-gradient(115deg, #bc3d3e 0%, #a8322f 40%, #b6893c 100%)',
@@ -471,7 +732,8 @@ const ContactPage: React.FC = () => {
                     boxShadow: '0 6px 28px rgba(188,61,62,0.35)',
                     opacity: status === 'saving' ? 0.65 : 1,
                     cursor: status === 'saving' ? 'not-allowed' : 'pointer',
-                  }}>
+                  }}
+                >
                   <Send size={15} />
                   {status === 'saving' ? 'Sending…' : 'Send Message'}
                 </button>

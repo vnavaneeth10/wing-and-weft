@@ -5,6 +5,119 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import SEO from '../components/SEO/SEO';
 import { useInView } from '../hooks';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO THEME SWITCHER
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//  HOW TO SWITCH THEMES
+//  ────────────────────
+//  Change the value of ACTIVE_HERO_THEME (line below) to one of:
+//    'silkDusk'       → A · deep charcoal → amber         (current / default)
+//    'oceanIndigo'    → B · deep navy → teal
+//    'sandalwoodDusk' → C · near-black → warm sandalwood  (most premium feel)
+//    'roseSilk'       → D · midnight maroon → rose pink   (festive / bridal)
+//    'mysoreViolet'   → E · midnight blue → violet        (regal / distinctive)
+//
+//  That's it — nothing else needs to change.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACTIVE_HERO_THEME = 'mysoreViolet'; // ← change this line to swap themes
+
+// ─── Theme definitions ────────────────────────────────────────────────────────
+// Each theme controls:
+//   background     — CSS gradient string for the hero banner
+//   radialGlow     — inner ambient glow (should match the dominant mid-tone)
+//   threadPrimary  — colour of the primary animated SVG thread
+//   threadAccent   — colour of the secondary/accent SVG thread
+//   eyebrow        — small ALL-CAPS label above the h1  (keep ≥ 0.85 for WCAG)
+//   h1             — main page heading colour
+//   tagline        — small tagline below the diamond rule (keep ≥ 0.70 for WCAG)
+//   diamond        — the rotating ◆ divider element
+//   rule           — the short horizontal lines flanking the diamond
+
+const HERO_THEMES = {
+
+  // A · Silk Dusk — deep charcoal → burnt amber
+  // Bold, dramatic, "heritage craft". The original design.
+  silkDusk: {
+    background:   'linear-gradient(150deg, #140a06 0%, #2c1010 30%, #5c1f1a 60%, #8b3a1a 80%, #b5692a 100%)',
+    radialGlow:   'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(180,90,30,0.22) 0%, transparent 70%)',
+    threadPrimary: '#d4924a',
+    threadAccent:  '#bc3d3e',
+    eyebrow:      'rgba(212,160,96,0.92)',
+    h1:           '#f5ead8',
+    tagline:      'rgba(245,234,216,0.72)',
+    diamond:      '#d4a060',
+    rule:         'rgba(212,160,96,0.75)',
+  },
+
+  // B · Ocean Indigo — deep navy → teal
+  // Cooler, modern luxury. Inspired by traditional indigo dyeing.
+  oceanIndigo: {
+    background:   'linear-gradient(150deg, #0a0f14 0%, #0f2233 25%, #1a3d5c 55%, #1e5c72 78%, #1b7a7a 100%)',
+    radialGlow:   'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(26,122,122,0.22) 0%, transparent 70%)',
+    threadPrimary: '#4ab0c8',
+    threadAccent:  '#2a7aaa',
+    eyebrow:      'rgba(180,220,210,0.92)',
+    h1:           '#e8f5f2',
+    tagline:      'rgba(232,245,242,0.72)',
+    diamond:      '#7ecec4',
+    rule:         'rgba(126,206,196,0.75)',
+  },
+
+  // C · Sandalwood Dusk — near-black → warm sandalwood gold
+  // Quieter, understated, very premium. Works well for a high-end positioning.
+  sandalwoodDusk: {
+    background:   'linear-gradient(150deg, #0d0a06 0%, #1a1408 25%, #362410 50%, #5c3d1a 75%, #8c6030 100%)',
+    radialGlow:   'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(92,61,26,0.18) 0%, transparent 70%)',
+    threadPrimary: '#c8a86a',
+    threadAccent:  '#8c6030',
+    eyebrow:      'rgba(220,196,150,0.92)',
+    h1:           '#f7efde',
+    tagline:      'rgba(247,239,222,0.72)',
+    diamond:      '#c8a86a',
+    rule:         'rgba(200,168,106,0.75)',
+  },
+
+  // D · Rose Silk — midnight maroon → rose pink
+  // Feminine, festive, Banarasi-inspired. Great for bridal / gifting angle.
+  roseSilk: {
+    background:   'linear-gradient(150deg, #10060a 0%, #280a18 25%, #520a30 50%, #8c1a4a 75%, #b52260 100%)',
+    radialGlow:   'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(140,26,74,0.22) 0%, transparent 70%)',
+    threadPrimary: '#f0a0bc',
+    threadAccent:  '#b52260',
+    eyebrow:      'rgba(255,192,210,0.92)',
+    h1:           '#fdeef4',
+    tagline:      'rgba(253,238,244,0.72)',
+    diamond:      '#f0a0bc',
+    rule:         'rgba(240,160,188,0.75)',
+  },
+
+  // E · Mysore Violet — midnight blue → rich violet
+  // Regal and distinctive. Inspired by Mysore silk heritage. Most unique.
+  mysoreViolet: {
+    background:   'linear-gradient(150deg, #080810 0%, #0e0e28 25%, #1a1a52 50%, #2e2a7c 75%, #4a3aaa 100%)',
+    radialGlow:   'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(46,42,124,0.26) 0%, transparent 70%)',
+    threadPrimary: '#a090e0',
+    threadAccent:  '#6050b8',
+    eyebrow:      'rgba(196,188,255,0.92)',
+    h1:           '#f0eeff',
+    tagline:      'rgba(240,238,255,0.72)',
+    diamond:      '#a090e0',
+    rule:         'rgba(160,144,224,0.75)',
+  },
+
+} as const;
+
+// Active theme — resolved from the key above.
+// All hero banner references use `theme.*` so swapping the key is the only edit needed.
+const theme = HERO_THEMES[ACTIVE_HERO_THEME];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Everything below this line is unchanged design logic.
+// You should not need to edit anything below to change the hero colours.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const VALUES = [
   { icon: '✦', title: 'Authenticity', description: 'Every saree in our collection is sourced directly from master weavers, ensuring genuine craftsmanship and fair trade.' },
   { icon: '♡', title: 'Craftsmanship', description: 'We believe in preserving centuries-old weaving traditions by supporting artisan communities across India.' },
@@ -13,7 +126,8 @@ const VALUES = [
 ];
 
 // ─── Unique ID counter for ThreadDivider gradients ────────────────────────────
-// Fixes: duplicate SVG gradient IDs when component renders more than once
+// FIX: use React 18's useId() if available; this counter is a fallback for React <18.
+// In React 18+, replace with: const id = useId(); inside the component.
 let _threadDividerCount = 0;
 
 const STYLES = `
@@ -86,14 +200,26 @@ const STYLES = `
     }
   }
 
+  /* FIX: only trigger hover lift when device actually supports hover.
+     Prevents stuck "lifted" state on mobile tap. */
+  @media (hover: hover) {
+    .os-value-card:hover {
+      transform: translateY(-8px) scale(1.02);
+    }
+    .os-logo-container:hover .os-logo-box {
+      transform: scale(1.04);
+      box-shadow: 0 24px 64px rgba(188,61,62,0.22), 0 8px 24px rgba(0,0,0,0.1);
+    }
+    .os-value-card:hover .os-value-icon {
+      transform: scale(1.2) rotate(8deg);
+      background: linear-gradient(135deg, rgba(188,61,62,0.18), rgba(182,137,60,0.18)) !important;
+    }
+  }
+
   .os-logo-container {
     position: relative;
     cursor: pointer;
     overflow: hidden;
-  }
-  .os-logo-container:hover .os-logo-box {
-    transform: scale(1.04);
-    box-shadow: 0 24px 64px rgba(188,61,62,0.22), 0 8px 24px rgba(0,0,0,0.1);
   }
   .os-logo-box {
     transition: transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s ease;
@@ -123,21 +249,16 @@ const STYLES = `
     transition: transform 0.4s cubic-bezier(0.22,1,0.36,1),
                 box-shadow 0.4s ease, border-color 0.3s ease;
   }
-  .os-value-card:hover {
-    transform: translateY(-8px) scale(1.02);
-  }
   .os-value-icon {
     transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), background 0.3s ease;
-  }
-  .os-value-card:hover .os-value-icon {
-    transform: scale(1.2) rotate(8deg);
-    background: linear-gradient(135deg, rgba(188,61,62,0.18), rgba(182,137,60,0.18)) !important;
   }
 `;
 
 // ─── Animated thread SVG decoration ──────────────────────────────────────────
-// Fix: unique gradient IDs per instance via counter ref
 const ThreadDivider: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+  // Uses module counter as fallback. Swap to useId() in React 18+:
+  //   import { useId } from 'react';
+  //   const id = useId();
   const id = useRef(`td-${++_threadDividerCount}`).current;
   const g1 = `${id}-g1`;
   const g2 = `${id}-g2`;
@@ -233,7 +354,7 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
           pointerEvents: 'none',
         }} />
 
-        {/* Orbiting dots — hidden on mobile via CSS to prevent overflow */}
+        {/* Orbiting dots — hidden on mobile via CSS */}
         {[
           { size: 8, color: '#bc3d3e', r: 155, dur: '5s',   delay: '0s',    cw: true  },
           { size: 5, color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s',   cw: false },
@@ -303,16 +424,20 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             <circle cx="96" cy="96" r="0.8" fill="#b6893c" opacity="0.6" />
           </svg>
 
-          {/* Logo image — eager loaded (it's above the fold) */}
+          {/* Logo image
+              FIX: width + height attributes added to prevent Cumulative Layout Shift (CLS).
+              Values should match the intrinsic pixel size of your logo@1x.png. */}
           <div className="os-logo-shimmer">
             <picture>
               <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
               <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
               <img
                 src="/logo@1x.png"
-                alt="Wing & Weft — handloom saree brand"
+                alt="Wing & Weft logo — authentic handloom sarees from Indian master weavers"
                 loading="eager"
                 decoding="async"
+                width={320}
+                height={180}
                 style={{
                   width: 'auto',
                   height: 'clamp(120px, 20vw, 180px)',
@@ -332,7 +457,6 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
 // ─── Story text ───────────────────────────────────────────────────────────────
 const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, visible }) => {
   const textPrimary = isDark ? '#f0e8d6' : '#1a1410';
-  // Raised opacity from 0.6 → 0.75 for WCAG AA contrast compliance
   const textMuted   = isDark ? 'rgba(240,232,214,0.75)' : 'rgba(26,20,16,0.72)';
   const borderColor = isDark ? '#3a2e24' : '#e9e3cb';
 
@@ -369,7 +493,7 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
         </p>
       </div>
 
-      {/* Headline — keyword-enriched for SEO */}
+      {/* Headline */}
       <h2 style={{
         fontFamily: '"Cormorant Garamond", serif',
         fontSize: 'clamp(2rem, 3vw, 2.8rem)',
@@ -427,7 +551,6 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const OurStoryPage: React.FC = () => {
-  // Single source of truth for page meta — removed duplicate usePageMeta call
   const { isDark } = useTheme();
   const { ref: heroRef, inView: heroVisible }     = useInView();
   const { ref: valuesRef, inView: valuesVisible } = useInView();
@@ -441,14 +564,14 @@ const OurStoryPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
-      {/* Single SEO call — canonical reads from env for future-proofing */}
       <SEO
         title="Our Story — Wing & Weft Handloom Sarees"
         description="Wing & Weft was born from a friendship and a love for Indian handloom traditions. Meet the founders and the master weavers behind every saree."
         canonical={`${import.meta.env.VITE_SITE_URL ?? 'https://wingandweft.vercel.app'}/our-story`}
       />
 
-      {/* JSON-LD Organisation schema for search engines */}
+      {/* JSON-LD Organisation schema
+          TODO: fill in founders[].name, address, and sameAs social URLs */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -460,18 +583,21 @@ const OurStoryPage: React.FC = () => {
             logo: 'https://wingandweft.vercel.app/logo@1x.png',
             description: 'Handloom sarees sourced directly from master weavers across India.',
             foundingDate: '2024',
-            sameAs: [],
+            areaServed: 'India',
+            // founders: [{ '@type': 'Person', name: 'Founder Name' }],
+            // sameAs: ['https://instagram.com/wingandweft'],
           }),
         }}
       />
 
-      {/* ── Hero banner — Option A: Silk Dusk ── */}
+      {/* ── Hero banner ──────────────────────────────────────────────────────── */}
+      {/* All colours below come from `theme.*` — change ACTIVE_HERO_THEME at    */}
+      {/* the top of this file and every hero colour updates automatically.       */}
       <div
         className="relative overflow-hidden"
         style={{
-          minHeight: 'clamp(280px, 30vw, 380px)',
-          // Deep charcoal-brown → warm amber — reads "heritage craft", not alert
-          background: 'linear-gradient(150deg, #140a06 0%, #2c1010 30%, #5c1f1a 60%, #8b3a1a 80%, #b5692a 100%)',
+          minHeight: 'clamp(320px, 35vw, 420px)', // FIX: raised floor from 280 → 320
+          background: theme.background,            // ← theme-controlled
         }}
       >
         {/* Woven texture overlay */}
@@ -487,16 +613,16 @@ const OurStoryPage: React.FC = () => {
           }}
         />
 
-        {/* Radial centre glow */}
+        {/* Radial centre glow — theme-controlled */}
         <div
           aria-hidden="true"
           style={{
             position: 'absolute', inset: 0, pointerEvents: 'none',
-            background: 'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(180,90,30,0.22) 0%, transparent 70%)',
+            background: theme.radialGlow, // ← theme-controlled
           }}
         />
 
-        {/* Animated thread lines */}
+        {/* Animated thread SVG lines */}
         <svg
           aria-hidden="true"
           viewBox="0 0 800 320"
@@ -504,19 +630,20 @@ const OurStoryPage: React.FC = () => {
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
         >
           <defs>
+            {/* Thread gradient colours are theme-controlled */}
             <linearGradient id="hero-thread-1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#b5692a" stopOpacity="0" />
-              <stop offset="40%"  stopColor="#d4924a" />
-              <stop offset="70%"  stopColor="#c4813a" />
-              <stop offset="100%" stopColor="#b5692a" stopOpacity="0" />
+              <stop offset="0%"   stopColor={theme.threadPrimary} stopOpacity="0" />
+              <stop offset="40%"  stopColor={theme.threadPrimary} />
+              <stop offset="70%"  stopColor={theme.threadPrimary} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={theme.threadPrimary} stopOpacity="0" />
             </linearGradient>
             <linearGradient id="hero-thread-2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0" />
-              <stop offset="50%"  stopColor="#bc3d3e" />
-              <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
+              <stop offset="0%"   stopColor={theme.threadAccent} stopOpacity="0" />
+              <stop offset="50%"  stopColor={theme.threadAccent} />
+              <stop offset="100%" stopColor={theme.threadAccent} stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* Primary amber thread */}
+          {/* Primary thread */}
           <path
             d="M80,160 C180,120 280,200 380,145 C480,90 560,180 680,145"
             stroke="url(#hero-thread-1)"
@@ -526,7 +653,7 @@ const OurStoryPage: React.FC = () => {
             strokeDasharray="500"
             style={{ animation: 'os-thread-draw 2s ease 0.4s both' }}
           />
-          {/* Secondary red thread */}
+          {/* Secondary thread */}
           <path
             d="M80,175 C190,145 290,210 390,160 C490,110 570,190 680,160"
             stroke="url(#hero-thread-2)"
@@ -544,27 +671,28 @@ const OurStoryPage: React.FC = () => {
         {/* Hero text content */}
         <div
           className="relative flex flex-col items-center justify-center text-center px-6"
-          style={{ minHeight: 'clamp(280px, 30vw, 380px)' }}
+          style={{ minHeight: 'clamp(320px, 35vw, 420px)' }}
         >
-          {/* Brand name eyebrow */}
+          {/* Brand name eyebrow — theme-controlled colour */}
           <p
             className="font-body uppercase"
             style={{
               fontSize: '0.6rem', letterSpacing: '0.42em',
-              color: 'rgba(212,160,96,0.75)', marginBottom: '14px', marginTop: 0,
+              color: theme.eyebrow, // ← theme-controlled (≥ 0.85 opacity for WCAG AA)
+              marginBottom: '14px', marginTop: 0,
               animation: 'os-slide-up 0.6s ease 0.2s both',
             }}
           >
             Wing &amp; Weft
           </p>
 
-          {/* Page h1 */}
+          {/* Page h1 — theme-controlled colour */}
           <h1
             style={{
               fontFamily: '"Cormorant Garamond", serif',
               fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
               fontWeight: 600,
-              color: '#f5ead8',
+              color: theme.h1, // ← theme-controlled
               lineHeight: 1.1,
               marginBottom: '20px',
               marginTop: 0,
@@ -572,40 +700,41 @@ const OurStoryPage: React.FC = () => {
               animation: 'os-slide-up 0.7s ease 0.35s both',
             }}
           >
-            Our Story
+            About Us
           </h1>
 
-          {/* Gold diamond rule */}
+          {/* Diamond rule — theme-controlled colours */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '12px',
             animation: 'os-slide-up 0.6s ease 0.55s both',
           }}>
             <div style={{
               height: '1px', width: '48px',
-              background: 'linear-gradient(to right, transparent, rgba(212,160,96,0.75))',
+              background: `linear-gradient(to right, transparent, ${theme.rule})`, // ← theme-controlled
               transformOrigin: 'right',
               animation: 'os-line-grow 0.5s ease 0.85s both',
             }} />
             <div style={{
               width: '6px', height: '6px',
-              background: '#d4a060',
+              background: theme.diamond, // ← theme-controlled
               transform: 'rotate(45deg)',
               animation: 'os-diamond-spin 3s ease-in-out 1.2s infinite',
             }} />
             <div style={{
               height: '1px', width: '48px',
-              background: 'linear-gradient(to left, transparent, rgba(212,160,96,0.75))',
+              background: `linear-gradient(to left, transparent, ${theme.rule})`, // ← theme-controlled
               transformOrigin: 'left',
               animation: 'os-line-grow 0.5s ease 0.85s both',
             }} />
           </div>
 
-          {/* Tagline */}
+          {/* Tagline — theme-controlled colour */}
           <p
             className="font-body uppercase"
             style={{
               fontSize: '0.6rem', letterSpacing: '0.22em',
-              color: 'rgba(245,234,216,0.42)', marginTop: '18px', marginBottom: 0,
+              color: theme.tagline, // ← theme-controlled (≥ 0.70 opacity for WCAG AA)
+              marginTop: '18px', marginBottom: 0,
               animation: 'os-slide-up 0.6s ease 0.7s both',
             }}
           >
@@ -620,9 +749,9 @@ const OurStoryPage: React.FC = () => {
               aria-hidden="true"
               style={{ opacity: 0.45, display: 'block', margin: '0 auto' }}
             >
-              <rect x="5" y="0" width="6" height="16" rx="3" fill="none" stroke="#d4a060" strokeWidth="1.2" />
+              <rect x="5" y="0" width="6" height="16" rx="3" fill="none" stroke={theme.diamond} strokeWidth="1.2" />
               <circle
-                cx="8" cy="6" r="2" fill="#d4a060"
+                cx="8" cy="6" r="2" fill={theme.diamond}
                 style={{ animation: 'os-scroll-dot 1.6s ease-in-out infinite' }}
               />
             </svg>
@@ -678,7 +807,9 @@ const OurStoryPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Value cards — sm:grid-cols-2 xl:grid-cols-4 gives cards more breathing room */}
+          {/* Value cards
+              FIX: aria-hidden added to icon divs so screen readers skip
+              decorative characters like ✦ ♡ ❧ ◆ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {VALUES.map((value, i) => (
               <div
@@ -693,8 +824,10 @@ const OurStoryPage: React.FC = () => {
                     : '0 4px 20px rgba(26,20,16,0.06)',
                 }}
               >
+                {/* aria-hidden="true" — FIX: prevents screen readers announcing raw unicode symbols */}
                 <div
                   className="os-value-icon w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+                  aria-hidden="true"
                   style={{
                     background: 'linear-gradient(135deg, rgba(188,61,62,0.12), rgba(182,137,60,0.12))',
                     fontSize: '1.5rem', color: '#b6893c',
