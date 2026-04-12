@@ -10,6 +10,7 @@ import './styles/a11y.css'; // ← global focus rings, reduced-motion, shimmer, 
 
 const HomePage          = lazy(() => import('./pages/HomePage'));
 const CategoryPage      = lazy(() => import('./pages/CategoryPage'));
+const CategoriesPage    = lazy(() => import('./pages/CategoriesPage')); // ← ADDED
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const OurStoryPage      = lazy(() => import('./pages/OurStoryPage'));
 const ContactPage       = lazy(() => import('./pages/ContactPage'));
@@ -64,6 +65,7 @@ const PublicLayout: React.FC = () => (
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/"                     element={<HomePage />} />
+          <Route path="/categories"           element={<CategoriesPage />} /> {/* ← ADDED */}
           <Route path="/category/:categoryId" element={<CategoryPage />} />
           <Route path="/product/:productId"   element={<ProductDetailPage />} />
           <Route path="/our-story"            element={<OurStoryPage />} />

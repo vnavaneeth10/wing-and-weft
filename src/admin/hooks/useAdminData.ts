@@ -5,7 +5,6 @@ import { useAdminAuth } from '../lib/AdminAuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// Free-form specification row (key-value pair)
 export interface ProductSpec {
   key:   string;
   value: string;
@@ -22,28 +21,20 @@ export interface DBProduct {
   colors:         string[];
   images:         string[];
   description:    string;
-  // Legacy fixed spec columns — kept for backward compatibility, no longer shown in UI
   saree_fabric:   string;
   saree_length:   string;
   blouse_length:  string;
   blouse_fabric:  string;
-  // Free-form specifications (replaces the fixed columns in the UI)
   specifications: ProductSpec[];
-  // Policy
   policy_points:  string[];
-  // Tags
   is_best_seller: boolean;
   is_new_arrival: boolean;
   is_featured:    boolean;
-  // Rating — individually controllable per product
   show_rating:    boolean;
   rating:         number;
   review_count:   number;
-  // Visibility
   is_visible:     boolean;
-  // Colours visibility
   show_colors:    boolean;
-  // Care
   washing_instructions: string[];
   created_at?:    string;
 }
@@ -52,6 +43,7 @@ export interface DBBanner {
   id:         string;
   title:      string;
   subtitle:   string;
+  eyebrow:    string;   // ADDED: admin-controlled eyebrow label above the title
   cta_text:   string;
   cta_link:   string;
   image_url:  string;
@@ -132,7 +124,6 @@ export function useProducts() {
         ? await dbSelect<DBProduct>('products', token, { order: 'created_at.desc' })
         : await publicFetch<DBProduct>('products', { order: 'created_at.desc' });
 
-      // Normalise specifications — JSONB may arrive as a parsed array or JSON string
       const normalised = (raw ?? []).map(p => ({
         ...p,
         specifications: Array.isArray(p.specifications)
@@ -239,7 +230,8 @@ export function useBanners() {
       const data = session
         ? await dbSelect<DBBanner>('banners', session.access_token, { order: 'sort_order.asc' })
         : await publicFetch<DBBanner>('banners', { order: 'sort_order.asc', is_active: 'eq.true' });
-      setBanners(data ?? []);
+      // ADDED: normalise eyebrow — old rows from before the migration may return null
+      setBanners((data ?? []).map(b => ({ ...b, eyebrow: b.eyebrow ?? '' })));
     } finally {
       setLoading(false);
     }

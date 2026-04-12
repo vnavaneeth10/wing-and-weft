@@ -12,11 +12,18 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 type SortOption = 'featured' | 'rating' | 'az' | 'za' | 'low-high' | 'high-low';
 type ViewMode   = '2col' | '3col' | '4col';
 
-interface CategoryMeta { id: string; name: string; description: string; }
+// FIX 7: Added image to CategoryMeta so we can pass it to og:image
+interface CategoryMeta {
+  id:          string;
+  name:        string;
+  description: string;
+  image?:      string;
+}
 
+// FIX 7: Also select image field for og:image
 const fetchCategoryMeta = async (id: string): Promise<CategoryMeta | null> => {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/categories?id=eq.${encodeURIComponent(id)}&select=id,name,description`,
+    `${SUPABASE_URL}/rest/v1/categories?id=eq.${encodeURIComponent(id)}&select=id,name,description,image`,
     { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
   );
   if (!res.ok) return null;
@@ -67,44 +74,41 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
 };
 
 // ─── View toggle ──────────────────────────────────────────────────────────────
+// FIX 4: Active state changed from maroon-brown gradient to amber family —
+// consistent with the site's warm gold palette and the fix applied to CategorySection
 const ViewBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; isDark: boolean }> =
   ({ active, onClick, icon, label, isDark }) => (
   <button onClick={onClick} aria-label={label} title={label} aria-pressed={active}
     className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200"
     style={{
-      background: active ? 'linear-gradient(135deg,#7A1F2E,#9C6F2E)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-      color: active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
+      // FIX 4: was linear-gradient(135deg,#7A1F2E,#9C6F2E) — maroon clashed with palette
+      background: active ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+      color:  active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
       border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+      transform: active ? 'scale(1.05)' : 'scale(1)',
     }}>
     {icon}
   </button>
 );
 
 // ─── Smart Product Card ───────────────────────────────────────────────────────
-// Desktop: shows first image, cycles through others on hover
-// Mobile/tablet: auto-cycles all images continuously
 const SmartProductCard: React.FC<{ product: Parameters<typeof ProductCard>[0]['product'] }> = ({ product }) => {
   const [imgIdx, setImgIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasMultiple = product.images.length > 1;
 
-  // Detect touch device (mobile/tablet)
   const isTouchDevice = useRef(
     typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
   );
 
-  // Auto-cycle on mobile/tablet
   useEffect(() => {
     if (!isTouchDevice.current || !hasMultiple) return;
     intervalRef.current = setInterval(() => {
       setImgIdx(prev => (prev + 1) % product.images.length);
     }, 2000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [product.images.length, hasMultiple]);
 
-  // Desktop hover handlers
   const startHoverCycle = useCallback(() => {
     if (isTouchDevice.current || !hasMultiple) return;
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -119,24 +123,20 @@ const SmartProductCard: React.FC<{ product: Parameters<typeof ProductCard>[0]['p
     setImgIdx(0);
   }, []);
 
-  // Build the product with reordered images based on current index
   const displayProduct = imgIdx === 0 ? product : {
     ...product,
     images: [product.images[imgIdx], ...product.images.filter((_, i) => i !== imgIdx)],
   };
 
   return (
-    <div
-      onMouseEnter={startHoverCycle}
-      onMouseLeave={stopHoverCycle}
-      style={{ position: 'relative' }}
-    >
+    <div onMouseEnter={startHoverCycle} onMouseLeave={stopHoverCycle} style={{ position: 'relative' }}>
       <ProductCard product={displayProduct} />
-      {/* Dot indicators for multiple images */}
+      {/* FIX 8: Dot indicator position changed from hardcoded bottom:72px to
+          a percentage-based bottom so it doesn't break if ProductCard info height changes */}
       {hasMultiple && (
         <div style={{
           position: 'absolute',
-          bottom: '72px', // sits above the card info section
+          bottom: '22%',       // FIX 8: was '72px' — now relative so it scales with card height
           left: 0, right: 0,
           display: 'flex', justifyContent: 'center', gap: '4px',
           pointerEvents: 'none',
@@ -214,7 +214,6 @@ const CategoryPage: React.FC = () => {
   const toggleFabric = (fabric: string) =>
     setFilterFabrics(prev => prev.includes(fabric) ? prev.filter(f => f !== fabric) : [...prev, fabric]);
 
-  // Responsive grid columns — cards always uniform in a row
   const gridCols: Record<ViewMode, string> = {
     '2col': 'grid-cols-2',
     '3col': 'grid-cols-2 sm:grid-cols-3',
@@ -226,22 +225,46 @@ const CategoryPage: React.FC = () => {
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
+  // FIX 5+6: categoryName now uses category.name from DB first,
+  // then falls back to formatting the URL slug cleanly.
+  // This matches the eyebrow fix pattern — no raw URL slugs shown to users.
   const categoryName = category?.name
-    ?? (categoryId ? categoryId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');
+    ?? (categoryId
+      ? categoryId
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ')
+      : '');
+
+  // FIX 6: SEO description uses the category's actual DB description if available,
+  // falls back to a generic template. No longer ignores the description field entirely.
+  const seoDescription = category?.description?.trim()
+    ? category.description
+    : categoryName
+      ? `Shop authentic handwoven ${categoryName} at Wing & Weft. Free shipping above ₹2000.`
+      : 'Browse our curated collection of authentic handwoven sarees.';
+
+  // FIX 5: Canonical URL updated — replace with your actual production domain.
+  // Was hardcoded to wingandweft.vercel.app which is the Vercel preview, not production.
+  const PRODUCTION_DOMAIN = 'https://www.wingandweft.com'; // ← update to your GoDaddy domain
+  const canonicalUrl = `${PRODUCTION_DOMAIN}/category/${categoryId}`;
 
   usePageMeta({
     title: categoryName ? `${categoryName} Sarees` : 'Browse Collection',
-    description: categoryName
-      ? `Shop authentic handwoven ${categoryName} at Wing & Weft. Free shipping above ₹2000.`
-      : 'Browse our curated collection of authentic handwoven sarees.',
+    description: seoDescription,
   });
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
+      {/* FIX 5, 6, 7: canonical fixed, description uses DB field, og:image added */}
       <SEO
         title={categoryName || 'Collections'}
-        description={`Browse our ${categoryName || 'saree'} collection — handwoven sarees crafted by master artisans. Free shipping above ₹2000.`}
-        canonical={`https://wingandweft.vercel.app/category/${categoryId}`}
+        description={seoDescription}
+        canonical={canonicalUrl}
+        // FIX 7: Pass category image as og:image if your SEO component supports it.
+        // This improves link previews on WhatsApp, Twitter, Facebook significantly.
+        // If your SEO component doesn't accept ogImage yet, add that prop to it.
+        ogImage={category?.image}
       />
 
       {/* ── Page header ── */}
@@ -284,14 +307,21 @@ const CategoryPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textMuted}`} aria-hidden="true" />
-            <input type="text" placeholder="Search in this category…" value={searchQuery}
+            <input
+              type="text"
+              placeholder="Search in this category…"
+              value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm font-body outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors ${card} ${textPrimary}`}
-              aria-label="Search products in this category" />
+              aria-label="Search products in this category"
+            />
           </div>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortOption)}
             className={`px-4 py-2.5 rounded-xl border text-sm font-body outline-none cursor-pointer ${card} ${textPrimary}`}
-            aria-label="Sort products">
+            aria-label="Sort products"
+          >
             <option value="featured">Featured</option>
             <option value="rating">Top Rated</option>
             <option value="az">A to Z</option>
@@ -299,13 +329,16 @@ const CategoryPage: React.FC = () => {
             <option value="low-high">Price: Low to High</option>
             <option value="high-low">Price: High to Low</option>
           </select>
-          <button onClick={() => setFilterOpen(v => !v)}
+          <button
+            onClick={() => setFilterOpen(v => !v)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold font-body transition-colors ${filterOpen ? 'bg-brand-red text-white border-brand-red' : `${card} ${textPrimary}`}`}
-            aria-expanded={filterOpen} aria-controls="filter-panel">
+            aria-expanded={filterOpen}
+            aria-controls="filter-panel"
+          >
             <SlidersHorizontal size={15} aria-hidden="true" />
             Filters
             {(filterTag !== 'All' || filterFabrics.length > 0) && (
-              <span className="w-2 h-2 rounded-full bg-brand-gold" aria-hidden="true" />
+              <span className="w-2 h-2 rounded-full bg-brand-gold" aria-label="Filters active" />
             )}
           </button>
         </div>
@@ -339,19 +372,29 @@ const CategoryPage: React.FC = () => {
                 </div>
               </div>
               <div>
+                {/* Price range — label updates live as slider moves */}
                 <h3 className={`text-sm font-semibold mb-3 font-body ${textPrimary}`}>
-                  Price: ₹{priceRange[0].toLocaleString()} – ₹{priceRange[1].toLocaleString()}
+                  Price: ₹{priceRange[0].toLocaleString('en-IN')} – ₹{priceRange[1].toLocaleString('en-IN')}
                 </h3>
-                <input type="range" min={0} max={20000} step={500} value={priceRange[1]}
+                <input
+                  type="range" min={0} max={20000} step={500} value={priceRange[1]}
                   onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-                  className="w-full" aria-label="Maximum price" />
+                  className="w-full accent-brand-gold"
+                  aria-label={`Maximum price ₹${priceRange[1]}`}
+                  style={{
+                    // FIX: Tint the range slider thumb to brand gold — browser default is jarring in dark mode
+                    accentColor: '#b6893c',
+                  }}
+                />
                 <div className={`flex justify-between text-xs font-body mt-1 ${textMuted}`}>
                   <span>₹0</span><span>₹20,000</span>
                 </div>
               </div>
             </div>
-            <button onClick={() => { setFilterTag('All'); setFilterFabrics([]); setPriceRange([0, 20000]); }}
-              className="mt-4 flex items-center gap-1.5 text-xs font-body text-brand-red hover:underline">
+            <button
+              onClick={() => { setFilterTag('All'); setFilterFabrics([]); setPriceRange([0, 20000]); }}
+              className="mt-4 flex items-center gap-1.5 text-xs font-body text-brand-red hover:underline"
+            >
               <X size={12} aria-hidden="true" /> Reset Filters
             </button>
           </div>
@@ -359,10 +402,12 @@ const CategoryPage: React.FC = () => {
 
         {/* ── Results count ── */}
         <p className={`text-sm mb-6 font-body ${textMuted}`} aria-live="polite">
-          {loading ? 'Loading products…' : `${filtered.length} ${filtered.length === 1 ? 'product' : 'products'}`}
+          {loading
+            ? 'Loading products…'
+            : `${filtered.length} ${filtered.length === 1 ? 'product' : 'products'}`}
         </p>
 
-        {/* ── Skeletons maintain 3:4 ratio too ── */}
+        {/* ── Product grid ── */}
         {loading ? (
           <div className={`grid ${gridCols[view]} gap-4 md:gap-5`} aria-busy="true" aria-label="Loading products">
             {[...Array(8)].map((_, i) => (

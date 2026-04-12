@@ -86,14 +86,14 @@ const AdminBanners: React.FC = () => {
       <div className="flex items-center gap-2 justify-end">
         <AdminBtn variant="secondary" icon={<Download size={14} />}
           onClick={() => exportToExcel(banners.map(b => ({
-            ID: b.id, Title: b.title, Subtitle: b.subtitle,
+            ID: b.id, Title: b.title, Eyebrow: b.eyebrow, Subtitle: b.subtitle,
             'CTA Text': b.cta_text, 'CTA Link': b.cta_link,
-            'Image URL': b.image_url, Active: b.is_active ? 'Yes':'No',
+            'Image URL': b.image_url, Active: b.is_active ? 'Yes' : 'No',
           })), 'banners')}
           className="text-xs py-2 px-3">Excel</AdminBtn>
         <AdminBtn variant="secondary" icon={<FileDown size={14} />}
-          onClick={() => exportToPDF('Banners',['ID','Title','Active'],
-            banners.map(b => [b.id, b.title, b.is_active ? 'Visible':'Hidden']),
+          onClick={() => exportToPDF('Banners', ['ID', 'Title', 'Active'],
+            banners.map(b => [b.id, b.title, b.is_active ? 'Visible' : 'Hidden']),
             'banners')}
           className="text-xs py-2 px-3">PDF</AdminBtn>
       </div>
@@ -138,7 +138,7 @@ const AdminBanners: React.FC = () => {
                     {banner.image_url && (
                       <button onClick={() => downloadImage(banner.image_url, `banner-${idx + 1}.jpg`)}
                         className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
-                        style={{ background: 'rgba(182,137,60,0.1)', border:'1px solid rgba(182,137,60,0.25)', color: tk.textMuted, fontFamily:'"Raleway",sans-serif' }}>
+                        style={{ background: 'rgba(182,137,60,0.1)', border: '1px solid rgba(182,137,60,0.25)', color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
                         <Download size={11} /> Download
                       </button>
                     )}
@@ -149,71 +149,93 @@ const AdminBanners: React.FC = () => {
                 </div>
 
                 <div>
+
+                  {/* ── ADDED: Eyebrow label field ── */}
+                  {/* This replaces the fragile cta_link parsing in Banner.tsx.            */}
+                  {/* Shows as a small uppercase label above the title on the storefront.  */}
+                  {/* Falls back to 'Featured' if left empty (handled in Banner.tsx).      */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider"
+                      style={{ fontFamily: '"Raleway",sans-serif', letterSpacing: '0.12em', color: tk.textLabel }}>
+                      Eyebrow Label
+                      <span className="normal-case font-normal ml-2" style={{ letterSpacing: '0', color: tk.textMuted }}>
+                        (small tag above headline)
+                      </span>
+                    </label>
+                  </div>
+                  <input
+                    className={inputCls}
+                    style={{ ...is, marginBottom: '16px' }}
+                    placeholder="e.g. New Arrivals · Silk Collection · Limited Edition"
+                    value={String(getField(banner, 'eyebrow') || '')}
+                    onChange={e => setField(banner.id, 'eyebrow', e.target.value)}
+                  />
+
                   {/* ── Headline with show/hide toggle ── */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily: '"Raleway",sans-serif', letterSpacing: '0.12em', color: tk.textLabel }}>
                       Headline
                     </label>
                     <button type="button"
-                      onClick={() => setField(banner.id, 'title', getField(banner,'title') ? '' : 'Headline')}
+                      onClick={() => setField(banner.id, 'title', getField(banner, 'title') ? '' : 'Headline')}
                       className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
                       style={{
-                        background: getField(banner,'title') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
-                        color: getField(banner,'title') ? '#4ade80' : tk.textMuted,
-                        border: `1px solid ${getField(banner,'title') ? 'rgba(34,197,94,0.25)' : tk.border}`,
-                        fontFamily:'"Raleway",sans-serif',
+                        background: getField(banner, 'title') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner, 'title') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner, 'title') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily: '"Raleway",sans-serif',
                       }}>
-                      {getField(banner,'title') ? '👁 Visible' : '🚫 Hidden'}
+                      {getField(banner, 'title') ? '👁 Visible' : '🚫 Hidden'}
                     </button>
                   </div>
-                  <input className={inputCls} style={{ ...is, marginBottom:'16px', opacity: getField(banner,'title') ? 1 : 0.4 }}
+                  <input className={inputCls} style={{ ...is, marginBottom: '16px', opacity: getField(banner, 'title') ? 1 : 0.4 }}
                     placeholder="e.g. Threads of Tradition"
                     value={String(getField(banner, 'title') || '')}
                     onChange={e => setField(banner.id, 'title', e.target.value)} />
 
                   {/* ── Subtitle with show/hide toggle ── */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily: '"Raleway",sans-serif', letterSpacing: '0.12em', color: tk.textLabel }}>
                       Subtitle
                     </label>
                     <button type="button"
-                      onClick={() => setField(banner.id, 'subtitle', getField(banner,'subtitle') ? '' : 'Subtitle text')}
+                      onClick={() => setField(banner.id, 'subtitle', getField(banner, 'subtitle') ? '' : 'Subtitle text')}
                       className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
                       style={{
-                        background: getField(banner,'subtitle') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
-                        color: getField(banner,'subtitle') ? '#4ade80' : tk.textMuted,
-                        border: `1px solid ${getField(banner,'subtitle') ? 'rgba(34,197,94,0.25)' : tk.border}`,
-                        fontFamily:'"Raleway",sans-serif',
+                        background: getField(banner, 'subtitle') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner, 'subtitle') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner, 'subtitle') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily: '"Raleway",sans-serif',
                       }}>
-                      {getField(banner,'subtitle') ? '👁 Visible' : '🚫 Hidden'}
+                      {getField(banner, 'subtitle') ? '👁 Visible' : '🚫 Hidden'}
                     </button>
                   </div>
-                  <input className={inputCls} style={{ ...is, marginBottom:'16px', opacity: getField(banner,'subtitle') ? 1 : 0.4 }}
+                  <input className={inputCls} style={{ ...is, marginBottom: '16px', opacity: getField(banner, 'subtitle') ? 1 : 0.4 }}
                     placeholder="e.g. Handwoven silk sarees where every thread carries a story"
                     value={String(getField(banner, 'subtitle') || '')}
                     onChange={e => setField(banner.id, 'subtitle', e.target.value)} />
 
                   {/* ── CTA (Button) with show/hide toggle ── */}
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily:'"Raleway",sans-serif', letterSpacing:'0.12em', color:tk.textLabel }}>
+                    <label className="text-xs font-semibold uppercase tracking-wider" style={{ fontFamily: '"Raleway",sans-serif', letterSpacing: '0.12em', color: tk.textLabel }}>
                       Button (CTA)
                     </label>
                     <button type="button"
                       onClick={() => {
-                        setField(banner.id, 'cta_text', getField(banner,'cta_text') ? '' : 'Explore');
-                        setField(banner.id, 'cta_link', getField(banner,'cta_link') ? '' : '/');
+                        setField(banner.id, 'cta_text', getField(banner, 'cta_text') ? '' : 'Explore');
+                        setField(banner.id, 'cta_link', getField(banner, 'cta_link') ? '' : '/');
                       }}
                       className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg transition-all"
                       style={{
-                        background: getField(banner,'cta_text') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
-                        color: getField(banner,'cta_text') ? '#4ade80' : tk.textMuted,
-                        border: `1px solid ${getField(banner,'cta_text') ? 'rgba(34,197,94,0.25)' : tk.border}`,
-                        fontFamily:'"Raleway",sans-serif',
+                        background: getField(banner, 'cta_text') ? 'rgba(34,197,94,0.1)' : 'rgba(120,113,108,0.12)',
+                        color: getField(banner, 'cta_text') ? '#4ade80' : tk.textMuted,
+                        border: `1px solid ${getField(banner, 'cta_text') ? 'rgba(34,197,94,0.25)' : tk.border}`,
+                        fontFamily: '"Raleway",sans-serif',
                       }}>
-                      {getField(banner,'cta_text') ? '👁 Visible' : '🚫 Hidden'}
+                      {getField(banner, 'cta_text') ? '👁 Visible' : '🚫 Hidden'}
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4" style={{ opacity: getField(banner,'cta_text') ? 1 : 0.4 }}>
+                  <div className="grid grid-cols-2 gap-4" style={{ opacity: getField(banner, 'cta_text') ? 1 : 0.4 }}>
                     <div>
                       <input className={inputCls} style={is} placeholder="e.g. Explore Silk"
                         value={String(getField(banner, 'cta_text') || '')}
@@ -226,14 +248,20 @@ const AdminBanners: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Live preview — always dark (it's a banner preview) */}
+                  {/* Live preview */}
                   <div className="mt-4 rounded-xl overflow-hidden relative"
                     style={{ background: 'linear-gradient(135deg, #0e0a07, #1a1208)', border: '1px solid rgba(182,137,60,0.15)', padding: '20px' }}>
                     <p className="text-xs mb-4 uppercase tracking-wide" style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.2em', color: '#475569' }}>Live Preview</p>
+
+                    {/* ADDED: Eyebrow preview — mirrors the storefront eyebrow style */}
                     <div className="flex items-center gap-2 mb-3">
-                      <div style={{ width: '20px', height: '1px', background: '#bc3d3e' }} />
-                      <span style={{ fontFamily: '"Raleway", sans-serif', fontSize: '0.55rem', letterSpacing: '0.35em', color: '#bc3d3e', fontWeight: 700, textTransform: 'uppercase' }}>Wing &amp; Weft Collection</span>
+                      <div style={{ width: '20px', height: '1px', background: '#c4855a' }} />
+                      <span style={{ fontFamily: '"Raleway", sans-serif', fontSize: '0.55rem', letterSpacing: '0.35em', color: '#d4956a', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {String(getField(banner, 'eyebrow') || 'Eyebrow Label')}
+                      </span>
+                      <div style={{ width: '20px', height: '1px', background: '#c4855a' }} />
                     </div>
+
                     <p style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 400, color: '#fff', lineHeight: 0.95, marginBottom: '10px', whiteSpace: 'pre-line' }}>
                       {String(getField(banner, 'title') || 'Headline\nText')}
                     </p>

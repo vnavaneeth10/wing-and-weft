@@ -2,45 +2,34 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Instagram, Sun, Moon, Menu, X, ChevronDown,
+  Search, Instagram, Sun, Moon, Menu, X, ChevronDown, ArrowRight,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSearchSuggestions } from '../../hooks';
 import { INSTAGRAM_URL } from '../../data/products';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
-
-// ─── Live categories from Supabase ───────────────────────────────────────────
-interface NavCategory { id: string; name: string; }
-
-const fetchNavCategories = async (): Promise<NavCategory[]> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/categories?is_active=eq.true&order=sort_order.asc&select=id,name`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) throw new Error('Failed');
-  return res.json();
-};
+import { getCategories, CachedCategory } from '../../lib/categoriesCache';
 
 const Navbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const navigate  = useNavigate();
   const location  = useLocation();
 
-  const [menuOpen, setMenuOpen]   = useState(false);
-  const [catOpen, setCatOpen]     = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen]       = useState(false);
+  const [catOpen, setCatOpen]         = useState(false);
+  const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [scrolled, setScrolled]   = useState(false);
+  const [scrolled, setScrolled]       = useState(false);
+  const [navCategories, setNavCategories] = useState<CachedCategory[]>([]);
 
   const suggestions = useSearchSuggestions(searchQuery);
-  const [navCategories, setNavCategories] = useState<NavCategory[]>([]);
 
-  // Fetch live categories on mount
+  // ── Uses shared cache — no duplicate network call if other components already fetched
   useEffect(() => {
-    fetchNavCategories().then(setNavCategories).catch(() => {});
+    getCategories().then(setNavCategories).catch(() => {});
   }, []);
-  const searchRef   = useRef<HTMLDivElement>(null);
-  const catRef      = useRef<HTMLDivElement>(null);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+  const catRef    = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -49,7 +38,6 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Scroll to top on every route change — fixes the "stays at footer" navigation bug
     window.scrollTo({ top: 0, behavior: 'instant' });
     setMenuOpen(false);
     setSearchOpen(false);
@@ -65,6 +53,25 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // ── Keyboard handler for the dropdown — Arrow keys + Escape
+  const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!catOpen) return;
+    const items = catRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    if (!items || items.length === 0) return;
+    const focused = document.activeElement as HTMLElement;
+    const idx     = Array.from(items).indexOf(focused);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[idx < items.length - 1 ? idx + 1 : 0].focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[idx > 0 ? idx - 1 : items.length - 1].focus();
+    } else if (e.key === 'Escape') {
+      setCatOpen(false);
+    }
+  }, [catOpen]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -73,6 +80,9 @@ const Navbar: React.FC = () => {
       setSearchQuery('');
     }
   };
+
+  // ── Active state: /categories and /category/* both highlight the Categories button
+  const isCatActive = location.pathname.startsWith('/categor');
 
   const navBg = scrolled
     ? isDark
@@ -116,7 +126,7 @@ const Navbar: React.FC = () => {
                 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}
                 className={isDark ? 'text-brand-cream' : 'text-stone-800'}
               >
-                Wing & Weft
+                Wing &amp; Weft
               </span>
               <p
                 style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: '"Raleway", sans-serif' }}
@@ -132,12 +142,17 @@ const Navbar: React.FC = () => {
             <NavLink to="/" label="Home" isDark={isDark} />
 
             {/* Categories dropdown */}
-            <div ref={catRef} className="relative">
+            <div ref={catRef} className="relative" onKeyDown={handleDropdownKeyDown}>
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${navLink}`}
-                onClick={() => setCatOpen((v) => !v)}
+                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${
+                  isCatActive
+                    ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
+                    : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
+                }`}
+                onClick={() => setCatOpen(v => !v)}
                 aria-expanded={catOpen}
                 aria-haspopup="true"
+                aria-controls="categories-dropdown"
               >
                 Categories
                 <ChevronDown size={14} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
@@ -145,28 +160,50 @@ const Navbar: React.FC = () => {
 
               {catOpen && (
                 <div
+                  id="categories-dropdown"
                   className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-y-auto ${
                     isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
                   }`}
                   role="menu"
-                  style={{ maxHeight: '320px' }}
+                  aria-label="Product categories"
+                  style={{ maxHeight: 'min(320px, 60vh)' }}
                 >
-                  {navCategories.length > 0 ? navCategories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      to={`/category/${cat.id}`}
-                      className={`flex items-center px-4 py-3 text-sm transition-colors ${
-                        isDark
-                          ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-orange'
-                          : 'text-stone-700 hover:bg-brand-cream hover:text-brand-red'
-                      }`}
-                      role="menuitem"
-                    >
-                      <span className="font-body">{cat.name}</span>
-                    </Link>
-                  )) : (
+                  {navCategories.length > 0 ? (
+                    <>
+                      {navCategories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          to={`/category/${cat.id}`}
+                          className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                            isDark
+                              ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-orange'
+                              : 'text-stone-700 hover:bg-brand-cream hover:text-brand-red'
+                          }`}
+                          role="menuitem"
+                          tabIndex={0}
+                        >
+                          <span className="font-body">{cat.name}</span>
+                        </Link>
+                      ))}
+
+                      {/* View all collections — SEO internal link + UX shortcut */}
+                      <Link
+                        to="/categories"
+                        className={`flex items-center justify-between px-4 py-3 text-xs font-semibold font-body border-t transition-colors ${
+                          isDark
+                            ? 'border-dark-border text-brand-gold hover:bg-brand-red/10'
+                            : 'border-brand-cream-dark text-brand-gold hover:bg-brand-cream'
+                        }`}
+                        role="menuitem"
+                        tabIndex={0}
+                      >
+                        View all collections
+                        <ArrowRight size={12} />
+                      </Link>
+                    </>
+                  ) : (
                     // Skeleton while loading
-                    [1,2,3].map(n => (
+                    [1, 2, 3].map(n => (
                       <div key={n} className="flex items-center px-4 py-3">
                         <div className={`h-3 w-28 rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
                       </div>
@@ -177,7 +214,7 @@ const Navbar: React.FC = () => {
             </div>
 
             <NavLink to="/our-story" label="About Us" isDark={isDark} />
-            <NavLink to="/contact" label="Contact" isDark={isDark} />
+            <NavLink to="/contact"   label="Contact"  isDark={isDark} />
           </div>
 
           {/* ── Right side ── */}
@@ -186,7 +223,7 @@ const Navbar: React.FC = () => {
             {/* Search */}
             <div ref={searchRef} className="relative">
               <button
-                onClick={() => setSearchOpen((v) => !v)}
+                onClick={() => setSearchOpen(v => !v)}
                 className={`p-2 rounded-lg transition-colors ${
                   isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-700 hover:text-brand-red hover:bg-brand-cream'
                 }`}
@@ -208,7 +245,7 @@ const Navbar: React.FC = () => {
                         type="text"
                         placeholder="Search sarees, fabrics…"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={e => setSearchQuery(e.target.value)}
                         className={`flex-1 px-3 py-2 rounded-lg text-sm outline-none border transition-colors font-body ${
                           isDark
                             ? 'bg-dark-bg border-dark-border text-dark-text placeholder-dark-muted focus:border-brand-red'
@@ -226,7 +263,7 @@ const Navbar: React.FC = () => {
                     </div>
                   </form>
 
-                  {/* ── Live suggestions from Supabase ── */}
+                  {/* Live suggestions */}
                   {suggestions.length > 0 && (
                     <div className={`border-t ${isDark ? 'border-dark-border' : 'border-brand-cream'}`}>
                       {suggestions.map((product) => (
@@ -242,6 +279,8 @@ const Navbar: React.FC = () => {
                             <img
                               src={product.images[0]}
                               alt={product.name}
+                              width={40}
+                              height={40}
                               className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                               loading="lazy"
                             />
@@ -257,7 +296,6 @@ const Navbar: React.FC = () => {
                     </div>
                   )}
 
-                  {/* No results state */}
                   {searchQuery.trim().length > 1 && suggestions.length === 0 && (
                     <div className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
                       No products found for "{searchQuery}"
@@ -296,7 +334,7 @@ const Navbar: React.FC = () => {
               className={`md:hidden p-2 rounded-lg transition-colors ${
                 isDark ? 'text-dark-text hover:bg-dark-card' : 'text-stone-700 hover:bg-brand-cream'
               }`}
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => setMenuOpen(v => !v)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
             >
@@ -318,24 +356,40 @@ const Navbar: React.FC = () => {
           <MobileLink to="/" label="Home" isDark={isDark} />
           <div>
             <button
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
-              onClick={() => setCatOpen((v) => !v)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
+                isCatActive
+                  ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/5'
+                  : isDark ? 'text-dark-text' : 'text-stone-800'
+              }`}
+              onClick={() => setCatOpen(v => !v)}
+              aria-expanded={catOpen}
             >
               Categories
               <ChevronDown size={14} className={`transition-transform ${catOpen ? 'rotate-180' : ''}`} />
             </button>
             {catOpen && (
               <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-gold'}`}>
-                {navCategories.length > 0 ? navCategories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={`/category/${cat.id}`}
-                    className={`block py-2 text-sm font-body ${isDark ? 'text-dark-muted hover:text-brand-orange' : 'text-stone-600 hover:text-brand-red'}`}
-                  >
-                    {cat.name}
-                  </Link>
-                )) : (
-                  [1,2,3].map(n => (
+                {navCategories.length > 0 ? (
+                  <>
+                    {navCategories.map((cat) => (
+                      <Link
+                        key={cat.id}
+                        to={`/category/${cat.id}`}
+                        className={`block py-2 text-sm font-body ${isDark ? 'text-dark-muted hover:text-brand-orange' : 'text-stone-600 hover:text-brand-red'}`}
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
+                    <Link
+                      to="/categories"
+                      className={`flex items-center gap-1.5 py-2 text-xs font-semibold font-body ${isDark ? 'text-brand-gold' : 'text-brand-gold'}`}
+                    >
+                      View all collections
+                      <ArrowRight size={11} />
+                    </Link>
+                  </>
+                ) : (
+                  [1, 2, 3].map(n => (
                     <div key={n} className={`h-3 w-24 rounded animate-pulse my-2.5 ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
                   ))
                 )}
@@ -343,12 +397,14 @@ const Navbar: React.FC = () => {
             )}
           </div>
           <MobileLink to="/our-story" label="About Us" isDark={isDark} />
-          <MobileLink to="/contact" label="Contact" isDark={isDark} />
+          <MobileLink to="/contact"   label="Contact"  isDark={isDark} />
         </div>
       )}
     </nav>
   );
 };
+
+// ─── NavLink ──────────────────────────────────────────────────────────────────
 
 const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => {
   const location = useLocation();
@@ -356,7 +412,7 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
   return (
     <Link
       to={to}
-      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${
+      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
         isActive
           ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
           : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -366,6 +422,8 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
     </Link>
   );
 };
+
+// ─── MobileLink ───────────────────────────────────────────────────────────────
 
 const MobileLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => (
   <Link

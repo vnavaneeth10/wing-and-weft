@@ -207,10 +207,10 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
 
         {/* Orbiting dots */}
         {[
-          { size: 8, color: '#bc3d3e', r: 155, dur: '5s', delay: '0s', cw: true },
-          { size: 5, color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s', cw: false },
-          { size: 6, color: '#e69358', r: 140, dur: '4.2s', delay: '-1.5s', cw: true },
-          { size: 3, color: '#bc3d3e', r: 190, dur: '9s', delay: '-4s', cw: false },
+          { size: 8, color: '#bc3d3e', r: 155, dur: '5s',   delay: '0s',    cw: true  },
+          { size: 5, color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s',   cw: false },
+          { size: 6, color: '#e69358', r: 140, dur: '4.2s', delay: '-1.5s', cw: true  },
+          { size: 3, color: '#bc3d3e', r: 190, dur: '9s',   delay: '-4s',   cw: false },
         ].map((d, i) => (
           <div key={i} className="os-orbit-dot" style={{
             width: d.size, height: d.size,
@@ -244,8 +244,10 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             animation: 'os-float 7s ease-in-out infinite',
           }}
         >
-          {/* Corner frame — single SVG, all 4 corners pixel-perfect */}
+          {/* Corner frame — viewBox 0 0 100 100 so all coords are % based */}
           <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
               pointerEvents: 'none', overflow: 'visible',
@@ -255,22 +257,22 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             aria-hidden="true"
           >
             {/* Top-left */}
-            <line x1="14" y1="14" x2="46" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-            <line x1="14" y1="14" x2="14" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="4"  y1="4"  x2="14" y2="4"  stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="4"  y1="4"  x2="4"  y2="14" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             {/* Top-right */}
-            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 46)" y2="14" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-            <line x1="calc(100% - 14)" y1="14" x2="calc(100% - 14)" y2="46" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="96" y1="4"  x2="86" y2="4"  stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="96" y1="4"  x2="96" y2="14" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             {/* Bottom-left */}
-            <line x1="14" y1="calc(100% - 14)" x2="46" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-            <line x1="14" y1="calc(100% - 14)" x2="14" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="4"  y1="96" x2="14" y2="96" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="4"  y1="96" x2="4"  y2="86" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             {/* Bottom-right */}
-            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 46)" y2="calc(100% - 14)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-            <line x1="calc(100% - 14)" y1="calc(100% - 14)" x2="calc(100% - 14)" y2="calc(100% - 46)" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
-            {/* Inner corner dots */}
-            <circle cx="14" cy="14" r="2" fill="#b6893c" opacity="0.6" />
-            <circle cx="calc(100% - 14)" cy="14" r="2" fill="#b6893c" opacity="0.6" />
-            <circle cx="14" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6" />
-            <circle cx="calc(100% - 14)" cy="calc(100% - 14)" r="2" fill="#b6893c" opacity="0.6" />
+            <line x1="96" y1="96" x2="86" y2="96" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
+            <line x1="96" y1="96" x2="96" y2="86" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
+            {/* Corner dots */}
+            <circle cx="4"  cy="4"  r="0.8" fill="#b6893c" opacity="0.6" />
+            <circle cx="96" cy="4"  r="0.8" fill="#b6893c" opacity="0.6" />
+            <circle cx="4"  cy="96" r="0.8" fill="#b6893c" opacity="0.6" />
+            <circle cx="96" cy="96" r="0.8" fill="#b6893c" opacity="0.6" />
           </svg>
 
           {/* Logo image */}
@@ -295,7 +297,6 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
           </div>
 
         </div>
-
       </div>
     </div>
   );

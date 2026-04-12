@@ -4,30 +4,13 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, LayoutGrid, Grid, AlignJustify } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useInView } from '../../hooks';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
-
-interface Category {
-  id:          string;
-  name:        string;
-  image:       string;
-  description: string;
-  count:       number;
-  sort_order:  number;
-  is_active:   boolean;
-}
+import { getCategories, CachedCategory } from '../../lib/categoriesCache';
 
 type ViewMode = 'scroll' | 'two' | 'three';
 
-const fetchCategories = async (): Promise<Category[]> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/categories?is_active=eq.true&order=sort_order.asc`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) throw new Error('Failed to fetch categories');
-  return res.json();
-};
-
-const FALLBACK: Category[] = [
+// Fallback shown instantly while the real fetch resolves.
+// Uses CachedCategory type so it's compatible with the shared cache.
+const FALLBACK: CachedCategory[] = [
   { id: 'silk-sarees',      name: 'Silk Sarees',      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
   { id: 'cotton-sarees',    name: 'Cotton Sarees',    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
   { id: 'georgette-sarees', name: 'Georgette Sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 3, is_active: true },
@@ -35,6 +18,8 @@ const FALLBACK: Category[] = [
   { id: 'chiffon-sarees',   name: 'Chiffon Sarees',   image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
   { id: 'banarasi-sarees',  name: 'Banarasi Sarees',  image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
 ];
+
+// ─── View toggle button ───────────────────────────────────────────────────────
 
 const ToggleBtn: React.FC<{
   active:  boolean;
@@ -47,12 +32,13 @@ const ToggleBtn: React.FC<{
     onClick={onClick}
     aria-label={label}
     title={label}
-    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200"
+    aria-pressed={active}
+    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1"
     style={{
       background: active
-        ? 'linear-gradient(135deg, #bc3d3e, #b6893c)'
+        ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)'
         : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-      color: active ? '#e9e3cb' : isDark ? '#94a3b8' : '#78716c',
+      color:  active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
       border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
       transform: active ? 'scale(1.05)' : 'scale(1)',
     }}
@@ -61,23 +47,27 @@ const ToggleBtn: React.FC<{
   </button>
 );
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 const CategorySection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
-  const [categories, setCategories] = useState<Category[]>(FALLBACK);
+  const [categories, setCategories] = useState<CachedCategory[]>(FALLBACK);
   const [loaded, setLoaded]         = useState(false);
   const [view, setView]             = useState<ViewMode>('three');
   const [animKey, setAnimKey]       = useState(0);
 
+  // Uses shared cache — if Navbar already fetched categories, this costs zero
+  // network requests. If this mounts first, it fires the single shared request.
   useEffect(() => {
-    fetchCategories()
-      .then((data) => { if (data.length > 0) setCategories(data); setLoaded(true); })
+    getCategories()
+      .then(data => { if (data.length > 0) setCategories(data); setLoaded(true); })
       .catch(() => setLoaded(true));
   }, []);
 
   const switchView = (v: ViewMode) => {
     if (v === view) return;
-    setAnimKey((k) => k + 1);
+    setAnimKey(k => k + 1);
     setView(v);
   };
 
@@ -94,7 +84,6 @@ const CategorySection: React.FC = () => {
         }
         .cat-card-anim { animation: catFadeUp 0.35s ease both; }
 
-        /* Horizontal scroll mode */
         .cat-scroll-track {
           display: flex;
           gap: 16px;
@@ -108,10 +97,10 @@ const CategorySection: React.FC = () => {
         .cat-scroll-track::-webkit-scrollbar { height: 4px; }
         .cat-scroll-track::-webkit-scrollbar-track { background: transparent; }
         .cat-scroll-track::-webkit-scrollbar-thumb { background: #b6893c60; border-radius: 4px; }
+
         .cat-scroll-item {
           flex-shrink: 0;
-          /* Portrait card: fixed width, height driven by aspect-ratio */
-          width: clamp(140px, 30vw, 200px);
+          width: clamp(160px, 38vw, 210px);
           scroll-snap-align: start;
         }
       `}</style>
@@ -169,14 +158,14 @@ const CategorySection: React.FC = () => {
           </div>
         )}
 
-        {/* ── View all ── */}
+        {/* View All link */}
         <div className="text-center mt-10">
           <Link
-            to={`/category/${categories[0]?.id ?? 'silk-sarees'}`}
+            to="/categories"
             className="inline-flex items-center gap-2 text-sm font-semibold font-body uppercase tracking-widest transition-all hover:gap-4"
             style={{ color: '#bc3d3e', letterSpacing: '0.15em' }}
           >
-            View All Categories
+            View All Collections
             <ArrowRight size={16} />
           </Link>
         </div>
@@ -186,15 +175,11 @@ const CategorySection: React.FC = () => {
 };
 
 // ─── Category Card ────────────────────────────────────────────────────────────
-// Always portrait 3:4 — image fills without cropping its edges.
-// object-cover ensures the image fills the space and is centred.
-const CategoryCard: React.FC<{
-  category: Category;
-  isDark:   boolean;
-}> = ({ category, isDark }) => (
+
+const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({ category, isDark }) => (
   <Link
     to={`/category/${category.id}`}
-    className="group relative overflow-hidden rounded-2xl cursor-pointer block w-full"
+    className="group relative overflow-hidden rounded-2xl cursor-pointer block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
     style={{ aspectRatio: '3/4', display: 'block' }}
     aria-label={`Browse ${category.name}`}
   >
@@ -202,11 +187,13 @@ const CategoryCard: React.FC<{
       <img
         src={category.image}
         alt={category.name}
+        width={400}
+        height={533}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         loading="lazy"
+        decoding="async"
       />
     ) : (
-      // Placeholder when no image is set
       <div
         className="absolute inset-0 w-full h-full"
         style={{
@@ -243,11 +230,6 @@ const CategoryCard: React.FC<{
       >
         {category.name}
       </h3>
-      {category.count > 0 && (
-        <p style={{ fontSize: '0.7rem', color: 'rgba(240,232,214,0.6)', fontFamily: '"Raleway",sans-serif', marginTop: '4px', letterSpacing: '0.08em' }}>
-          {category.count} sarees
-        </p>
-      )}
     </div>
   </Link>
 );
