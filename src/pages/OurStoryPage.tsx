@@ -24,6 +24,7 @@ import { useInView } from '../hooks';
 
 const ACTIVE_HERO_THEME = 'silkDusk'; // ← change this line to swap themes
 
+
 // ─── Theme definitions ────────────────────────────────────────────────────────
 //
 //  Hero fields (same as before):

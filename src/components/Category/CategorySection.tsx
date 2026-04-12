@@ -10,23 +10,26 @@ type ViewMode = 'scroll' | 'two' | 'three';
 
 // Fallback shown instantly while the real fetch resolves.
 // Uses CachedCategory type so it's compatible with the shared cache.
+
 const FALLBACK: CachedCategory[] = [
-  { id: 'silk-sarees',      name: 'Silk Sarees',      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
-  { id: 'cotton-sarees',    name: 'Cotton Sarees',    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
+  { id: 'silk-sarees', name: 'Silk Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
+  { id: 'cotton-sarees', name: 'Cotton Sarees', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
   { id: 'georgette-sarees', name: 'Georgette Sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 3, is_active: true },
-  { id: 'linen-sarees',     name: 'Linen Sarees',     image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 4, is_active: true },
-  { id: 'chiffon-sarees',   name: 'Chiffon Sarees',   image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
-  { id: 'banarasi-sarees',  name: 'Banarasi Sarees',  image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
+  { id: 'linen-sarees', name: 'Linen Sarees', image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 4, is_active: true },
+  { id: 'chiffon-sarees', name: 'Chiffon Sarees', image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
+  { id: 'banarasi-sarees', name: 'Banarasi Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
 ];
+
 
 // ─── View toggle button ───────────────────────────────────────────────────────
 
+
 const ToggleBtn: React.FC<{
-  active:  boolean;
+  active: boolean;
   onClick: () => void;
-  icon:    React.ReactNode;
-  label:   string;
-  isDark:  boolean;
+  icon: React.ReactNode;
+  label: string;
+  isDark: boolean;
 }> = ({ active, onClick, icon, label, isDark }) => (
   <button
     onClick={onClick}
@@ -38,7 +41,7 @@ const ToggleBtn: React.FC<{
       background: active
         ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)'
         : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-      color:  active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
+      color: active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
       border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
       transform: active ? 'scale(1.05)' : 'scale(1)',
     }}
@@ -47,23 +50,27 @@ const ToggleBtn: React.FC<{
   </button>
 );
 
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const CategorySection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
   const [categories, setCategories] = useState<CachedCategory[]>(FALLBACK);
-  const [loaded, setLoaded]         = useState(false);
-  const [view, setView]             = useState<ViewMode>('three');
-  const [animKey, setAnimKey]       = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState<ViewMode>('three');
+  const [animKey, setAnimKey] = useState(0);
+
 
   // Uses shared cache — if Navbar already fetched categories, this costs zero
   // network requests. If this mounts first, it fires the single shared request.
+
   useEffect(() => {
     getCategories()
       .then(data => { if (data.length > 0) setCategories(data); setLoaded(true); })
       .catch(() => setLoaded(true));
   }, []);
+
 
   const switchView = (v: ViewMode) => {
     if (v === view) return;
@@ -124,8 +131,8 @@ const CategorySection: React.FC = () => {
         {/* ── View Toggle ── */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <ToggleBtn active={view === 'scroll'} onClick={() => switchView('scroll')} icon={<AlignJustify size={16} />} label="Single row scroll" isDark={isDark} />
-          <ToggleBtn active={view === 'two'}    onClick={() => switchView('two')}    icon={<LayoutGrid size={16} />}  label="2 columns grid"    isDark={isDark} />
-          <ToggleBtn active={view === 'three'}  onClick={() => switchView('three')}  icon={<Grid size={16} />}        label="3 columns grid"    isDark={isDark} />
+          <ToggleBtn active={view === 'two'} onClick={() => switchView('two')} icon={<LayoutGrid size={16} />} label="2 columns grid" isDark={isDark} />
+          <ToggleBtn active={view === 'three'} onClick={() => switchView('three')} icon={<Grid size={16} />} label="3 columns grid" isDark={isDark} />
         </div>
 
         {/* ── Skeleton ── */}

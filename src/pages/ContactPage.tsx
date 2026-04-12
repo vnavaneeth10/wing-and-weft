@@ -25,6 +25,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 
 const ACTIVE_HERO_THEME = 'silkDusk'; // ← change this line to swap themes
 
+
 // ─── Theme definitions ────────────────────────────────────────────────────────
 //
 //  NEW FIELDS (propagate colour throughout the entire page):
