@@ -60,7 +60,7 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
         <p style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.8, color: isDark ? 'rgba(240,232,214,0.5)' : 'rgba(26,20,16,0.5)', marginBottom: '28px' }}>
           We're weaving something extraordinary for this collection. Check back soon.
         </p>
-        <Link to="/" style={{
+        <Link to="/categories" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 28px',
           background: 'linear-gradient(115deg,#bc3d3e,#b6893c)', color: '#e9e3cb',
           textDecoration: 'none', borderRadius: '2px', fontFamily: '"Raleway",sans-serif',
