@@ -22,7 +22,7 @@ import { useInView } from '../hooks';
 //  That's it — nothing else needs to change.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ACTIVE_HERO_THEME = 'mysoreViolet'; // ← change this line to swap themes
+const ACTIVE_HERO_THEME = 'silkDusk'; // ← change this line to swap themes
 
 // ─── Theme definitions ────────────────────────────────────────────────────────
 //
