@@ -1,5 +1,5 @@
 // src/pages/OurStoryPage.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import SEO from '../components/SEO/SEO';
@@ -11,6 +11,10 @@ const VALUES = [
   { icon: '❧', title: 'Sustainability', description: 'Handloom weaving uses minimal electricity and supports eco-friendly, slow fashion principles.' },
   { icon: '◆', title: 'Quality', description: 'Each saree undergoes rigorous quality checks before reaching you — because you deserve only the finest.' },
 ];
+
+// ─── Unique ID counter for ThreadDivider gradients ────────────────────────────
+// Fixes: duplicate SVG gradient IDs when component renders more than once
+let _threadDividerCount = 0;
 
 const STYLES = `
   @keyframes os-shimmer {
@@ -30,7 +34,7 @@ const STYLES = `
     to   { transform: rotate(-360deg) translateX(var(--r)) rotate(360deg); }
   }
   @keyframes os-ring-breathe {
-    0%,100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.12; }
+    0%,100% { transform: translate(-50%,-50%) scale(1);    opacity: 0.12; }
     50%     { transform: translate(-50%,-50%) scale(1.08); opacity: 0.28; }
   }
   @keyframes os-glow-pulse {
@@ -58,21 +62,34 @@ const STYLES = `
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes os-diamond-spin {
-    0%,100% { transform: rotate(45deg) scale(1);   box-shadow: 0 0 6px rgba(182,137,60,0.4); }
-    50%     { transform: rotate(225deg) scale(1.3); box-shadow: 0 0 20px rgba(182,137,60,0.9); }
+    0%,100% { transform: rotate(45deg) scale(1);    box-shadow: 0 0 6px rgba(212,160,96,0.4); }
+    50%     { transform: rotate(45deg) scale(1.35); box-shadow: 0 0 20px rgba(212,160,96,0.9); }
   }
   @keyframes os-thread-draw {
-    from { stroke-dashoffset: 400; opacity: 0; }
+    from { stroke-dashoffset: 500; opacity: 0; }
     to   { stroke-dashoffset: 0;   opacity: 1; }
   }
   @keyframes os-line-grow {
     from { transform: scaleX(0); opacity: 0; }
     to   { transform: scaleX(1); opacity: 1; }
   }
+  @keyframes os-scroll-dot {
+    0%   { transform: translateY(0);  opacity: 1; }
+    100% { transform: translateY(7px); opacity: 0; }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
 
   .os-logo-container {
     position: relative;
     cursor: pointer;
+    overflow: hidden;
   }
   .os-logo-container:hover .os-logo-box {
     transform: scale(1.04);
@@ -96,7 +113,11 @@ const STYLES = `
     top: 50%; left: 50%;
     animation: var(--anim) var(--dur) linear var(--delay) infinite;
   }
-
+  /* Hide orbit dots on small screens to prevent horizontal overflow */
+  @media (max-width: 640px) {
+    .os-orbit-dot { display: none; }
+    .os-ring-pulse { display: none; }
+  }
 
   .os-value-card {
     transition: transform 0.4s cubic-bezier(0.22,1,0.36,1),
@@ -112,57 +133,57 @@ const STYLES = `
     transform: scale(1.2) rotate(8deg);
     background: linear-gradient(135deg, rgba(188,61,62,0.18), rgba(182,137,60,0.18)) !important;
   }
-
-  .os-text-para {
-    opacity: 0; transform: translateY(16px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-  .os-text-para.visible {
-    opacity: 1; transform: translateY(0);
-  }
 `;
 
 // ─── Animated thread SVG decoration ──────────────────────────────────────────
-const ThreadDivider: React.FC<{ isDark: boolean }> = ({ isDark }) => (
-  <svg viewBox="0 0 500 60" fill="none"
-    style={{ width: '100%', maxWidth: '460px', height: '40px', overflow: 'visible', margin: '0 auto', display: 'block' }}
-    aria-hidden="true">
-    <path d="M0,30 C60,8 100,52 160,28 C220,4 260,48 320,24 C380,0 430,44 500,28"
-      stroke={isDark ? 'url(#tg-dark)' : 'url(#tg-light)'} strokeWidth="1.5"
-      strokeLinecap="round" strokeDasharray="400"
-      style={{ animation: 'os-thread-draw 1.8s ease 0.3s both' }} />
-    <path d="M0,38 C70,16 115,56 175,36 C235,16 265,52 325,32 C385,12 440,50 500,36"
-      stroke={isDark ? 'url(#tg-dark2)' : 'url(#tg-light2)'} strokeWidth="0.8"
-      strokeLinecap="round" strokeDasharray="400" opacity="0.5"
-      style={{ animation: 'os-thread-draw 1.8s ease 0.6s both' }} />
-    <defs>
-      <linearGradient id="tg-dark" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#bc3d3e" stopOpacity="0" />
-        <stop offset="35%" stopColor="#bc3d3e" />
-        <stop offset="65%" stopColor="#b6893c" />
-        <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
-      </linearGradient>
-      <linearGradient id="tg-dark2" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#e69358" stopOpacity="0" />
-        <stop offset="50%" stopColor="#e69358" />
-        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
-      </linearGradient>
-      <linearGradient id="tg-light" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#bc3d3e" stopOpacity="0" />
-        <stop offset="35%" stopColor="#bc3d3e" />
-        <stop offset="65%" stopColor="#b6893c" />
-        <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
-      </linearGradient>
-      <linearGradient id="tg-light2" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#e69358" stopOpacity="0" />
-        <stop offset="50%" stopColor="#e69358" />
-        <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
-      </linearGradient>
-    </defs>
-  </svg>
-);
+// Fix: unique gradient IDs per instance via counter ref
+const ThreadDivider: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+  const id = useRef(`td-${++_threadDividerCount}`).current;
+  const g1 = `${id}-g1`;
+  const g2 = `${id}-g2`;
 
-// ─── Logo section with full animation suite ───────────────────────────────────
+  return (
+    <svg
+      viewBox="0 0 500 60"
+      fill="none"
+      style={{ width: '100%', maxWidth: '460px', height: '40px', overflow: 'visible', margin: '0 auto', display: 'block' }}
+      aria-hidden="true"
+    >
+      <path
+        d="M0,30 C60,8 100,52 160,28 C220,4 260,48 320,24 C380,0 430,44 500,28"
+        stroke={`url(#${g1})`}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeDasharray="400"
+        style={{ animation: 'os-thread-draw 1.8s ease 0.3s both' }}
+      />
+      <path
+        d="M0,38 C70,16 115,56 175,36 C235,16 265,52 325,32 C385,12 440,50 500,36"
+        stroke={`url(#${g2})`}
+        strokeWidth="0.8"
+        strokeLinecap="round"
+        strokeDasharray="400"
+        opacity="0.5"
+        style={{ animation: 'os-thread-draw 1.8s ease 0.6s both' }}
+      />
+      <defs>
+        <linearGradient id={g1} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0" />
+          <stop offset="35%"  stopColor="#bc3d3e" />
+          <stop offset="65%"  stopColor="#b6893c" />
+          <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id={g2} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="#e69358" stopOpacity="0" />
+          <stop offset="50%"  stopColor="#e69358" />
+          <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
+// ─── Logo section ─────────────────────────────────────────────────────────────
 const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, visible }) => {
   const styleRef = useRef(false);
   useEffect(() => {
@@ -174,23 +195,30 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
   }, []);
 
   return (
-    <div className="flex justify-center" style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateX(0)' : 'translateX(-40px)',
-      transition: 'opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1)',
-    }}>
+    <div
+      className="flex justify-center"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateX(0)' : 'translateX(-40px)',
+        transition: 'opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1)',
+      }}
+    >
       <div className="os-logo-container">
 
-        {/* Pulsing background rings */}
+        {/* Pulsing background rings — hidden on mobile via CSS */}
         {[240, 320, 400].map((s, i) => (
-          <div key={s} style={{
-            position: 'absolute', top: '50%', left: '50%',
-            width: s, height: s,
-            borderRadius: '50%',
-            border: `1px solid ${isDark ? 'rgba(188,61,62,0.1)' : 'rgba(188,61,62,0.08)'}`,
-            animation: `os-ring-breathe ${8 + i * 2}s ease-in-out ${i * 1.8}s infinite`,
-            pointerEvents: 'none',
-          }} />
+          <div
+            key={s}
+            className="os-ring-pulse"
+            style={{
+              position: 'absolute', top: '50%', left: '50%',
+              width: s, height: s,
+              borderRadius: '50%',
+              border: `1px solid ${isDark ? 'rgba(188,61,62,0.1)' : 'rgba(188,61,62,0.08)'}`,
+              animation: `os-ring-breathe ${8 + i * 2}s ease-in-out ${i * 1.8}s infinite`,
+              pointerEvents: 'none',
+            }}
+          />
         ))}
 
         {/* Ambient glow */}
@@ -205,22 +233,27 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
           pointerEvents: 'none',
         }} />
 
-        {/* Orbiting dots */}
+        {/* Orbiting dots — hidden on mobile via CSS to prevent overflow */}
         {[
           { size: 8, color: '#bc3d3e', r: 155, dur: '5s',   delay: '0s',    cw: true  },
           { size: 5, color: '#b6893c', r: 175, dur: '7.5s', delay: '-3s',   cw: false },
           { size: 6, color: '#e69358', r: 140, dur: '4.2s', delay: '-1.5s', cw: true  },
           { size: 3, color: '#bc3d3e', r: 190, dur: '9s',   delay: '-4s',   cw: false },
         ].map((d, i) => (
-          <div key={i} className="os-orbit-dot" style={{
-            width: d.size, height: d.size,
-            background: d.color, opacity: 0.75,
-            marginLeft: -d.size / 2, marginTop: -d.size / 2,
-            '--r': `${d.r}px`,
-            '--anim': d.cw ? 'os-orbit-cw' : 'os-orbit-ccw',
-            '--dur': d.dur, '--delay': d.delay,
-            boxShadow: `0 0 ${d.size * 2}px ${d.color}`,
-          } as React.CSSProperties} />
+          <div
+            key={i}
+            className="os-orbit-dot"
+            style={{
+              width: d.size, height: d.size,
+              background: d.color, opacity: 0.75,
+              marginLeft: -d.size / 2, marginTop: -d.size / 2,
+              ['--r' as string]: `${d.r}px`,
+              ['--anim' as string]: d.cw ? 'os-orbit-cw' : 'os-orbit-ccw',
+              ['--dur' as string]: d.dur,
+              ['--delay' as string]: d.delay,
+              boxShadow: `0 0 ${d.size * 2}px ${d.color}`,
+            }}
+          />
         ))}
 
         {/* Main logo box */}
@@ -244,7 +277,7 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             animation: 'os-float 7s ease-in-out infinite',
           }}
         >
-          {/* Corner frame — viewBox 0 0 100 100 so all coords are % based */}
+          {/* Corner frame */}
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -256,34 +289,29 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
             }}
             aria-hidden="true"
           >
-            {/* Top-left */}
             <line x1="4"  y1="4"  x2="14" y2="4"  stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             <line x1="4"  y1="4"  x2="4"  y2="14" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
-            {/* Top-right */}
             <line x1="96" y1="4"  x2="86" y2="4"  stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             <line x1="96" y1="4"  x2="96" y2="14" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
-            {/* Bottom-left */}
             <line x1="4"  y1="96" x2="14" y2="96" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             <line x1="4"  y1="96" x2="4"  y2="86" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
-            {/* Bottom-right */}
             <line x1="96" y1="96" x2="86" y2="96" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
             <line x1="96" y1="96" x2="96" y2="86" stroke="#b6893c" strokeWidth="0.5" strokeLinecap="round" opacity="0.8" />
-            {/* Corner dots */}
             <circle cx="4"  cy="4"  r="0.8" fill="#b6893c" opacity="0.6" />
             <circle cx="96" cy="4"  r="0.8" fill="#b6893c" opacity="0.6" />
             <circle cx="4"  cy="96" r="0.8" fill="#b6893c" opacity="0.6" />
             <circle cx="96" cy="96" r="0.8" fill="#b6893c" opacity="0.6" />
           </svg>
 
-          {/* Logo image */}
+          {/* Logo image — eager loaded (it's above the fold) */}
           <div className="os-logo-shimmer">
             <picture>
               <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
               <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
               <img
                 src="/logo@1x.png"
-                alt="Wing & Weft"
-                loading="lazy"
+                alt="Wing & Weft — handloom saree brand"
+                loading="eager"
                 decoding="async"
                 style={{
                   width: 'auto',
@@ -295,17 +323,17 @@ const LogoDisplay: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, 
               />
             </picture>
           </div>
-
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Animated story text ──────────────────────────────────────────────────────
+// ─── Story text ───────────────────────────────────────────────────────────────
 const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, visible }) => {
   const textPrimary = isDark ? '#f0e8d6' : '#1a1410';
-  const textMuted = isDark ? 'rgba(240,232,214,0.6)' : 'rgba(26,20,16,0.6)';
+  // Raised opacity from 0.6 → 0.75 for WCAG AA contrast compliance
+  const textMuted   = isDark ? 'rgba(240,232,214,0.75)' : 'rgba(26,20,16,0.72)';
   const borderColor = isDark ? '#3a2e24' : '#e9e3cb';
 
   const paras = [
@@ -316,15 +344,16 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
   ];
 
   return (
-    <div style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateX(0)' : 'translateX(40px)',
-      transition: 'opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.15s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.15s',
-    }}>
+    <div
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateX(0)' : 'translateX(40px)',
+        transition: 'opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.15s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.15s',
+      }}
+    >
       {/* Eyebrow */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '10px',
-        marginBottom: '16px',
+        display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px',
         opacity: visible ? 1 : 0,
         transform: visible ? 'scaleX(1)' : 'scaleX(0)',
         transformOrigin: 'left',
@@ -334,13 +363,13 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
         <p style={{
           color: '#b6893c', fontSize: '0.6rem',
           letterSpacing: '0.38em', textTransform: 'uppercase',
-          fontFamily: '"Raleway",sans-serif', fontWeight: 700,
+          fontFamily: '"Raleway",sans-serif', fontWeight: 700, margin: 0,
         }}>
           Woven from Tradition
         </p>
       </div>
 
-      {/* Headline */}
+      {/* Headline — keyword-enriched for SEO */}
       <h2 style={{
         fontFamily: '"Cormorant Garamond", serif',
         fontSize: 'clamp(2rem, 3vw, 2.8rem)',
@@ -353,27 +382,27 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
         Where Every Thread Tells a Story
       </h2>
 
-      {/* Paragraphs — each staggers in */}
+      {/* Paragraphs */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
         {paras.map((p, i) => (
-          <p key={i} style={{
-            fontSize: '0.9rem', lineHeight: 1.8,
-            fontFamily: '"Raleway",sans-serif', fontWeight: 300,
-            color: textMuted,
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'translateY(0)' : 'translateY(16px)',
-            transition: `opacity 0.6s ease ${0.5 + i * 0.12}s, transform 0.6s ease ${0.5 + i * 0.12}s`,
-          }}>
+          <p
+            key={i}
+            style={{
+              fontSize: '0.9rem', lineHeight: 1.8,
+              fontFamily: '"Raleway",sans-serif', fontWeight: 300,
+              color: textMuted, margin: 0,
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'translateY(0)' : 'translateY(16px)',
+              transition: `opacity 0.6s ease ${0.5 + i * 0.12}s, transform 0.6s ease ${0.5 + i * 0.12}s`,
+            }}
+          >
             {p}
           </p>
         ))}
       </div>
 
       {/* Thread divider */}
-      <div style={{
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.8s ease 1s',
-      }}>
+      <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.8s ease 1s' }}>
         <ThreadDivider isDark={isDark} />
       </div>
 
@@ -387,7 +416,7 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
         <p style={{
           fontFamily: '"Cormorant Garamond", serif',
           fontSize: '1.2rem', fontStyle: 'italic',
-          color: textMuted,
+          color: textMuted, margin: 0,
         }}>
           — The Wing &amp; Weft Family
         </p>
@@ -398,54 +427,205 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const OurStoryPage: React.FC = () => {
-  usePageMeta({ title: 'Our Story', description: 'Wing & Weft was born from a love for Indian handloom traditions. Learn about our journey and the master weavers behind every saree.' });
+  // Single source of truth for page meta — removed duplicate usePageMeta call
   const { isDark } = useTheme();
-  const { ref: heroRef, inView: heroVisible } = useInView();
+  const { ref: heroRef, inView: heroVisible }     = useInView();
   const { ref: valuesRef, inView: valuesVisible } = useInView();
 
-  const bg = isDark ? 'bg-dark-bg' : 'bg-stone-50';
+  const bg          = isDark ? 'bg-dark-bg' : 'bg-stone-50';
   const textPrimary = isDark ? 'text-dark-text' : 'text-stone-800';
-  const textMuted = isDark ? 'text-dark-muted' : 'text-stone-600';
-  const card = isDark
+  const textMuted   = isDark ? 'text-dark-muted' : 'text-stone-600';
+  const card        = isDark
     ? 'bg-dark-card border-dark-border'
     : 'bg-white border-stone-200';
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
+      {/* Single SEO call — canonical reads from env for future-proofing */}
       <SEO
-        title="Our Story"
-        description="Learn about Wing & Weft — born from a love for Indian handloom weaving. Our mission to connect master artisans with modern saree lovers."
-        canonical="https://wingandweft.vercel.app/our-story"
+        title="Our Story — Wing & Weft Handloom Sarees"
+        description="Wing & Weft was born from a friendship and a love for Indian handloom traditions. Meet the founders and the master weavers behind every saree."
+        canonical={`${import.meta.env.VITE_SITE_URL ?? 'https://wingandweft.vercel.app'}/our-story`}
       />
 
-      {/* ── Hero banner ── */}
-      <div className="relative h-56 md:h-72 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #2a1f1a, #bc3d3e)' }}>
-        <div className="absolute inset-0 pattern-overlay opacity-20" />
-        <div className="absolute inset-0 flex items-center justify-center text-center px-4">
-          <div>
-            <p className="text-brand-cream/60 text-xs uppercase tracking-widest mb-3 font-body"
-              style={{ letterSpacing: '0.35em', animation: 'os-slide-up 0.6s ease 0.1s both' }}>
-              Our Story
-            </p>
-            <h1 className="text-brand-cream"
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 600,
-                animation: 'os-slide-up 0.7s ease 0.25s both',
-              }}>
-              About Us
-            </h1>
-            {/* Animated gold rule */}
+      {/* JSON-LD Organisation schema for search engines */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Wing & Weft',
+            url: 'https://wingandweft.vercel.app',
+            logo: 'https://wingandweft.vercel.app/logo@1x.png',
+            description: 'Handloom sarees sourced directly from master weavers across India.',
+            foundingDate: '2024',
+            sameAs: [],
+          }),
+        }}
+      />
+
+      {/* ── Hero banner — Option A: Silk Dusk ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          minHeight: 'clamp(280px, 30vw, 380px)',
+          // Deep charcoal-brown → warm amber — reads "heritage craft", not alert
+          background: 'linear-gradient(150deg, #140a06 0%, #2c1010 30%, #5c1f1a 60%, #8b3a1a 80%, #b5692a 100%)',
+        }}
+      >
+        {/* Woven texture overlay */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: `
+              repeating-linear-gradient(45deg,  rgba(212,160,96,0.055) 0, rgba(212,160,96,0.055) 1px, transparent 0, transparent 50%),
+              repeating-linear-gradient(-45deg, rgba(212,160,96,0.055) 0, rgba(212,160,96,0.055) 1px, transparent 0, transparent 50%)
+            `,
+            backgroundSize: '12px 12px',
+          }}
+        />
+
+        {/* Radial centre glow */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'radial-gradient(ellipse 60% 70% at 50% 50%, rgba(180,90,30,0.22) 0%, transparent 70%)',
+          }}
+        />
+
+        {/* Animated thread lines */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 800 320"
+          preserveAspectRatio="none"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        >
+          <defs>
+            <linearGradient id="hero-thread-1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#b5692a" stopOpacity="0" />
+              <stop offset="40%"  stopColor="#d4924a" />
+              <stop offset="70%"  stopColor="#c4813a" />
+              <stop offset="100%" stopColor="#b5692a" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="hero-thread-2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0" />
+              <stop offset="50%"  stopColor="#bc3d3e" />
+              <stop offset="100%" stopColor="#bc3d3e" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* Primary amber thread */}
+          <path
+            d="M80,160 C180,120 280,200 380,145 C480,90 560,180 680,145"
+            stroke="url(#hero-thread-1)"
+            strokeWidth="1"
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray="500"
+            style={{ animation: 'os-thread-draw 2s ease 0.4s both' }}
+          />
+          {/* Secondary red thread */}
+          <path
+            d="M80,175 C190,145 290,210 390,160 C490,110 570,190 680,160"
+            stroke="url(#hero-thread-2)"
+            strokeWidth="0.6"
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray="500"
+            opacity="0.5"
+            style={{ animation: 'os-thread-draw 2s ease 0.8s both' }}
+          />
+          {/* Gold bottom border rule */}
+          <line x1="0" y1="319" x2="800" y2="319" stroke="rgba(212,160,96,0.3)" strokeWidth="1" />
+        </svg>
+
+        {/* Hero text content */}
+        <div
+          className="relative flex flex-col items-center justify-center text-center px-6"
+          style={{ minHeight: 'clamp(280px, 30vw, 380px)' }}
+        >
+          {/* Brand name eyebrow */}
+          <p
+            className="font-body uppercase"
+            style={{
+              fontSize: '0.6rem', letterSpacing: '0.42em',
+              color: 'rgba(212,160,96,0.75)', marginBottom: '14px', marginTop: 0,
+              animation: 'os-slide-up 0.6s ease 0.2s both',
+            }}
+          >
+            Wing &amp; Weft
+          </p>
+
+          {/* Page h1 */}
+          <h1
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
+              fontWeight: 600,
+              color: '#f5ead8',
+              lineHeight: 1.1,
+              marginBottom: '20px',
+              marginTop: 0,
+              letterSpacing: '-0.01em',
+              animation: 'os-slide-up 0.7s ease 0.35s both',
+            }}
+          >
+            Our Story
+          </h1>
+
+          {/* Gold diamond rule */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            animation: 'os-slide-up 0.6s ease 0.55s both',
+          }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              justifyContent: 'center', marginTop: '16px',
-              animation: 'os-slide-up 0.6s ease 0.45s both',
-            }}>
-              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.7))', transformOrigin: 'left', animation: 'os-line-grow 0.5s ease 0.7s both' }} />
-              <div style={{ width: '6px', height: '6px', background: '#b6893c', transform: 'rotate(45deg)', animation: 'os-diamond-spin 3s ease-in-out 1s infinite' }} />
-              <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.7))', transformOrigin: 'right', animation: 'os-line-grow 0.5s ease 0.7s both' }} />
-            </div>
+              height: '1px', width: '48px',
+              background: 'linear-gradient(to right, transparent, rgba(212,160,96,0.75))',
+              transformOrigin: 'right',
+              animation: 'os-line-grow 0.5s ease 0.85s both',
+            }} />
+            <div style={{
+              width: '6px', height: '6px',
+              background: '#d4a060',
+              transform: 'rotate(45deg)',
+              animation: 'os-diamond-spin 3s ease-in-out 1.2s infinite',
+            }} />
+            <div style={{
+              height: '1px', width: '48px',
+              background: 'linear-gradient(to left, transparent, rgba(212,160,96,0.75))',
+              transformOrigin: 'left',
+              animation: 'os-line-grow 0.5s ease 0.85s both',
+            }} />
+          </div>
+
+          {/* Tagline */}
+          <p
+            className="font-body uppercase"
+            style={{
+              fontSize: '0.6rem', letterSpacing: '0.22em',
+              color: 'rgba(245,234,216,0.42)', marginTop: '18px', marginBottom: 0,
+              animation: 'os-slide-up 0.6s ease 0.7s both',
+            }}
+          >
+            Woven from tradition
+          </p>
+
+          {/* Scroll indicator */}
+          <div style={{ marginTop: '32px', animation: 'os-slide-up 0.6s ease 1s both' }}>
+            <svg
+              viewBox="0 0 16 26"
+              width="14"
+              aria-hidden="true"
+              style={{ opacity: 0.45, display: 'block', margin: '0 auto' }}
+            >
+              <rect x="5" y="0" width="6" height="16" rx="3" fill="none" stroke="#d4a060" strokeWidth="1.2" />
+              <circle
+                cx="8" cy="6" r="2" fill="#d4a060"
+                style={{ animation: 'os-scroll-dot 1.6s ease-in-out infinite' }}
+              />
+            </svg>
           </div>
         </div>
       </div>
@@ -454,41 +634,58 @@ const OurStoryPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
 
         {/* Story section */}
-        <div ref={heroRef} className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center mb-24">
+        <div
+          ref={heroRef}
+          className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center mb-24"
+        >
           <LogoDisplay isDark={isDark} visible={heroVisible} />
-          <StoryText isDark={isDark} visible={heroVisible} />
+          <StoryText   isDark={isDark} visible={heroVisible} />
         </div>
 
         {/* Values section */}
         <div ref={valuesRef}>
           {/* Section header */}
-          <div className="text-center mb-12" style={{
-            opacity: valuesVisible ? 1 : 0,
-            transform: valuesVisible ? 'translateY(0)' : 'translateY(28px)',
-            transition: 'opacity 0.7s ease, transform 0.7s ease',
-          }}>
-            <p className="text-brand-gold text-xs uppercase tracking-widest mb-3 font-body"
-              style={{ letterSpacing: '0.35em' }}>
-              What We Stand For
+          <div
+            className="text-center mb-12"
+            style={{
+              opacity:   valuesVisible ? 1 : 0,
+              transform: valuesVisible ? 'translateY(0)' : 'translateY(28px)',
+              transition: 'opacity 0.7s ease, transform 0.7s ease',
+            }}
+          >
+            <p
+              className="text-brand-gold text-xs uppercase tracking-widest mb-3 font-body"
+              style={{ letterSpacing: '0.35em' }}
+            >
+              Our Promise
             </p>
-            <h2 className={textPrimary}
-              style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2rem, 3vw, 2.5rem)', fontWeight: 600 }}>
+            <h2
+              className={textPrimary}
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: 'clamp(2rem, 3vw, 2.5rem)',
+                fontWeight: 600,
+              }}
+            >
               Our Values
             </h2>
-            {/* Animated thread divider */}
-            <div style={{ marginTop: '16px', opacity: valuesVisible ? 1 : 0, transition: 'opacity 0.8s ease 0.3s' }}>
+            <div style={{
+              marginTop: '16px',
+              opacity: valuesVisible ? 1 : 0,
+              transition: 'opacity 0.8s ease 0.3s',
+            }}>
               <ThreadDivider isDark={isDark} />
             </div>
           </div>
 
-          {/* Value cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Value cards — sm:grid-cols-2 xl:grid-cols-4 gives cards more breathing room */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {VALUES.map((value, i) => (
               <div
                 key={value.title}
                 className={`os-value-card rounded-2xl border p-6 text-center ${card}`}
                 style={{
-                  opacity: valuesVisible ? 1 : 0,
+                  opacity:   valuesVisible ? 1 : 0,
                   transform: valuesVisible ? 'translateY(0) scale(1)' : 'translateY(32px) scale(0.95)',
                   transition: `opacity 0.6s ease ${i * 0.12}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 0.12}s`,
                   boxShadow: isDark
@@ -505,8 +702,13 @@ const OurStoryPage: React.FC = () => {
                 >
                   {value.icon}
                 </div>
-                <h3 className={`mb-2 ${textPrimary}`}
-                  style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 600 }}>
+                <h3
+                  className={`mb-2 ${textPrimary}`}
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: '1.3rem', fontWeight: 600,
+                  }}
+                >
                   {value.title}
                 </h3>
                 <p className={`text-sm font-body leading-relaxed ${textMuted}`}>
