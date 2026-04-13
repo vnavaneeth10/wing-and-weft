@@ -7,6 +7,7 @@ import Footer from './components/Footer/Footer';
 import { FloatingActions } from './components/WhatsApp/WhatsAppSection';
 import LoadingScreen from './components/UI/LoadingScreen';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import './styles/a11y.css'; // ← global focus rings, reduced-motion, shimmer, sr-only
 
 const HomePage          = lazy(() => import('./pages/HomePage'));
