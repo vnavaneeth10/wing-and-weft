@@ -6,6 +6,7 @@ import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import { FloatingActions } from './components/WhatsApp/WhatsAppSection';
 import LoadingScreen from './components/UI/LoadingScreen';
+import { Analytics } from "@vercel/analytics/next"
 import './styles/a11y.css'; // ← global focus rings, reduced-motion, shimmer, sr-only
 
 const HomePage          = lazy(() => import('./pages/HomePage'));
@@ -87,6 +88,7 @@ const AppContent: React.FC = () => (
       <Route path="/admin/*" element={<Suspense fallback={<AdminFallback />}><AdminApp /></Suspense>} />
       <Route path="/*"       element={<PublicLayout />} />
     </Routes>
+    <Analytics />
   </BrowserRouter>
 );
 
