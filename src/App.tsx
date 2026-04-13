@@ -8,17 +8,21 @@ import { FloatingActions } from './components/WhatsApp/WhatsAppSection';
 import LoadingScreen from './components/UI/LoadingScreen';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react'
-import './styles/a11y.css'; // ← global focus rings, reduced-motion, shimmer, sr-only
+import './styles/a11y.css';
+ // ← global focus rings, reduced-motion, shimmer, sr-only
+
 
 const HomePage          = lazy(() => import('./pages/HomePage'));
 const CategoryPage      = lazy(() => import('./pages/CategoryPage'));
-const CategoriesPage    = lazy(() => import('./pages/CategoriesPage')); // ← ADDED
+const CategoriesPage    = lazy(() => import('./pages/CategoriesPage')); 
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const OurStoryPage      = lazy(() => import('./pages/OurStoryPage'));
 const ContactPage       = lazy(() => import('./pages/ContactPage'));
 const SearchPage        = lazy(() => import('./pages/SearchPage'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage'));
 const AdminApp          = lazy(() => import('./admin/AdminApp'));
+
+
 
 const PageSkeleton = () => (
   <div className="min-h-screen pt-20 max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -40,6 +44,7 @@ const PageSkeleton = () => (
   </div>
 );
 
+
 const AdminFallback = () => (
   <div style={{ background: '#080a12', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <div style={{ width: '40px', height: '40px', border: '3px solid rgba(188,61,62,0.2)', borderTopColor: '#bc3d3e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -59,10 +64,12 @@ const PublicLayout: React.FC = () => (
 
     <Navbar />
 
+
     {/*
       id="main-content" is the target of the skip link above.
       role="main" is redundant with <main> but kept for older screen readers.
     */}
+
     <main id="main-content" className="flex-1">
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
@@ -83,6 +90,7 @@ const PublicLayout: React.FC = () => (
   </div>
 );
 
+
 const AppContent: React.FC = () => (
   <BrowserRouter>
     <Routes>
@@ -93,6 +101,7 @@ const AppContent: React.FC = () => (
   </BrowserRouter>
 );
 
+
 const App: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   return (
@@ -102,5 +111,7 @@ const App: React.FC = () => {
     </ThemeProvider>
   );
 };
+
+
 
 export default App;
