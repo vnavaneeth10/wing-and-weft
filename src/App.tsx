@@ -1,20 +1,21 @@
-// src/App.tsx
-import React, { Suspense, lazy, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import { FloatingActions } from './components/WhatsApp/WhatsAppSection';
 import LoadingScreen from './components/UI/LoadingScreen';
 import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react'
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import ReactGA from 'react-ga4';
 import './styles/a11y.css';
- // ← global focus rings, reduced-motion, shimmer, sr-only
 
+// ── Initialize GA4 once ───────────────────────────────────────────────────────
+ReactGA.initialize(import.meta.env.VITE_GA_MEASUREMENT_ID);
 
 const HomePage          = lazy(() => import('./pages/HomePage'));
 const CategoryPage      = lazy(() => import('./pages/CategoryPage'));
-const CategoriesPage    = lazy(() => import('./pages/CategoriesPage')); 
+const CategoriesPage    = lazy(() => import('./pages/CategoriesPage'));
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const OurStoryPage      = lazy(() => import('./pages/OurStoryPage'));
 const ContactPage       = lazy(() => import('./pages/ContactPage'));
@@ -22,7 +23,14 @@ const SearchPage        = lazy(() => import('./pages/SearchPage'));
 const NotFoundPage      = lazy(() => import('./pages/NotFoundPage'));
 const AdminApp          = lazy(() => import('./admin/AdminApp'));
 
-
+// ── Tracks every route change as a GA4 pageview ──────────────────────────────
+const RouteTracker: React.FC = () => {
+  const location = useLocation();
+  useEffect(() => {
+    ReactGA.send({ hitType: 'pageview', page: location.pathname });
+  }, [location]);
+  return null;
+};
 
 const PageSkeleton = () => (
   <div className="min-h-screen pt-20 max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -44,7 +52,6 @@ const PageSkeleton = () => (
   </div>
 );
 
-
 const AdminFallback = () => (
   <div style={{ background: '#080a12', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <div style={{ width: '40px', height: '40px', border: '3px solid rgba(188,61,62,0.2)', borderTopColor: '#bc3d3e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -53,28 +60,15 @@ const AdminFallback = () => (
 
 const PublicLayout: React.FC = () => (
   <div className="flex flex-col min-h-screen">
-    {/*
-      Skip-to-main link — invisible until focused via keyboard Tab.
-      Lets screen reader and keyboard users jump past the navbar directly
-      to the page content. Styled in globals_a11y.css (.skip-to-main).
-    */}
     <a href="#main-content" className="skip-to-main">
       Skip to main content
     </a>
-
     <Navbar />
-
-
-    {/*
-      id="main-content" is the target of the skip link above.
-      role="main" is redundant with <main> but kept for older screen readers.
-    */}
-
     <main id="main-content" className="flex-1">
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/"                     element={<HomePage />} />
-          <Route path="/categories"           element={<CategoriesPage />} /> {/* ← ADDED */}
+          <Route path="/categories"           element={<CategoriesPage />} />
           <Route path="/category/:categoryId" element={<CategoryPage />} />
           <Route path="/product/:productId"   element={<ProductDetailPage />} />
           <Route path="/our-story"            element={<OurStoryPage />} />
@@ -84,25 +78,22 @@ const PublicLayout: React.FC = () => (
         </Routes>
       </Suspense>
     </main>
-
     <Footer />
     <FloatingActions />
   </div>
 );
 
-
-
 const AppContent: React.FC = () => (
   <BrowserRouter>
+    <RouteTracker />   {/* ← tracks every page navigation */}
     <Routes>
       <Route path="/admin/*" element={<Suspense fallback={<AdminFallback />}><AdminApp /></Suspense>} />
       <Route path="/*"       element={<PublicLayout />} />
     </Routes>
     <Analytics />
+    <SpeedInsights />  {/* ← moved here from before */}
   </BrowserRouter>
 );
-
-
 
 const App: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
@@ -113,7 +104,5 @@ const App: React.FC = () => {
     </ThemeProvider>
   );
 };
-
-
 
 export default App;
