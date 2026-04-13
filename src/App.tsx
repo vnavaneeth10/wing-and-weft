@@ -91,6 +91,7 @@ const PublicLayout: React.FC = () => (
 );
 
 
+
 const AppContent: React.FC = () => (
   <BrowserRouter>
     <Routes>
@@ -100,6 +101,7 @@ const AppContent: React.FC = () => (
     <Analytics />
   </BrowserRouter>
 );
+
 
 
 const App: React.FC = () => {
