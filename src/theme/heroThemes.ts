@@ -15,7 +15,7 @@
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const ACTIVE_HERO_THEME = 'roseSilk'; // ← change this ONE line to swap ALL pages
+export const ACTIVE_HERO_THEME = 'silkDusk'; // ← change this ONE line to swap ALL pages
 
 // ─── Theme shape ──────────────────────────────────────────────────────────────
 
