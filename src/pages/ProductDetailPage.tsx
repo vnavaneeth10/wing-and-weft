@@ -10,7 +10,71 @@ import { useProduct } from '../hooks/useProducts';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 import { WHATSAPP_NUMBER } from '../data/products';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { theme } from '../theme/heroThemes';
+import { useSettings } from '../context/SettingsContext';
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const STYLES = `
+  @keyframes pdp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pdp-slide-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pdp-thread-draw {
+    from { stroke-dashoffset: 500; opacity: 0; }
+    to   { stroke-dashoffset: 0;   opacity: 1; }
+  }
+  @keyframes pdp-shimmer {
+    from { background-position: -200% center; }
+    to   { background-position:  200% center; }
+  }
+  @keyframes pdp-glow-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1);    }
+    50%       { opacity: 0.7; transform: scale(1.06); }
+  }
+  @keyframes pdp-badge-in {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .pdp-wa-btn {
+    position: relative; overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease;
+  }
+  .pdp-wa-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transition: left 0.5s ease;
+  }
+  @media (hover: hover) {
+    .pdp-wa-btn:hover:not(.disabled) { transform: translateY(-3px); }
+    .pdp-wa-btn:hover:not(.disabled)::before { left: 130%; }
+  }
+
+  .pdp-accordion-btn {
+    transition: color 0.25s ease;
+  }
+
+  .pdp-thumb {
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .pdp-thumb:hover { transform: scale(1.05); }
+
+  .pdp-share-icon {
+    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
+  }
+  .pdp-share-icon:hover { transform: scale(1.12) rotate(4deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+`;
+
+// ─── Data fetching ─────────────────────────────────────────────────────────────
 const fetchSettings = async (): Promise<Record<string, string>> => {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/settings?select=key,value`, {
@@ -24,18 +88,52 @@ const fetchSettings = async (): Promise<Record<string, string>> => {
   } catch { return {}; }
 };
 
+// ─── Thread divider ───────────────────────────────────────────────────────────
+const ThreadDivider: React.FC = () => (
+  <svg
+    viewBox="0 0 400 40" fill="none"
+    style={{ width: '100%', maxWidth: '360px', height: '28px', overflow: 'visible' }}
+    aria-hidden="true"
+  >
+    <path
+      d="M0,20 C50,5 80,35 130,18 C180,1 210,34 260,16 C310,-1 345,30 400,18"
+      stroke={`url(#pdp-tg)`} strokeWidth="1.4" strokeLinecap="round" strokeDasharray="400"
+      style={{ animation: 'pdp-thread-draw 1.5s ease 0.2s both' }}
+    />
+    <defs>
+      <linearGradient id="pdp-tg" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stopColor={theme.threadColor1} stopOpacity="0" />
+        <stop offset="30%"  stopColor={theme.threadColor1} />
+        <stop offset="70%"  stopColor={theme.threadColor2} />
+        <stop offset="100%" stopColor={theme.threadColor2} stopOpacity="0" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 const ProductDetailPage: React.FC = () => {
   const { productId }   = useParams<{ productId: string }>();
   const { isDark }      = useTheme();
   const { product, loading } = useProduct(productId || '');
+  const styleRef = useRef(false);
 
-  const [selectedImage, setSelectedImage]   = useState(0);
-  const [selectedColor, setSelectedColor]   = useState(0);
-  const [openAccordion, setOpenAccordion]   = useState<string | null>('description');
-  const [settings, setSettings]             = useState<Record<string, string>>({});
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedColor, setSelectedColor] = useState(0);
+  const [openAccordion, setOpenAccordion] = useState<string | null>('description');
+  const [settings, setSettings]           = useState<Record<string, string>>({});
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { whatsapp_number } = useSettings();
 
-  useEffect(() => { fetchSettings().then(setSettings); }, []);
+  useEffect(() => {
+    if (!styleRef.current) {
+      const tag = document.createElement('style');
+      tag.textContent = STYLES;
+      document.head.appendChild(tag);
+      styleRef.current = true;
+    }
+    fetchSettings().then(setSettings);
+  }, []);
 
   const startAutoSlide = useCallback(() => {
     if (!product || product.images.length <= 1) return;
@@ -53,10 +151,7 @@ const ProductDetailPage: React.FC = () => {
     return stopAutoSlide;
   }, [product, startAutoSlide, stopAutoSlide]);
 
-  const handleThumbClick = (i: number) => {
-    stopAutoSlide();
-    setSelectedImage(i);
-  };
+  const handleThumbClick = (i: number) => { stopAutoSlide(); setSelectedImage(i); };
 
   usePageMeta({
     title: product
@@ -71,13 +166,14 @@ const ProductDetailPage: React.FC = () => {
   const seoDescription = product
     ? `${product.name} — ${product.fabric} saree. ₹${product.discount_price || product.price}. Handwoven by artisans. Free shipping above ₹2000.`
     : 'Browse handwoven sarees at Wing & Weft.';
-  const seoImage       = product?.images?.[0];
+  const seoImage = product?.images?.[0];
 
   const bg          = isDark ? 'bg-dark-bg'    : 'bg-brand-cream';
   const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
+  // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className={`min-h-screen ${bg} pt-20`}>
@@ -90,7 +186,7 @@ const ProductDetailPage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-4">
-              {[1/3, 3/4, 1/4, 1/2].map((w,i) => (
+              {[1/3, 3/4, 1/4, 1/2].map((w, i) => (
                 <div key={i} className="shimmer h-6 rounded" style={{ width: `${w*100}%` }} />
               ))}
             </div>
@@ -100,6 +196,7 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
+  // ── Not found ───────────────────────────────────────────────────────────────
   if (!product) {
     return (
       <div className={`min-h-screen ${bg} pt-24 flex items-center justify-center`}>
@@ -108,7 +205,15 @@ const ProductDetailPage: React.FC = () => {
           <h2 className={textPrimary} style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}>
             Product Not Found
           </h2>
-          <Link to="/" className="text-brand-red hover:underline text-sm font-body mt-2 block">Back to Home</Link>
+          <Link
+            to="/"
+            className="text-sm font-body mt-2 block transition-colors"
+            style={{ color: theme.productLinkHover }}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.opacity = '0.75'}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.opacity = '1'}
+          >
+            Back to Home
+          </Link>
         </div>
       </div>
     );
@@ -118,16 +223,13 @@ const ProductDetailPage: React.FC = () => {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-  const whatsappText = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g,' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
-  const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappText)}`;
+const whatsappText = `Hi! I'm interested in:\n*${product.name}*...`;
+const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
 
   // ── Derived guards ──────────────────────────────────────────────────────────
-
-  // Colours — only render when colours are set AND admin has enabled show_colors
   const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
   const hasColors    = (product as any).show_colors !== false && activeColors.length > 0;
 
-  // Star rating — per-product toggle AND must have a rating value AND review count
   const globalRatingsOn = settings['show_ratings'] !== 'false';
   const showRating = (
     globalRatingsOn &&
@@ -136,12 +238,14 @@ const ProductDetailPage: React.FC = () => {
     product.review_count > 0
   );
 
-  // Free-form specifications — rows where both key and value are filled
   interface SpecRow { key: string; value: string; }
   const specRows: SpecRow[] = ((product as any).specifications || []).filter(
     (s: SpecRow) => s.key?.trim() && s.value?.trim()
   );
   const hasSpecs = specRows.length > 0;
+
+  // Spec row divider — theme-controlled
+  const specDividerColor = isDark ? theme.specRowDivider.dark : theme.specRowDivider.light;
 
   const accordions = [
     {
@@ -153,7 +257,6 @@ const ProductDetailPage: React.FC = () => {
         </p>
       ),
     },
-    // Specifications accordion — only present when admin has added spec rows
     ...(hasSpecs ? [{
       id: 'specifications',
       title: 'Saree Specifications',
@@ -161,7 +264,7 @@ const ProductDetailPage: React.FC = () => {
         <div className="space-y-0">
           {specRows.map(({ key, value }) => (
             <div key={key} className="flex justify-between py-2.5 border-b last:border-0"
-              style={{ borderColor: isDark ? '#3a2e24' : '#EDE5D4' }}>
+              style={{ borderColor: specDividerColor }}>
               <span className={`text-sm font-semibold font-body ${textPrimary}`}>{key}</span>
               <span className={`text-sm font-body text-right ml-4 ${textMuted}`}>{value}</span>
             </div>
@@ -185,7 +288,8 @@ const ProductDetailPage: React.FC = () => {
               ]
           ).filter(Boolean).map((item, i) => (
             <li key={i} className="flex gap-2 text-sm font-body">
-              <span className="text-brand-gold mt-0.5">•</span>
+              {/* Bullet — theme-coloured */}
+              <span style={{ color: theme.accentSecondary }} className="mt-0.5">•</span>
               <span className={textMuted}>{item}</span>
             </li>
           ))}
@@ -196,7 +300,6 @@ const ProductDetailPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
-
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -205,17 +308,29 @@ const ProductDetailPage: React.FC = () => {
         type="product"
       />
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — theme-coloured hover and active */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <nav className="flex items-center gap-2 text-xs font-body" aria-label="Breadcrumb">
-          <Link to="/" className={`${textMuted} hover:text-brand-red transition-colors`}>Home</Link>
+          <Link
+            to="/"
+            className={`transition-colors ${textMuted}`}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
+          >
+            Home
+          </Link>
           <ChevronRight size={12} className={textMuted} aria-hidden="true" />
-          <Link to={`/category/${product.category}`}
-            className={`${textMuted} hover:text-brand-red transition-colors capitalize`}>
+          <Link
+            to={`/category/${product.category}`}
+            className={`transition-colors capitalize ${textMuted}`}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
+          >
             {product.category.replace(/-/g,' ')}
           </Link>
           <ChevronRight size={12} className={textMuted} aria-hidden="true" />
-          <span className="text-brand-red truncate max-w-[180px]">{product.name}</span>
+          {/* Active crumb — theme-coloured */}
+          <span style={{ color: theme.accentPrimary }} className="truncate max-w-[180px]">{product.name}</span>
         </nav>
       </div>
 
@@ -223,28 +338,28 @@ const ProductDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
 
           {/* ── Left: Images ── */}
-          <div>
-            <div className={`rounded-2xl overflow-hidden mb-3 ${card} border relative`}
-              style={{ height: '500px' }}>
+          <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
+            <div className={`rounded-2xl overflow-hidden mb-3 ${card} border relative`} style={{ height: '500px' }}>
               <img
                 key={selectedImage}
                 src={product.images[selectedImage]}
                 alt={`${product.name} — image ${selectedImage + 1}`}
-                className="w-full h-full object-cover transition-opacity duration-500"
-                style={{ opacity: 1, animation: 'fadeIn 0.4s ease' }}
+                className="w-full h-full object-cover"
+                style={{ animation: 'pdp-fade-in 0.4s ease' }}
                 loading="eager"
               />
+
+              {/* Carousel dots — theme-coloured active dot */}
               {product.images.length > 1 && (
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
                   {product.images.map((_, i) => (
-                    <button key={i} onClick={() => handleThumbClick(i)}
+                    <button
+                      key={i} onClick={() => handleThumbClick(i)}
                       className="transition-all duration-300 rounded-full"
                       style={{
-                        width: i === selectedImage ? '20px' : '6px',
+                        width:  i === selectedImage ? '20px' : '6px',
                         height: '6px',
-                        background: i === selectedImage
-                          ? 'linear-gradient(90deg, #bc3d3e, #b6893c)'
-                          : 'rgba(255,255,255,0.5)',
+                        background: i === selectedImage ? theme.productDotActive : 'rgba(255,255,255,0.5)',
                       }}
                       aria-label={`View image ${i + 1}`}
                       aria-pressed={i === selectedImage}
@@ -252,6 +367,7 @@ const ProductDetailPage: React.FC = () => {
                   ))}
                 </div>
               )}
+
               {product.stock === 0 && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
                   <span className="text-white font-semibold font-body text-lg">Out of Stock</span>
@@ -259,15 +375,22 @@ const ProductDetailPage: React.FC = () => {
               )}
             </div>
 
+            {/* Thumbnails — theme-coloured active border */}
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img, i) => (
-                <button key={i} onClick={() => handleThumbClick(i)}
-                  className={`rounded-xl overflow-hidden border-2 transition-all ${
-                    i === selectedImage ? 'border-brand-red' : isDark ? 'border-dark-border' : 'border-transparent'
-                  }`}
-                  style={{ height: '90px' }}
+                <button
+                  key={i} onClick={() => handleThumbClick(i)}
+                  className={`pdp-thumb rounded-xl overflow-hidden border-2`}
+                  style={{
+                    height: '90px',
+                    borderColor: i === selectedImage
+                      ? theme.accentPrimary
+                      : isDark ? 'transparent' : 'transparent',
+                    borderWidth: '2px',
+                  }}
                   aria-label={`View image ${i + 1}`}
-                  aria-pressed={i === selectedImage}>
+                  aria-pressed={i === selectedImage}
+                >
                   <img src={img} alt={`${product.name} thumbnail ${i + 1}`}
                     className="w-full h-full object-cover" loading="lazy" />
                 </button>
@@ -282,21 +405,34 @@ const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* ── Right: Details ── */}
-          <div>
-            <p className="text-brand-gold text-xs uppercase font-label mb-2" style={{ letterSpacing: '0.22em' }}>
+          <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.22s both' }}>
+
+            {/* Fabric / category badge — theme-coloured */}
+            <p
+              className="text-xs uppercase font-label mb-2"
+              style={{ letterSpacing: '0.22em', color: theme.accentSecondary }}
+            >
               {product.fabric} · {product.category.replace(/-/g,' ')}
             </p>
 
-            <h1 className={`mb-3 leading-tight ${textPrimary}`}
-              style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(1.8rem,3vw,2.6rem)', fontWeight: 400, lineHeight: 1.1 }}>
+            <h1 className={`mb-3 leading-tight ${textPrimary}`} style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: 'clamp(1.8rem,3vw,2.6rem)',
+              fontWeight: 400, lineHeight: 1.1,
+            }}>
               {product.name}
             </h1>
+
+            {/* Thread divider under title */}
+            <div style={{ marginBottom: '16px' }}>
+              <ThreadDivider />
+            </div>
 
             <p className={`text-xs mb-4 font-body ${textMuted}`}>
               Product ID: <span className="font-mono tracking-wider">{product.id}</span>
             </p>
 
-            {/* ── Star rating — shown only when admin enabled it for this product ── */}
+            {/* Star rating */}
             {showRating && (
               <div className="flex items-center gap-3 mb-4">
                 <StarRating rating={product.rating} size={16} />
@@ -306,67 +442,96 @@ const ProductDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* Price */}
+            {/* Price + discount badge */}
             <div className="flex items-center gap-4 mb-4">
               {product.discount_price ? (
                 <>
-                  <span className="font-bold text-brand-gold"
-                    style={{ fontSize: '1.8rem', fontFamily: '"DM Sans", system-ui, sans-serif' }}>
+                  <span className="font-bold" style={{
+                    fontSize: '1.8rem',
+                    fontFamily: '"DM Sans", system-ui, sans-serif',
+                    color: theme.accentSecondary,
+                  }}>
                     ₹{product.discount_price.toLocaleString()}
                   </span>
                   <div>
                     <span className={`text-base line-through font-body ${textMuted}`}>
                       ₹{product.price.toLocaleString()}
                     </span>
-                    <span className="ml-2 text-sm font-semibold font-body text-brand-gold-light">
+                    {/* Discount badge — theme-coloured pill */}
+                    <span
+                      className="ml-2 text-xs font-bold font-body px-2.5 py-1 rounded-full"
+                      style={{
+                        background: theme.productBadgeBg,
+                        color: theme.productBadgeText,
+                        animation: 'pdp-badge-in 0.5s cubic-bezier(0.22,1,0.36,1) 0.5s both',
+                        display: 'inline-block',
+                      }}
+                    >
                       {discount}% off
                     </span>
                   </div>
                 </>
               ) : (
-                <span className="font-bold text-brand-gold"
-                  style={{ fontSize: '1.8rem', fontFamily: '"DM Sans", system-ui, sans-serif' }}>
+                <span className="font-bold" style={{
+                  fontSize: '1.8rem',
+                  fontFamily: '"DM Sans", system-ui, sans-serif',
+                  color: theme.accentSecondary,
+                }}>
                   ₹{product.price.toLocaleString()}
                 </span>
               )}
             </div>
 
-            {/* Stock */}
-            <p className={`text-sm font-semibold mb-4 font-body ${
-              product.stock === 0 ? 'text-brand-red'
-              : product.stock <= 5 ? 'text-brand-orange'
-              : 'text-green-600'
-            }`}>
+            {/* Stock status */}
+            <p className={`text-sm font-semibold mb-4 font-body`} style={{
+              color: product.stock === 0
+                ? theme.accentPrimary
+                : product.stock <= 5
+                  ? '#d97706'   // amber — universal warning colour
+                  : '#16a34a',  // green — universal in-stock colour
+            }}>
               {product.stock === 0 ? '✗ Out of Stock'
                : product.stock <= 5 ? `⚠ Only ${product.stock} left in stock!`
                : '✓ In Stock'}
             </p>
 
-            {/* ── Colours — only shown when admin has enabled show_colors ── */}
+            {/* Colour swatches */}
             {hasColors && (
               <div className="mb-6">
                 <p className={`text-sm font-semibold mb-2 font-body ${textPrimary}`}>Colour</p>
                 <div className="flex gap-2">
                   {activeColors.map((color, i) => (
-                    <button key={color} onClick={() => setSelectedColor(i)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                        i === selectedColor ? 'border-brand-red scale-110' : 'border-transparent'
-                      }`}
-                      style={{ background: color }}
+                    <button
+                      key={color} onClick={() => setSelectedColor(i)}
+                      className="w-8 h-8 rounded-full transition-all hover:scale-110"
+                      style={{
+                        background: color,
+                        border: `2px solid ${i === selectedColor ? theme.accentPrimary : 'transparent'}`,
+                        transform: i === selectedColor ? 'scale(1.10)' : 'scale(1)',
+                      }}
                       aria-label={`Select colour ${i + 1}`}
-                      aria-pressed={i === selectedColor} />
+                      aria-pressed={i === selectedColor}
+                    />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* CTA */}
+            {/* CTA — WhatsApp (brand green, not theme) */}
             <div className="mb-8">
-              <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
-                className={`w-full flex items-center justify-center gap-3 py-4 rounded-full font-bold font-body text-sm uppercase transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
-                  product.stock === 0 ? 'opacity-50 pointer-events-none' : ''
-                }`}
-                style={{ background: '#25D366', color: '#fff', boxShadow: '0 4px 20px rgba(37,211,102,0.4)', letterSpacing: '0.15em' }}>
+              <a
+                href={whatsappLink} target="_blank" rel="noopener noreferrer"
+                className={`pdp-wa-btn w-full flex items-center justify-center gap-3 py-4 rounded-full font-bold font-body text-sm uppercase ${product.stock === 0 ? 'disabled' : ''}`}
+                style={{
+                  background: '#25D366',
+                  color: '#fff',
+                  boxShadow: '0 4px 20px rgba(37,211,102,0.4)',
+                  letterSpacing: '0.15em',
+                  pointerEvents: product.stock === 0 ? 'none' : 'auto',
+                  opacity: product.stock === 0 ? 0.5 : 1,
+                  textDecoration: 'none',
+                }}
+              >
                 <MessageCircle size={18} />
                 {product.stock === 0 ? 'Out of Stock' : 'Order via WhatsApp'}
               </a>
@@ -377,17 +542,27 @@ const ProductDetailPage: React.FC = () => {
               {accordions.map(acc => (
                 <div key={acc.id} className={`rounded-xl border overflow-hidden ${card}`}>
                   <button
-                    className={`w-full flex items-center justify-between px-5 py-4 text-sm font-semibold font-body text-left transition-colors ${textPrimary} hover:text-brand-red`}
+                    className={`pdp-accordion-btn w-full flex items-center justify-between px-5 py-4 text-sm font-semibold font-body text-left ${textPrimary}`}
                     onClick={() => setOpenAccordion(openAccordion === acc.id ? null : acc.id)}
                     aria-expanded={openAccordion === acc.id}
-                    aria-controls={`accordion-${acc.id}`}>
+                    aria-controls={`accordion-${acc.id}`}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = theme.accordionHover}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = ''}
+                  >
                     {acc.title}
-                    <ChevronDown size={16}
+                    <ChevronDown
+                      size={16}
                       className={`transition-transform duration-200 flex-shrink-0 ${openAccordion === acc.id ? 'rotate-180' : ''}`}
-                      aria-hidden="true" />
+                      aria-hidden="true"
+                      style={{ color: openAccordion === acc.id ? theme.accentPrimary : '' }}
+                    />
                   </button>
                   {openAccordion === acc.id && (
-                    <div id={`accordion-${acc.id}`} className={`px-5 pb-4 border-t ${isDark ? 'border-dark-border' : 'border-brand-cream-dark'}`}>
+                    <div
+                      id={`accordion-${acc.id}`}
+                      className={`px-5 pb-4 border-t ${isDark ? 'border-dark-border' : 'border-brand-cream-dark'}`}
+                      style={{ animation: 'pdp-slide-up 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+                    >
                       <div className="pt-3">{acc.content}</div>
                     </div>
                   )}
@@ -395,23 +570,23 @@ const ProductDetailPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Share */}
+            {/* Share icons */}
             <div>
               <p className={`text-sm font-semibold mb-2 font-body ${textPrimary}`}>Share this product</p>
               <div className="flex gap-3">
                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                  className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
                   style={{ background: '#25D366' }} aria-label="Share on WhatsApp">
                   <MessageCircle size={16} color="white" />
                 </a>
                 <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                  className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
                   style={{ background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)' }}
                   aria-label="Share on Instagram">
                   <Instagram size={16} color="white" />
                 </a>
                 <a href="#"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                  className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
                   style={{ background: '#1877F2' }} aria-label="Share on Facebook">
                   <Facebook size={16} color="white" />
                 </a>
@@ -420,10 +595,6 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
     </div>
   );
 };

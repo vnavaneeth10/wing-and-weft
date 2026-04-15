@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Star, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { WHATSAPP_NUMBER } from '../../data/products';
+import { useSettings } from '../../context/SettingsContext';
 
 export interface Product {
   id:             string;
@@ -47,13 +48,16 @@ export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating
   </div>
 );
 
-const buildWhatsAppLink = (product: Product): string => {
-  const text = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g, ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-};
+
 
 const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const { isDark } = useTheme();
+  const { whatsapp_number } = useSettings(); 
+
+  const buildWhatsAppLink = () => {
+    const text = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g, ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
+    return `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(text)}`;
+  };
 
   const discount = product.discount_price
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
@@ -62,7 +66,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    window.open(buildWhatsAppLink(product), '_blank', 'noopener,noreferrer');
+    window.open(buildWhatsAppLink(), '_blank', 'noopener,noreferrer');
   };
 
   // ── Compact card ──────────────────────────────────────────────────────────
@@ -215,7 +219,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </p>
           </div>
 
-          <a href={buildWhatsAppLink(product)} target="_blank" rel="noopener noreferrer"
+          <a href={buildWhatsAppLink()} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105"
             style={{ background: '#25D366', color: '#fff' }}
             aria-label={`Buy ${product.name} on WhatsApp`}>

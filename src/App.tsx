@@ -7,6 +7,7 @@ import { FloatingActions } from './components/WhatsApp/WhatsAppSection';
 import LoadingScreen from './components/UI/LoadingScreen';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { SettingsProvider } from './context/SettingsContext';
 import ReactGA from 'react-ga4';
 import './styles/a11y.css';
 
@@ -99,8 +100,10 @@ const App: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   return (
     <ThemeProvider>
-      {!loaded && <LoadingScreen onComplete={() => setLoaded(true)} />}
-      {loaded && <AppContent />}
+      <SettingsProvider>           {/* ← add this */}
+        {!loaded && <LoadingScreen onComplete={() => setLoaded(true)} />}
+        {loaded && <AppContent />}
+      </SettingsProvider>           {/* ← add this */}
     </ThemeProvider>
   );
 };
