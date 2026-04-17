@@ -2,12 +2,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Search, Instagram, Sun, Moon, Menu, X, ChevronDown, ArrowRight,
+  Search, Instagram, Sun, Moon, Menu, X, ChevronDown, ArrowRight, PackageSearch,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSearchSuggestions } from '../../hooks';
 import { INSTAGRAM_URL } from '../../data/products';
 import { getCategories, CachedCategory } from '../../lib/categoriesCache';
+
+const TRACK_ORDER_URL = 'https://trackcourier.io/';
 
 const Navbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -92,10 +94,6 @@ const Navbar: React.FC = () => {
     ? 'bg-dark-bg/80 border-transparent'
     : 'bg-brand-cream/80 border-transparent';
 
-  const navLink = isDark
-    ? 'text-dark-text hover:text-brand-orange'
-    : 'text-stone-800 hover:text-brand-red';
-
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b transition-all duration-300 ${navBg}`}
@@ -144,7 +142,7 @@ const Navbar: React.FC = () => {
             {/* Categories dropdown */}
             <div ref={catRef} className="relative" onKeyDown={handleDropdownKeyDown}>
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors font-body ${
+                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body ${
                   isCatActive
                     ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
                     : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -215,6 +213,23 @@ const Navbar: React.FC = () => {
 
             <NavLink to="/our-story" label="About Us" isDark={isDark} />
             <NavLink to="/contact"   label="Contact"  isDark={isDark} />
+
+            {/* ── Track your Order — external link ── */}
+            <a
+              href={TRACK_ORDER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
+                isDark
+                  ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50'
+                  : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
+              }`}
+              aria-label="Track your courier order (opens in new tab)"
+              title="Track your courier order"
+            >
+              <PackageSearch size={14} aria-hidden="true" />
+              Track Order
+            </a>
           </div>
 
           {/* ── Right side ── */}
@@ -356,7 +371,7 @@ const Navbar: React.FC = () => {
           <MobileLink to="/" label="Home" isDark={isDark} />
           <div>
             <button
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold font-body ${
                 isCatActive
                   ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/5'
                   : isDark ? 'text-dark-text' : 'text-stone-800'
@@ -398,6 +413,22 @@ const Navbar: React.FC = () => {
           </div>
           <MobileLink to="/our-story" label="About Us" isDark={isDark} />
           <MobileLink to="/contact"   label="Contact"  isDark={isDark} />
+
+          {/* ── Track your Order — Mobile ── */}
+          <a
+            href={TRACK_ORDER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold font-body transition-colors ${
+              isDark
+                ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card'
+                : 'text-stone-800 hover:text-brand-red hover:bg-white/50'
+            }`}
+            aria-label="Track your courier order (opens in new tab)"
+          >
+            <PackageSearch size={15} aria-hidden="true" />
+            Track your Order
+          </a>
         </div>
       )}
     </nav>
@@ -412,7 +443,7 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
   return (
     <Link
       to={to}
-      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
+      className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
         isActive
           ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
           : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -428,7 +459,7 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
 const MobileLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => (
   <Link
     to={to}
-    className={`block px-3 py-2.5 rounded-lg text-sm font-medium font-body ${
+    className={`block px-3 py-2.5 rounded-lg text-sm font-semibold font-body ${
       isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-800 hover:text-brand-red hover:bg-white/50'
     }`}
   >

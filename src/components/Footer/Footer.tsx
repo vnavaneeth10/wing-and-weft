@@ -1,13 +1,15 @@
 // src/components/Footer/Footer.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, Mail, MessageCircle, ArrowRight, Heart } from 'lucide-react';
+import { Instagram, Facebook, Mail, MessageCircle, ArrowRight, Heart, PackageSearch } from 'lucide-react';
 import { INSTAGRAM_URL, WHATSAPP_NUMBER } from '../../data/products';
 import { useTheme } from '../../context/ThemeContext';
 import PolicyModal from '../Policy/PolicyModal';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 import { theme } from '../../theme/heroThemes';
 import { useSettings } from '../../context/SettingsContext';
+
+const TRACK_ORDER_URL = 'https://trackcourier.io/';
 
 interface FooterCategory { id: string; name: string; }
 interface FooterPolicy   { id: string; title: string; }
@@ -91,12 +93,12 @@ function useFadeIn() {
 
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
-  const [email, setEmail]           = useState('');
+  const [email, setEmail]             = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-  const [openPolicy, setOpenPolicy] = useState<string | null>(null);
-  const [categories, setCategories] = useState<FooterCategory[]>([]);
+  const [openPolicy, setOpenPolicy]   = useState<string | null>(null);
+  const [categories, setCategories]   = useState<FooterCategory[]>([]);
   const [footerPolicies, setFooterPolicies] = useState<FooterPolicy[]>([]);
-  const [settings, setSettings]     = useState<FooterSettings>({
+  const [settings, setSettings]       = useState<FooterSettings>({
     instagram_url:   INSTAGRAM_URL,
     facebook_url:    '#',
     contact_email:   'support@wingandweft.com',
@@ -106,7 +108,7 @@ const Footer: React.FC = () => {
   const banner = useFadeIn();
   const grid   = useFadeIn();
   const bottom = useFadeIn();
-  
+
   const siteSettings = useSettings();
 
   useEffect(() => {
@@ -131,14 +133,15 @@ const Footer: React.FC = () => {
   };
 
   const fadeStyle = (visible: boolean, delay = 0): React.CSSProperties => ({
-    opacity:   visible ? 1 : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(20px)',
+    opacity:    visible ? 1 : 0,
+    transform:  visible ? 'translateY(0)' : 'translateY(20px)',
     transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
   });
 
   const bg      = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
   const text    = isDark ? 'text-stone-400' : 'text-stone-500';
   const heading = isDark ? 'text-brand-cream' : 'text-brand-ink';
+
   // Link hover — theme-coloured
   const linkHoverStyle = (e: React.MouseEvent, enter: boolean) => {
     (e.currentTarget as HTMLElement).style.color = enter
@@ -282,6 +285,23 @@ const Footer: React.FC = () => {
                       </Link>
                     </li>
                   ))}
+
+                  {/* ── Track your Order ── */}
+                  <li>
+                    <a
+                      href={TRACK_ORDER_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 text-sm font-body transition-colors ${text}`}
+                      onMouseEnter={e => linkHoverStyle(e, true)}
+                      onMouseLeave={e => linkHoverStyle(e, false)}
+                      aria-label="Track your courier order (opens in new tab)"
+                      title="Track your courier order"
+                    >
+                      <PackageSearch size={13} aria-hidden="true" className="flex-shrink-0" />
+                      Track your Order
+                    </a>
+                  </li>
                 </ul>
               </div>
 
