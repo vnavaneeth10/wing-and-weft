@@ -1,587 +1,706 @@
-// src/pages/CategoryPage.tsx
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+// src/pages/ProductDetailPage.tsx
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { SlidersHorizontal, X, Search, LayoutGrid, Grid, Columns } from 'lucide-react';
+import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { usePageMeta } from '../hooks/usePageMeta';
 import SEO from '../components/SEO/SEO';
-import ProductCard from '../components/Products/ProductCard';
-import { useProductsByCategory } from '../hooks/useProducts';
+import { StarRating } from '../components/Products/ProductCard';
+import { useProduct } from '../hooks/useProducts';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { theme } from '../theme/heroThemes';
+import { useSettings } from '../context/SettingsContext';
 
-type SortOption = 'featured' | 'rating' | 'az' | 'za' | 'low-high' | 'high-low';
-type ViewMode   = '2col' | '3col' | '4col';
+// ✅ All social values come exclusively from SettingsContext
 
-interface CategoryMeta {
-  id:          string;
-  name:        string;
-  description: string;
-  image?:      string;
-}
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const STYLES = `
+  @keyframes pdp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pdp-slide-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pdp-thread-draw {
+    from { stroke-dashoffset: 500; opacity: 0; }
+    to   { stroke-dashoffset: 0;   opacity: 1; }
+  }
+  @keyframes pdp-shimmer {
+    from { background-position: -200% center; }
+    to   { background-position:  200% center; }
+  }
+  @keyframes pdp-glow-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1);    }
+    50%       { opacity: 0.7; transform: scale(1.06); }
+  }
+  @keyframes pdp-badge-in {
+    from { opacity: 0; transform: scale(0.85) translateY(4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
 
-const fetchCategoryMeta = async (id: string): Promise<CategoryMeta | null> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/categories?id=eq.${encodeURIComponent(id)}&select=id,name,description,image`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data[0] ?? null;
+  .pdp-wa-btn {
+    position: relative; overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease;
+  }
+  .pdp-wa-btn::before {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transition: left 0.5s ease;
+  }
+  @media (hover: hover) {
+    .pdp-wa-btn:hover:not(.disabled) { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(37,211,102,0.5) !important; }
+    .pdp-wa-btn:hover:not(.disabled)::before { left: 130%; }
+  }
+
+  .pdp-accordion-btn { transition: color 0.25s ease; }
+
+  .pdp-thumb {
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .pdp-thumb:hover { transform: scale(1.05); }
+
+  .pdp-share-icon {
+    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
+  }
+  .pdp-share-icon:hover { transform: scale(1.12) rotate(4deg); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+`;
+
+// ─── Data fetching ─────────────────────────────────────────────────────────────
+const fetchSettings = async (): Promise<Record<string, string>> => {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/settings?select=key,value`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) return {};
+    const rows: { key: string; value: string }[] = await res.json();
+    const map: Record<string, string> = {};
+    rows.forEach(r => { if (r.key) map[r.key] = r.value; });
+    return map;
+  } catch { return {}; }
 };
 
-// ─── Coming Soon empty state ──────────────────────────────────────────────────
-const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ categoryName, isDark }) => {
-  const [vis, setVis] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
-
-  return (
-    <div style={{
-      minHeight: '70vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '60px 24px',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        position: 'absolute', top: '10%', left: '5%',
-        width: '340px', height: '340px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(188,61,62,0.07) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        animation: 'cs-breathe 7s ease-in-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '10%', right: '5%',
-        width: '280px', height: '280px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(182,137,60,0.07) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        animation: 'cs-breathe 9s ease-in-out 2s infinite',
-      }} />
-
-      {[
-        { top: 24, left: 24 },
-        { top: 24, right: 24 },
-        { bottom: 24, left: 24 },
-        { bottom: 24, right: 24 },
-      ].map((pos, i) => (
-        <svg
-          key={i}
-          width="28" height="28" viewBox="0 0 28 28"
-          style={{
-            position: 'absolute', ...pos,
-            opacity: vis ? 0.4 : 0,
-            transition: `opacity 0.6s ease ${0.8 + i * 0.1}s`,
-            transform: i === 1 ? 'scaleX(-1)' : i === 2 ? 'scaleY(-1)' : i === 3 ? 'scale(-1)' : 'none',
-          }}
-          aria-hidden="true"
-        >
-          <line x1="2" y1="2" x2="16" y2="2" stroke="#b6893c" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="2" y1="2" x2="2"  y2="16" stroke="#b6893c" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-      ))}
-
-      <style>{`
-        @keyframes cs-breathe {
-          0%,100% { transform: scale(1);    opacity: 0.8; }
-          50%      { transform: scale(1.12); opacity: 1;   }
-        }
-        @keyframes cs-float {
-          0%,100% { transform: translateY(0px);   }
-          50%      { transform: translateY(-10px); }
-        }
-        @keyframes cs-spin-slow {
-          from { transform: rotate(0deg);   }
-          to   { transform: rotate(360deg); }
-        }
-        @keyframes cs-thread {
-          from { stroke-dashoffset: 300; opacity: 0; }
-          to   { stroke-dashoffset: 0;   opacity: 1; }
-        }
-        @keyframes cs-shimmer {
-          0%   { left: -80%; }
-          100% { left: 130%; }
-        }
-        .cs-btn {
-          position: relative; overflow: hidden;
-          display: inline-flex; align-items: center; gap: 10px;
-          padding: 14px 36px;
-          background: linear-gradient(115deg, #bc3d3e, #b6893c);
-          color: #faf6ef;
-          text-decoration: none;
-          font-family: '"Raleway",sans-serif';
-          font-size: 0.6rem; font-weight: 700;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          border-radius: 2px;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .cs-btn::after {
-          content: '';
-          position: absolute; top: 0; width: 50%; height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-          animation: cs-shimmer 2.8s ease-in-out 1.5s infinite;
-        }
-        .cs-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(188,61,62,0.35);
-        }
-        .cs-btn svg { transition: transform 0.3s ease; }
-        .cs-btn:hover svg { transform: translateX(4px); }
-      `}</style>
-
-      <div style={{
-        position: 'relative',
-        maxWidth: '520px',
-        width: '100%',
-        textAlign: 'center',
-        opacity: vis ? 1 : 0,
-        transform: vis ? 'translateY(0)' : 'translateY(28px)',
-        transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
-      }}>
-        <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 32px' }}>
-          <svg
-            width="100" height="100" viewBox="0 0 100 100"
-            style={{
-              position: 'absolute', inset: 0,
-              animation: 'cs-spin-slow 18s linear infinite',
-              opacity: vis ? 0.5 : 0,
-              transition: 'opacity 0.8s ease 0.4s',
-            }}
-            aria-hidden="true"
-          >
-            <circle cx="50" cy="50" r="46" fill="none" stroke="url(#cs-ring-grad)" strokeWidth="0.8" strokeDasharray="6 10" strokeLinecap="round" />
-            <defs>
-              <linearGradient id="cs-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%"   stopColor="#bc3d3e" />
-                <stop offset="100%" stopColor="#b6893c" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div style={{
-            position: 'absolute', inset: '14px', borderRadius: '50%',
-            background: isDark
-              ? 'linear-gradient(135deg, rgba(188,61,62,0.12), rgba(182,137,60,0.1))'
-              : 'linear-gradient(135deg, rgba(188,61,62,0.08), rgba(182,137,60,0.07))',
-            border: '1px solid rgba(182,137,60,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '26px',
-            animation: 'cs-float 5s ease-in-out infinite',
-            boxShadow: isDark
-              ? '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
-              : '0 8px 24px rgba(26,20,16,0.08)',
-          }}>🪡</div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '14px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.3s' }}>
-          <div style={{ width: '24px', height: '1px', background: 'linear-gradient(to right, transparent, #bc3d3e)' }} />
-          <p style={{ color: '#bc3d3e', fontSize: '0.55rem', letterSpacing: '0.4em', textTransform: 'uppercase', fontFamily: '"Raleway", sans-serif', fontWeight: 700, margin: 0 }}>{categoryName}</p>
-          <div style={{ width: '24px', height: '1px', background: 'linear-gradient(to left, transparent, #bc3d3e)' }} />
-        </div>
-
-        <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2.4rem, 5vw, 3.4rem)', fontWeight: 300, lineHeight: 1.1, color: isDark ? '#f0e8d6' : '#1a1410', marginBottom: '8px', letterSpacing: '-0.01em', opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s' }}>
-          Coming Soon
-        </h2>
-
-        <p style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(1rem, 2vw, 1.2rem)', fontStyle: 'italic', fontWeight: 400, color: '#b6893c', marginBottom: '20px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.5s' }}>
-          Something extraordinary is being woven
-        </p>
-
-        <svg viewBox="0 0 400 32" fill="none" style={{ width: '100%', maxWidth: '360px', height: '24px', display: 'block', margin: '0 auto 20px' }} aria-hidden="true">
-          <path d="M0,16 C50,4 80,28 130,14 C180,0 210,28 260,14 C310,0 350,24 400,14" stroke="url(#cs-thread-grad)" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="300" style={{ animation: vis ? 'cs-thread 1.6s ease 0.6s both' : 'none' }} />
-          <defs>
-            <linearGradient id="cs-thread-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0" />
-              <stop offset="30%"  stopColor="#bc3d3e" />
-              <stop offset="70%"  stopColor="#b6893c" />
-              <stop offset="100%" stopColor="#b6893c" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-        </svg>
-
-        <p style={{ fontFamily: '"Raleway", sans-serif', fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.85, color: isDark ? 'rgba(240,232,214,0.5)' : 'rgba(26,20,16,0.5)', marginBottom: '36px', maxWidth: '380px', margin: '0 auto 36px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.65s' }}>
-          Our artisans are handcrafting this collection with the utmost care. Each piece will be worth the wait.
-        </p>
-
-        <div style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 0.6s ease 0.75s, transform 0.6s ease 0.75s' }}>
-          <Link to="/categories" className="cs-btn">
-            Explore Other Collections
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </Link>
-        </div>
-
-        <p style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '0.85rem', fontStyle: 'italic', color: isDark ? 'rgba(240,232,214,0.25)' : 'rgba(26,20,16,0.25)', marginTop: '40px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.9s' }}>
-          — Wing &amp; Weft
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// ─── View toggle ──────────────────────────────────────────────────────────────
-const ViewBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; isDark: boolean }> =
-  ({ active, onClick, icon, label, isDark }) => (
-  <button onClick={onClick} aria-label={label} title={label} aria-pressed={active}
-    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200"
-    style={{
-      background: active ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-      color:  active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
-      border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
-      transform: active ? 'scale(1.05)' : 'scale(1)',
-    }}>
-    {icon}
-  </button>
+// ─── Thread divider ───────────────────────────────────────────────────────────
+const ThreadDivider: React.FC = () => (
+  <svg
+    viewBox="0 0 400 40" fill="none"
+    style={{ width: '100%', maxWidth: '360px', height: '28px', overflow: 'visible' }}
+    aria-hidden="true"
+  >
+    <path
+      d="M0,20 C50,5 80,35 130,18 C180,1 210,34 260,16 C310,-1 345,30 400,18"
+      stroke={`url(#pdp-tg)`} strokeWidth="1.4" strokeLinecap="round" strokeDasharray="400"
+      style={{ animation: 'pdp-thread-draw 1.5s ease 0.2s both' }}
+    />
+    <defs>
+      <linearGradient id="pdp-tg" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stopColor={theme.threadColor1} stopOpacity="0" />
+        <stop offset="30%"  stopColor={theme.threadColor1} />
+        <stop offset="70%"  stopColor={theme.threadColor2} />
+        <stop offset="100%" stopColor={theme.threadColor2} stopOpacity="0" />
+      </linearGradient>
+    </defs>
+  </svg>
 );
 
-// ─── Smart Product Card ───────────────────────────────────────────────────────
-const SmartProductCard: React.FC<{ product: Parameters<typeof ProductCard>[0]['product'] }> = ({ product }) => {
-  const [imgIdx, setImgIdx] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasMultiple = product.images.length > 1;
-
-  const isTouchDevice = useRef(
-    typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
-  );
-
-  useEffect(() => {
-    if (!isTouchDevice.current || !hasMultiple) return;
-    intervalRef.current = setInterval(() => {
-      setImgIdx(prev => (prev + 1) % product.images.length);
-    }, 2000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [product.images.length, hasMultiple]);
-
-  const startHoverCycle = useCallback(() => {
-    if (isTouchDevice.current || !hasMultiple) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setImgIdx(prev => (prev + 1) % product.images.length);
-    }, 800);
-  }, [product.images.length, hasMultiple]);
-
-  const stopHoverCycle = useCallback(() => {
-    if (isTouchDevice.current) return;
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    setImgIdx(0);
-  }, []);
-
-  const displayProduct = imgIdx === 0 ? product : {
-    ...product,
-    images: [product.images[imgIdx], ...product.images.filter((_, i) => i !== imgIdx)],
-  };
-
-  return (
-    <div onMouseEnter={startHoverCycle} onMouseLeave={stopHoverCycle} style={{ position: 'relative' }}>
-      <ProductCard product={displayProduct} />
-
-      {/* ✅ Dot indicator — placed INSIDE the image area at the TOP so it never
-          overlaps the product name or info below the card image.
-          Uses absolute positioning relative to the parent wrapper, offset to sit
-          just inside the top of the 3:4 image. A small semi-transparent pill
-          keeps it readable against any image. */}
-      {hasMultiple && (
-        <div
-          style={{
-            position:        'absolute',
-            // The image is 3:4 aspect. We place dots near the top of the image,
-            // clear of the top badges (which sit at ~top:12px).
-            // "calc(X% - Y)" places it relative to the wrapper height.
-            // Since the image is 3/4 of the card width, and cards vary,
-            // we use a fixed top offset that lands inside the image safely.
-            top:             '10px',
-            left:            '50%',
-            transform:       'translateX(-50%)',
-            display:         'flex',
-            alignItems:      'center',
-            justifyContent:  'center',
-            gap:             '4px',
-            pointerEvents:   'none',
-            zIndex:          10,
-            // Pill background for legibility over any image colour
-            background:      'rgba(0,0,0,0.28)',
-            backdropFilter:  'blur(4px)',
-            padding:         '4px 8px',
-            borderRadius:    '20px',
-          }}
-        >
-          {product.images.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width:        i === imgIdx ? '14px' : '5px',
-                height:       '5px',
-                borderRadius: '3px',
-                background:   i === imgIdx ? '#f0e8d6' : 'rgba(255,255,255,0.5)',
-                transition:   'width 0.3s ease, background 0.3s ease',
-              }}
-            />
-          ))}
-        </div>
-      )}
+// ─── Not Found component ──────────────────────────────────────────────────────
+const NotFound: React.FC<{ bg: string; textPrimary: string }> = ({ bg, textPrimary }) => (
+  <div className={`min-h-screen ${bg} pt-24 flex items-center justify-center`}>
+    <div className="text-center">
+      <p className="text-6xl mb-4">🕊️</p>
+      <h2
+        className={textPrimary}
+        style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}
+      >
+        Product Not Found
+      </h2>
+      <Link
+        to="/"
+        className="text-sm font-body mt-2 block transition-colors"
+        style={{ color: theme.productLinkHover }}
+        onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.opacity = '0.75'}
+        onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.opacity = '1'}
+      >
+        Back to Home
+      </Link>
     </div>
-  );
-};
+  </div>
+);
 
-// ─── Main CategoryPage ────────────────────────────────────────────────────────
-const CategoryPage: React.FC = () => {
-  const { categoryId } = useParams<{ categoryId: string }>();
-  const { isDark } = useTheme();
+// ─── Main page ────────────────────────────────────────────────────────────────
+const ProductDetailPage: React.FC = () => {
+  const { productId }   = useParams<{ productId: string }>();
+  const { isDark }      = useTheme();
 
-  const [category, setCategory] = useState<CategoryMeta | null>(null);
-  const [view, setView]         = useState<ViewMode>('4col');
-  const { products: allProducts, loading } = useProductsByCategory(categoryId || '');
+  // ✅ FIX: pass productId directly — useProduct handles the empty/undefined case
+  const { product, loading } = useProduct(productId ?? '');
+  const styleRef = useRef(false);
 
-  const [sortBy, setSortBy]               = useState<SortOption>('featured');
-  const [filterTag, setFilterTag]         = useState('All');
-  const [filterFabrics, setFilterFabrics] = useState<string[]>([]);
-  const [priceRange, setPriceRange]       = useState<[number, number]>([0, 20000]);
-  const [searchQuery, setSearchQuery]     = useState('');
-  const [filterOpen, setFilterOpen]       = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedColor, setSelectedColor] = useState(0);
+  const [openAccordion, setOpenAccordion] = useState<string | null>('description');
+  const [settings, setSettings]           = useState<Record<string, string>>({});
+  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (!categoryId) return;
-    fetchCategoryMeta(categoryId).then(setCategory).catch(() => {});
-  }, [categoryId]);
-
-  const visibleProducts = useMemo(
-    () => allProducts.filter(p => p.is_visible !== false),
-    [allProducts]
-  );
-
-  const allFabrics = useMemo(
-    () => [...new Set(visibleProducts.map(p => p.fabric))],
-    [visibleProducts]
-  );
-
-  const filtered = useMemo(() => {
-    let list = [...visibleProducts];
-    if (filterTag === 'Best Sellers') list = list.filter(p => p.is_best_seller);
-    else if (filterTag === 'New Arrivals') list = list.filter(p => p.is_new_arrival);
-    else if (filterTag === 'Featured') list = list.filter(p => p.is_featured);
-    if (filterFabrics.length > 0) list = list.filter(p => filterFabrics.includes(p.fabric));
-    list = list.filter(p => {
-      const price = p.discount_price || p.price;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(q) || p.fabric.toLowerCase().includes(q));
-    }
-    switch (sortBy) {
-      case 'rating':   return [...list].sort((a, b) => b.rating - a.rating);
-      case 'az':       return [...list].sort((a, b) => a.name.localeCompare(b.name));
-      case 'za':       return [...list].sort((a, b) => b.name.localeCompare(a.name));
-      case 'low-high': return [...list].sort((a, b) => (a.discount_price || a.price) - (b.discount_price || b.price));
-      case 'high-low': return [...list].sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
-      default: return list;
-    }
-  }, [visibleProducts, sortBy, filterTag, filterFabrics, priceRange, searchQuery]);
-
-  const toggleFabric = (fabric: string) =>
-    setFilterFabrics(prev => prev.includes(fabric) ? prev.filter(f => f !== fabric) : [...prev, fabric]);
-
-  const gridCols: Record<ViewMode, string> = {
-    '2col': 'grid-cols-2',
-    '3col': 'grid-cols-2 sm:grid-cols-3',
-    '4col': 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
-  };
+  // ✅ All social values from SettingsContext
+  const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
   const bg          = isDark ? 'bg-dark-bg'    : 'bg-brand-cream';
   const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
-  const categoryName = category?.name
-    ?? (categoryId
-      ? categoryId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-      : '');
+  useEffect(() => {
+    if (!styleRef.current) {
+      const tag = document.createElement('style');
+      tag.textContent = STYLES;
+      document.head.appendChild(tag);
+      styleRef.current = true;
+    }
+    fetchSettings().then(setSettings);
+  }, []);
 
-  const seoDescription = category?.description?.trim()
-    ? category.description
-    : categoryName
-      ? `Shop authentic handwoven ${categoryName} at Wing & Weft. Free shipping above ₹2000.`
-      : 'Browse our curated collection of authentic handwoven sarees.';
+  const startAutoSlide = useCallback(() => {
+    if (!product || product.images.length <= 1) return;
+    autoRef.current = setInterval(() => {
+      setSelectedImage(prev => (prev + 1) % product.images.length);
+    }, 3000);
+  }, [product]);
 
-  const PRODUCTION_DOMAIN = 'https://www.wingandweft.com';
-  const canonicalUrl = `${PRODUCTION_DOMAIN}/category/${categoryId}`;
+  const stopAutoSlide = useCallback(() => {
+    if (autoRef.current) { clearInterval(autoRef.current); autoRef.current = null; }
+  }, []);
+
+  useEffect(() => {
+    if (product && product.images.length > 1) startAutoSlide();
+    return stopAutoSlide;
+  }, [product, startAutoSlide, stopAutoSlide]);
+
+  const handleThumbClick = (i: number) => { stopAutoSlide(); setSelectedImage(i); };
 
   usePageMeta({
-    title: categoryName ? `${categoryName} Sarees` : 'Browse Collection',
-    description: seoDescription,
+    title: product
+      ? `${product.name} — ${product.category.replace(/-/g,' ')}`
+      : 'Product',
+    description: product
+      ? `${product.name} — ${product.fabric} saree. ₹${product.discount_price || product.price}. ${product.description?.slice(0, 100) || 'Authentic handwoven saree from Wing & Weft.'}`
+      : 'Authentic handwoven saree from Wing & Weft.',
   });
+
+  const seoTitle       = product?.name ?? 'Product';
+  const seoDescription = product
+    ? `${product.name} — ${product.fabric} saree. ₹${product.discount_price || product.price}. Handwoven by artisans. Free shipping above ₹2000.`
+    : 'Browse handwoven sarees at Wing & Weft.';
+  const seoImage = product?.images?.[0];
+
+  // ✅ FIX: guard against missing productId in URL entirely — don't show skeleton forever
+  if (!productId) {
+    return <NotFound bg={bg} textPrimary={textPrimary} />;
+  }
+
+  // ── Loading skeleton ────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${bg} pt-20`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            <div className="space-y-3">
+              <div className="shimmer rounded-2xl w-full" style={{ height: '500px' }} />
+              <div className="grid grid-cols-4 gap-2">
+                {[...Array(4)].map((_,i) => <div key={i} className="shimmer rounded-xl" style={{ height: '90px' }} />)}
+              </div>
+            </div>
+            <div className="space-y-4">
+              {[1/3, 3/4, 1/4, 1/2].map((w, i) => (
+                <div key={i} className="shimmer h-6 rounded" style={{ width: `${w*100}%` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Not found ───────────────────────────────────────────────────────────────
+  if (!product) {
+    return <NotFound bg={bg} textPrimary={textPrimary} />;
+  }
+
+  const discount = product.discount_price
+    ? Math.round(((product.price - product.discount_price) / product.price) * 100)
+    : 0;
+
+  // ✅ All social links from context
+  const whatsappText    = `Hi! I'm interested in:\n*${product.name}*...`;
+  const whatsappLink    = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
+  const facebookShareLink = facebook_url && facebook_url !== '#'
+    ? facebook_url
+    : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
+  const instagramLink   = instagram_url || 'https://www.instagram.com/';
+
+  // ── Derived guards ──────────────────────────────────────────────────────────
+  const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
+  const hasColors    = (product as any).show_colors !== false && activeColors.length > 0;
+
+  const globalRatingsOn = settings['show_ratings'] !== 'false';
+  const showRating = (
+    globalRatingsOn &&
+    (product as any).show_rating === true &&
+    product.rating > 0 &&
+    product.review_count > 0
+  );
+
+  interface SpecRow { key: string; value: string; }
+  const specRows: SpecRow[] = ((product as any).specifications || []).filter(
+    (s: SpecRow) => s.key?.trim() && s.value?.trim()
+  );
+  const hasSpecs = specRows.length > 0;
+  const specDividerColor = isDark ? theme.specRowDivider.dark : theme.specRowDivider.light;
+
+  const accordions = [
+    {
+      id: 'description',
+      title: 'Detailed Description',
+      content: (
+        <p className={`text-sm font-body leading-relaxed ${textMuted}`} style={{ lineHeight: 1.8 }}>
+          {product.description || 'No description available.'}
+        </p>
+      ),
+    },
+    ...(hasSpecs ? [{
+      id: 'specifications',
+      title: 'Saree Specifications',
+      content: (
+        <div className="space-y-0">
+          {specRows.map(({ key, value }) => (
+            <div key={key} className="flex justify-between py-2.5 border-b last:border-0"
+              style={{ borderColor: specDividerColor }}>
+              <span className={`text-sm font-bold font-body ${textPrimary}`}>{key}</span>
+              <span className={`text-sm font-body text-right ml-4 ${textMuted}`}>{value}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    }] : []),
+    {
+      id: 'policy',
+      title: 'Policy',
+      content: (
+        <ul className="space-y-2">
+          {(product.policy_points?.length
+            ? product.policy_points
+            : [
+                'Exchange accepted within 7 days of delivery.',
+                'Product must be unused and in original packaging.',
+                'Cancellation allowed within 12 hours of order placement.',
+                'Refunds processed within 5–7 business days.',
+                'Free shipping on orders above ₹2000.',
+              ]
+          ).filter(Boolean).map((item, i) => (
+            <li key={i} className="flex gap-2 text-sm font-body">
+              <span style={{ color: theme.accentSecondary }} className="mt-0.5 font-bold">•</span>
+              <span className={textMuted}>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+  ];
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
       <SEO
-        title={categoryName || 'Collections'}
+        title={seoTitle}
         description={seoDescription}
-        canonical={canonicalUrl}
-        ogImage={category?.image}
+        canonical={`https://wingandweft.vercel.app/product/${productId}`}
+        image={seoImage}
+        type="product"
       />
 
-      {/* ── Page header ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4">
-        <nav className="flex items-center gap-2 text-xs font-body mb-6" aria-label="Breadcrumb">
-          <Link to="/" className={`${textMuted} hover:text-brand-red transition-colors`}>Home</Link>
-          <span className={textMuted} aria-hidden="true">›</span>
-          <span className="text-brand-red font-medium capitalize">{categoryName}</span>
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <nav className="flex items-center gap-2 text-xs font-body" aria-label="Breadcrumb">
+          <Link
+            to="/"
+            className={`transition-colors ${textMuted}`}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
+          >
+            Home
+          </Link>
+          <ChevronRight size={12} className={textMuted} aria-hidden="true" />
+          <Link
+            to={`/category/${product.category}`}
+            className={`transition-colors capitalize ${textMuted}`}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
+          >
+            {product.category.replace(/-/g,' ')}
+          </Link>
+          <ChevronRight size={12} className={textMuted} aria-hidden="true" />
+          <span style={{ color: theme.accentPrimary, fontWeight: 600 }} className="truncate max-w-[180px]">{product.name}</span>
         </nav>
-
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-2">
-          <div>
-            <p className="text-brand-gold text-xs uppercase font-label mb-1" style={{ letterSpacing: '0.28em' }}>
-              Browse Collection
-            </p>
-            <h1 className={textPrimary} style={{
-              fontFamily: '"Cormorant Garamond",serif',
-              fontSize: 'clamp(2rem,4vw,3rem)', fontWeight: 400, lineHeight: 1.1,
-            }}>
-              {categoryName}
-            </h1>
-          </div>
-          <div className="flex items-center gap-1.5" role="group" aria-label="Grid view options">
-            <ViewBtn active={view === '2col'} onClick={() => setView('2col')} icon={<Columns size={15} />} label="2 columns grid" isDark={isDark} />
-            <ViewBtn active={view === '3col'} onClick={() => setView('3col')} icon={<LayoutGrid size={15} />} label="3 columns grid" isDark={isDark} />
-            <ViewBtn active={view === '4col'} onClick={() => setView('4col')} icon={<Grid size={15} />} label="4 columns grid" isDark={isDark} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mb-8" aria-hidden="true">
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.5))' }} />
-          <div style={{ width: '5px', height: '5px', background: '#b6893c', transform: 'rotate(45deg)' }} />
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.5))' }} />
-        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
 
-        {/* ── Toolbar ── */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textMuted}`} aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Search in this category…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm font-body outline-none focus:ring-2 focus:ring-brand-red/20 focus:border-brand-red transition-colors ${card} ${textPrimary}`}
-              aria-label="Search products in this category"
-            />
-          </div>
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortOption)}
-            className={`px-4 py-2.5 rounded-xl border text-sm font-body outline-none cursor-pointer ${card} ${textPrimary}`}
-            aria-label="Sort products"
-          >
-            <option value="featured">Featured</option>
-            <option value="rating">Top Rated</option>
-            <option value="az">A to Z</option>
-            <option value="za">Z to A</option>
-            <option value="low-high">Price: Low to High</option>
-            <option value="high-low">Price: High to Low</option>
-          </select>
-          <button
-            onClick={() => setFilterOpen(v => !v)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold font-body transition-colors ${filterOpen ? 'bg-brand-red text-white border-brand-red' : `${card} ${textPrimary}`}`}
-            aria-expanded={filterOpen}
-            aria-controls="filter-panel"
-          >
-            <SlidersHorizontal size={15} aria-hidden="true" />
-            Filters
-            {(filterTag !== 'All' || filterFabrics.length > 0) && (
-              <span className="w-2 h-2 rounded-full bg-brand-gold" aria-label="Filters active" />
+          {/* ── Left: Images ── */}
+          <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
+            <div className={`rounded-2xl overflow-hidden mb-3 ${card} border relative`} style={{ height: '500px' }}>
+              <img
+                key={selectedImage}
+                src={product.images[selectedImage]}
+                alt={`${product.name} — image ${selectedImage + 1}`}
+                className="w-full h-full object-cover"
+                style={{ animation: 'pdp-fade-in 0.4s ease' }}
+                loading="eager"
+              />
+
+              {product.images.length > 1 && (
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                  {product.images.map((_, i) => (
+                    <button
+                      key={i} onClick={() => handleThumbClick(i)}
+                      className="transition-all duration-300 rounded-full"
+                      style={{
+                        width:  i === selectedImage ? '20px' : '6px',
+                        height: '6px',
+                        background: i === selectedImage ? theme.productDotActive : 'rgba(255,255,255,0.5)',
+                      }}
+                      aria-label={`View image ${i + 1}`}
+                      aria-pressed={i === selectedImage}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* ✅ Discount badge on main image */}
+              {discount > 0 && (
+                <div className="absolute top-4 left-4" style={{ zIndex: 2 }}>
+                  <span
+                    style={{
+                      display:       'inline-flex',
+                      alignItems:    'center',
+                      background:    'linear-gradient(135deg, #e05c1a, #c94a10)',
+                      color:         '#fff',
+                      fontSize:      '0.95rem',
+                      fontWeight:    900,
+                      letterSpacing: '0.02em',
+                      padding:       '6px 14px',
+                      borderRadius:  '8px',
+                      boxShadow:     '0 3px 14px rgba(0,0,0,0.4)',
+                      fontFamily:    '"Raleway", sans-serif',
+                      lineHeight:    1,
+                      animation:     'pdp-badge-in 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both',
+                    }}
+                  >
+                    {discount}% OFF
+                  </span>
+                </div>
+              )}
+
+              {product.stock === 0 && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
+                  <span className="text-white font-semibold font-body text-lg">Out of Stock</span>
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnails */}
+            <div className="grid grid-cols-4 gap-2">
+              {product.images.map((img, i) => (
+                <button
+                  key={i} onClick={() => handleThumbClick(i)}
+                  className={`pdp-thumb rounded-xl overflow-hidden border-2`}
+                  style={{
+                    height:      '90px',
+                    borderColor: i === selectedImage ? theme.accentPrimary : 'transparent',
+                    borderWidth: '2px',
+                  }}
+                  aria-label={`View image ${i + 1}`}
+                  aria-pressed={i === selectedImage}
+                >
+                  <img src={img} alt={`${product.name} thumbnail ${i + 1}`}
+                    className="w-full h-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+
+            {product.images.length > 1 && (
+              <p className={`text-xs text-center mt-2 font-body ${textMuted}`} style={{ opacity: 0.6 }}>
+                Auto-cycling images · click a thumbnail to pause
+              </p>
             )}
-          </button>
-        </div>
+          </div>
 
-        {/* ── Filter panel ── */}
-        {filterOpen && (
-          <div id="filter-panel" className={`rounded-2xl border p-5 mb-6 ${card}`} role="region" aria-label="Filters">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h3 className={`text-sm font-semibold mb-3 font-body ${textPrimary}`}>Filter by</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['All', 'Best Sellers', 'New Arrivals', 'Featured'].map(tag => (
-                    <button key={tag} onClick={() => setFilterTag(tag)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterTag === tag ? 'bg-brand-red text-white border-brand-red' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-red hover:text-brand-red' : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-red hover:text-brand-red'}`}
-                      aria-pressed={filterTag === tag}>
-                      {tag}
-                    </button>
+          {/* ── Right: Details ── */}
+          <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.22s both' }}>
+
+            <p
+              className="font-label mb-2"
+              style={{
+                letterSpacing: '0.26em',
+                color:         theme.accentSecondary,
+                fontSize:      '0.62rem',
+                fontWeight:    800,
+                textTransform: 'uppercase',
+              }}
+            >
+              {product.fabric} · {product.category.replace(/-/g,' ')}
+            </p>
+
+            <h1
+              className={`mb-3 leading-tight ${textPrimary}`}
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize:   'clamp(2rem, 3.5vw, 2.9rem)',
+                fontWeight: 600,
+                lineHeight: 1.08,
+              }}
+            >
+              {product.name}
+            </h1>
+
+            <div style={{ marginBottom: '16px' }}>
+              <ThreadDivider />
+            </div>
+
+            <p className={`text-xs mb-4 font-body ${textMuted}`} style={{ opacity: 0.7 }}>
+              Product ID: <span className="font-mono tracking-wider">{product.id}</span>
+            </p>
+
+            {/* Star rating */}
+            {showRating && (
+              <div className="flex items-center gap-3 mb-4">
+                <StarRating rating={product.rating} size={16} />
+                <span className={`text-sm font-body font-semibold ${textMuted}`}>
+                  {product.rating} ({product.review_count} {product.review_count === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            )}
+
+            {/* Price block */}
+            <div className="flex items-end gap-4 mb-2">
+              {product.discount_price ? (
+                <>
+                  <span
+                    style={{
+                      fontFamily:    '"Raleway", sans-serif',
+                      fontSize:      '2.2rem',
+                      fontWeight:    900,
+                      color:         '#bc3d3e',
+                      letterSpacing: '-0.02em',
+                      lineHeight:    1,
+                    }}
+                  >
+                    ₹{product.discount_price.toLocaleString()}
+                  </span>
+                  <span
+                    className={`font-body line-through`}
+                    style={{
+                      fontSize:   '1.1rem',
+                      fontWeight: 500,
+                      color:      isDark ? '#64748b' : '#a8a29e',
+                      marginBottom: '3px',
+                    }}
+                  >
+                    ₹{product.price.toLocaleString()}
+                  </span>
+                </>
+              ) : (
+                <span
+                  style={{
+                    fontFamily:    '"Raleway", sans-serif',
+                    fontSize:      '2.2rem',
+                    fontWeight:    900,
+                    color:         '#bc3d3e',
+                    letterSpacing: '-0.02em',
+                    lineHeight:    1,
+                  }}
+                >
+                  ₹{product.price.toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Savings callout */}
+            {product.discount_price && discount > 0 && (
+              <p
+                className="mb-4 font-body"
+                style={{
+                  fontSize:   '0.8rem',
+                  fontWeight: 700,
+                  color:      '#16a34a',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                You save ₹{(product.price - product.discount_price).toLocaleString()} ({discount}% off)
+              </p>
+            )}
+
+            {/* Stock status */}
+            <p
+              className="font-body mb-5"
+              style={{
+                fontSize:   '0.85rem',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                color: product.stock === 0
+                  ? '#ef4444'
+                  : product.stock <= 5
+                    ? '#f97316'
+                    : '#16a34a',
+              }}
+            >
+              {product.stock === 0
+                ? '✗  Out of Stock'
+                : product.stock <= 5
+                  ? `⚠  Only ${product.stock} left in stock!`
+                  : '✓  In Stock'}
+            </p>
+
+            {/* Colour swatches */}
+            {hasColors && (
+              <div className="mb-6">
+                <p className={`font-body mb-2 ${textPrimary}`} style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Colour
+                </p>
+                <div className="flex gap-2">
+                  {activeColors.map((color, i) => (
+                    <button
+                      key={color} onClick={() => setSelectedColor(i)}
+                      className="w-8 h-8 rounded-full transition-all hover:scale-110"
+                      style={{
+                        background: color,
+                        border:    `2px solid ${i === selectedColor ? theme.accentPrimary : 'transparent'}`,
+                        transform: i === selectedColor ? 'scale(1.12)' : 'scale(1)',
+                        boxShadow: i === selectedColor ? `0 0 0 3px ${theme.accentPrimary}30` : 'none',
+                      }}
+                      aria-label={`Select colour ${i + 1}`}
+                      aria-pressed={i === selectedColor}
+                    />
                   ))}
                 </div>
               </div>
-              <div>
-                <h3 className={`text-sm font-semibold mb-3 font-body ${textPrimary}`}>Fabric</h3>
-                <div className="flex flex-wrap gap-2">
-                  {allFabrics.map(fabric => (
-                    <button key={fabric} onClick={() => toggleFabric(fabric)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterFabrics.includes(fabric) ? 'bg-brand-gold text-white border-brand-gold' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-gold hover:text-brand-gold' : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-gold hover:text-brand-gold'}`}
-                      aria-pressed={filterFabrics.includes(fabric)}>
-                      {fabric}
-                    </button>
-                  ))}
+            )}
+
+            {/* WhatsApp CTA */}
+            <div className="mb-8">
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`pdp-wa-btn w-full flex items-center justify-center gap-3 py-4 rounded-full font-body ${product.stock === 0 ? 'disabled' : ''}`}
+                style={{
+                  background:     '#25D366',
+                  color:          '#fff',
+                  boxShadow:      '0 4px 20px rgba(37,211,102,0.4)',
+                  letterSpacing:  '0.18em',
+                  fontSize:       '0.78rem',
+                  fontWeight:     900,
+                  textTransform:  'uppercase',
+                  pointerEvents:  product.stock === 0 ? 'none' : 'auto',
+                  opacity:        product.stock === 0 ? 0.5 : 1,
+                  textDecoration: 'none',
+                }}
+              >
+                <MessageCircle size={20} />
+                {product.stock === 0 ? 'Out of Stock' : 'Order via WhatsApp'}
+              </a>
+            </div>
+
+            {/* Accordions */}
+            <div className="space-y-2 mb-6">
+              {accordions.map(acc => (
+                <div key={acc.id} className={`rounded-xl border overflow-hidden ${card}`}>
+                  <button
+                    className={`pdp-accordion-btn w-full flex items-center justify-between px-5 py-4 text-left ${textPrimary}`}
+                    onClick={() => setOpenAccordion(openAccordion === acc.id ? null : acc.id)}
+                    aria-expanded={openAccordion === acc.id}
+                    aria-controls={`accordion-${acc.id}`}
+                    style={{ fontSize: '0.85rem', fontWeight: 700, fontFamily: '"Raleway", sans-serif' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = theme.accordionHover}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = ''}
+                  >
+                    {acc.title}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-200 flex-shrink-0 ${openAccordion === acc.id ? 'rotate-180' : ''}`}
+                      aria-hidden="true"
+                      style={{ color: openAccordion === acc.id ? theme.accentPrimary : '' }}
+                    />
+                  </button>
+                  {openAccordion === acc.id && (
+                    <div
+                      id={`accordion-${acc.id}`}
+                      className={`px-5 pb-4 border-t ${isDark ? 'border-dark-border' : 'border-brand-cream-dark'}`}
+                      style={{ animation: 'pdp-slide-up 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+                    >
+                      <div className="pt-3">{acc.content}</div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div>
-                <h3 className={`text-sm font-semibold mb-3 font-body ${textPrimary}`}>
-                  Price: ₹{priceRange[0].toLocaleString('en-IN')} – ₹{priceRange[1].toLocaleString('en-IN')}
-                </h3>
-                <input
-                  type="range" min={0} max={20000} step={500} value={priceRange[1]}
-                  onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-                  className="w-full accent-brand-gold"
-                  aria-label={`Maximum price ₹${priceRange[1]}`}
-                  style={{ accentColor: '#b6893c' }}
-                />
-                <div className={`flex justify-between text-xs font-body mt-1 ${textMuted}`}>
-                  <span>₹0</span><span>₹20,000</span>
-                </div>
+              ))}
+            </div>
+
+            {/* Share section */}
+            <div>
+              <p
+                className={`mb-3 font-body ${textPrimary}`}
+                style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' }}
+              >
+                Share this product
+              </p>
+              <div className="flex gap-3">
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: '#25D366', boxShadow: '0 2px 10px rgba(37,211,102,0.4)' }}
+                  aria-label="Share on WhatsApp"
+                >
+                  <MessageCircle size={18} color="white" />
+                </a>
+
+                <a
+                  href={instagramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
+                    boxShadow:  '0 2px 10px rgba(220,39,67,0.35)',
+                  }}
+                  aria-label="Follow us on Instagram"
+                >
+                  <Instagram size={18} color="white" />
+                </a>
+
+                <a
+                  href={facebookShareLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: '#1877F2', boxShadow: '0 2px 10px rgba(24,119,242,0.35)' }}
+                  aria-label="Share on Facebook"
+                >
+                  <Facebook size={18} color="white" />
+                </a>
               </div>
             </div>
-            <button
-              onClick={() => { setFilterTag('All'); setFilterFabrics([]); setPriceRange([0, 20000]); }}
-              className="mt-4 flex items-center gap-1.5 text-xs font-body text-brand-red hover:underline"
-            >
-              <X size={12} aria-hidden="true" /> Reset Filters
-            </button>
           </div>
-        )}
-
-        {/* ── Results count ── */}
-        <p className={`text-sm mb-6 font-body ${textMuted}`} aria-live="polite">
-          {loading
-            ? 'Loading products…'
-            : `${filtered.length} ${filtered.length === 1 ? 'product' : 'products'}`}
-        </p>
-
-        {/* ── Product grid ── */}
-        {loading ? (
-          <div className={`grid ${gridCols[view]} gap-4 md:gap-5`} aria-busy="true" aria-label="Loading products">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className={`rounded-2xl border overflow-hidden ${card}`}>
-                <div className="shimmer w-full" style={{ aspectRatio: '3/4' }} />
-                <div className="p-3 space-y-2">
-                  <div className="shimmer h-3 rounded w-3/4" />
-                  <div className="shimmer h-3 rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <ComingSoonEmpty categoryName={categoryName} isDark={isDark} />
-        ) : (
-          <div className={`grid ${gridCols[view]} gap-4 md:gap-5`}>
-            {filtered.map(product => (
-              <SmartProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default CategoryPage;
+export default ProductDetailPage;

@@ -102,7 +102,13 @@ export function useProduct(id: string) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!id) return;
+    // ✅ FIX: if no id, immediately clear loading so the page doesn't
+    // stay stuck on the skeleton forever.
+    if (!id) {
+      setLoading(false);
+      setProduct(null);
+      return;
+    }
     setLoading(true);
     publicGet<Product>('products', { id: `eq.${id}`, limit: '1' })
       .then((data) => { setProduct(data?.[0] ?? null); setError(''); })
