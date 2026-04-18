@@ -2,23 +2,22 @@
 import React from 'react';
 import { MessageCircle, ArrowUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { WHATSAPP_NUMBER } from '../../data/products';
 import { useScrollToTop } from '../../hooks';
 import { theme } from '../../theme/heroThemes';
-import { useSettings } from '../../context/SettingsContext'; 
-
-const WA_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need help choosing a saree from Wing & Weft.')}`;
+import { useSettings } from '../../context/SettingsContext';
 
 // ─── CTA Section ──────────────────────────────────────────────────────────────
 export const WhatsAppSection: React.FC = () => {
   const { isDark } = useTheme();
-  const { whatsapp_number } = useSettings(); 
+  const { whatsapp_number } = useSettings();
+
+  // ✅ FIX: waLink built inside component using live context value
+  const waLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent('Hi! I need help choosing a saree from Wing & Weft.')}`;
 
   return (
     <section
       className="relative py-20 overflow-hidden"
       style={{
-        // Background switches between dark/light variants of the active theme
         background: isDark ? theme.waSectionBgDark : theme.waSectionBgLight,
       }}
       aria-label="Contact us on WhatsApp"
@@ -89,8 +88,9 @@ export const WhatsAppSection: React.FC = () => {
           <div style={{ width: '40px', height: '1px', background: `linear-gradient(to left, transparent, ${theme.rule})` }} />
         </div>
 
+        {/* ✅ FIX: href now uses waLink from context, not hardcoded WA_LINK */}
         <a
-          href={WA_LINK}
+          href={waLink}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 px-10 py-4 rounded-full font-bold font-body text-sm uppercase tracking-widest transition-all duration-300 hover:scale-105 hover:shadow-2xl"
@@ -116,7 +116,10 @@ export const WhatsAppSection: React.FC = () => {
 // ─── Floating WhatsApp + Scroll-to-top ────────────────────────────────────────
 export const FloatingActions: React.FC = () => {
   const { visible, scrollToTop } = useScrollToTop();
-  const { whatsapp_number } = useSettings();  
+  const { whatsapp_number } = useSettings();
+
+  // ✅ FIX: waLink built inside component using live context value
+  const waLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent('Hi! I need help choosing a saree from Wing & Weft.')}`;
 
   return (
     <div className="whatsapp-float z-50">
@@ -136,8 +139,9 @@ export const FloatingActions: React.FC = () => {
       </button>
 
       {/* WhatsApp button — always brand green */}
+      {/* ✅ FIX: href now uses waLink from context, not hardcoded WA_LINK */}
       <a
-        href={WA_LINK}
+        href={waLink}
         target="_blank"
         rel="noopener noreferrer"
         className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110"

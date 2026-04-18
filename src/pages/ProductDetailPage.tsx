@@ -2,16 +2,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle } from 'lucide-react';
-import { INSTAGRAM_URL } from '../data/products';
 import { useTheme } from '../context/ThemeContext';
 import SEO from '../components/SEO/SEO';
 import { StarRating } from '../components/Products/ProductCard';
 import { useProduct } from '../hooks/useProducts';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
-import { WHATSAPP_NUMBER } from '../data/products';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { theme } from '../theme/heroThemes';
 import { useSettings } from '../context/SettingsContext';
+
+// ✅ Removed: INSTAGRAM_URL and WHATSAPP_NUMBER imports from data/products
+//    All social values now come exclusively from SettingsContext
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const STYLES = `
@@ -123,7 +124,9 @@ const ProductDetailPage: React.FC = () => {
   const [openAccordion, setOpenAccordion] = useState<string | null>('description');
   const [settings, setSettings]           = useState<Record<string, string>>({});
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { whatsapp_number } = useSettings();
+
+  // ✅ All social values from SettingsContext — reflects admin dashboard in real time
+  const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
   useEffect(() => {
     if (!styleRef.current) {
@@ -223,8 +226,17 @@ const ProductDetailPage: React.FC = () => {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-const whatsappText = `Hi! I'm interested in:\n*${product.name}*...`;
-const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
+  // ✅ whatsapp_number from context — always reflects admin dashboard value
+  const whatsappText = `Hi! I'm interested in:\n*${product.name}*...`;
+  const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
+
+  // ✅ Facebook share link — uses facebook_url from context, falls back to page URL
+  const facebookShareLink = facebook_url && facebook_url !== '#'
+    ? facebook_url
+    : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
+
+  // ✅ Instagram link — uses instagram_url from context
+  const instagramLink = instagram_url || 'https://www.instagram.com/';
 
   // ── Derived guards ──────────────────────────────────────────────────────────
   const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
@@ -244,7 +256,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
   );
   const hasSpecs = specRows.length > 0;
 
-  // Spec row divider — theme-controlled
   const specDividerColor = isDark ? theme.specRowDivider.dark : theme.specRowDivider.light;
 
   const accordions = [
@@ -288,7 +299,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               ]
           ).filter(Boolean).map((item, i) => (
             <li key={i} className="flex gap-2 text-sm font-body">
-              {/* Bullet — theme-coloured */}
               <span style={{ color: theme.accentSecondary }} className="mt-0.5">•</span>
               <span className={textMuted}>{item}</span>
             </li>
@@ -308,7 +318,7 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
         type="product"
       />
 
-      {/* Breadcrumb — theme-coloured hover and active */}
+      {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <nav className="flex items-center gap-2 text-xs font-body" aria-label="Breadcrumb">
           <Link
@@ -329,7 +339,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
             {product.category.replace(/-/g,' ')}
           </Link>
           <ChevronRight size={12} className={textMuted} aria-hidden="true" />
-          {/* Active crumb — theme-coloured */}
           <span style={{ color: theme.accentPrimary }} className="truncate max-w-[180px]">{product.name}</span>
         </nav>
       </div>
@@ -349,7 +358,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
                 loading="eager"
               />
 
-              {/* Carousel dots — theme-coloured active dot */}
               {product.images.length > 1 && (
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
                   {product.images.map((_, i) => (
@@ -375,7 +383,7 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               )}
             </div>
 
-            {/* Thumbnails — theme-coloured active border */}
+            {/* Thumbnails */}
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img, i) => (
                 <button
@@ -407,7 +415,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
           {/* ── Right: Details ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.22s both' }}>
 
-            {/* Fabric / category badge — theme-coloured */}
             <p
               className="text-xs uppercase font-label mb-2"
               style={{ letterSpacing: '0.22em', color: theme.accentSecondary }}
@@ -423,7 +430,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               {product.name}
             </h1>
 
-            {/* Thread divider under title */}
             <div style={{ marginBottom: '16px' }}>
               <ThreadDivider />
             </div>
@@ -432,7 +438,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               Product ID: <span className="font-mono tracking-wider">{product.id}</span>
             </p>
 
-            {/* Star rating */}
             {showRating && (
               <div className="flex items-center gap-3 mb-4">
                 <StarRating rating={product.rating} size={16} />
@@ -457,7 +462,6 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
                     <span className={`text-base line-through font-body ${textMuted}`}>
                       ₹{product.price.toLocaleString()}
                     </span>
-                    {/* Discount badge — theme-coloured pill */}
                     <span
                       className="ml-2 text-xs font-bold font-body px-2.5 py-1 rounded-full"
                       style={{
@@ -487,8 +491,8 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               color: product.stock === 0
                 ? theme.accentPrimary
                 : product.stock <= 5
-                  ? '#d97706'   // amber — universal warning colour
-                  : '#16a34a',  // green — universal in-stock colour
+                  ? '#d97706'
+                  : '#16a34a',
             }}>
               {product.stock === 0 ? '✗ Out of Stock'
                : product.stock <= 5 ? `⚠ Only ${product.stock} left in stock!`
@@ -517,7 +521,7 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
               </div>
             )}
 
-            {/* CTA — WhatsApp (brand green, not theme) */}
+            {/* CTA — WhatsApp */}
             <div className="mb-8">
               <a
                 href={whatsappLink} target="_blank" rel="noopener noreferrer"
@@ -574,20 +578,39 @@ const whatsappLink = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent
             <div>
               <p className={`text-sm font-semibold mb-2 font-body ${textPrimary}`}>Share this product</p>
               <div className="flex gap-3">
-                <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
+                {/* ✅ WhatsApp share — uses whatsapp_number from context */}
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: '#25D366' }} aria-label="Share on WhatsApp">
+                  style={{ background: '#25D366' }}
+                  aria-label="Share on WhatsApp"
+                >
                   <MessageCircle size={16} color="white" />
                 </a>
-                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer"
+
+                {/* ✅ Instagram — uses instagram_url from context */}
+                <a
+                  href={instagramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
                   style={{ background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)' }}
-                  aria-label="Share on Instagram">
+                  aria-label="Follow us on Instagram"
+                >
                   <Instagram size={16} color="white" />
                 </a>
-                <a href="#"
+
+                {/* ✅ Facebook — uses facebook_url from context, no longer hardcoded # */}
+                <a
+                  href={facebookShareLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="pdp-share-icon w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: '#1877F2' }} aria-label="Share on Facebook">
+                  style={{ background: '#1877F2' }}
+                  aria-label="Share on Facebook"
+                >
                   <Facebook size={16} color="white" />
                 </a>
               </div>

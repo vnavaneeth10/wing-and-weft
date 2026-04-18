@@ -26,12 +26,27 @@ import { theme } from '../theme/heroThemes';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALUES = [
-  { icon: '✦', title: 'Authenticity',  description: 'Every saree in our collection is sourced directly from master weavers, ensuring genuine craftsmanship and fair trade.' },
-  { icon: '♡', title: 'Craftsmanship', description: 'We believe in preserving centuries-old weaving traditions by supporting artisan communities across India.' },
-  { icon: '❧', title: 'Sustainability', description: 'Handloom weaving uses minimal electricity and supports eco-friendly, slow fashion principles.' },
-  { icon: '◆', title: 'Quality',        description: 'Each saree undergoes rigorous quality checks before reaching you — because you deserve only the finest.' },
+  {
+    icon: '✦',
+    title: 'Authenticity',
+    description: 'From loom to home you are not just wearing a piece of clothing — you are wearing a story. Every piece in our collection comes directly from the weavers who craft them. Every thread is a whisper from the past.',
+  },
+  {
+    icon: '♡',
+    title: 'Craftsmanship',
+    description: 'We stand by local weavers and honour traditional techniques passed down through generations — because some arts are too precious to lose.',
+  },
+  {
+    icon: '❧',
+    title: 'Sustainability',
+    description: 'Our production process is kind to the earth. Handloom weaving is inherently sustainable, producing minimal waste and leaving a lighter footprint with every saree made.',
+  },
+  {
+    icon: '◆',
+    title: 'Quality',
+    description: 'Every fold is meticulously inspected before it reaches you — because your style deserves nothing less than perfection.',
+  },
 ];
-
 let _threadDividerCount = 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -569,12 +584,12 @@ const OurStoryPage: React.FC = () => {
           </p>
 
           {/* Scroll indicator */}
-          <div style={{ marginTop: '32px', animation: 'os-slide-up 0.6s ease 1s both' }}>
+          {/* <div style={{ marginTop: '32px', animation: 'os-slide-up 0.6s ease 1s both' }}>
             <svg viewBox="0 0 16 26" width="14" aria-hidden="true" style={{ opacity: 0.45, display: 'block', margin: '0 auto' }}>
               <rect x="5" y="0" width="6" height="16" rx="3" fill="none" stroke={theme.diamond} strokeWidth="1.2" />
               <circle cx="8" cy="6" r="2" fill={theme.diamond} style={{ animation: 'os-scroll-dot 1.6s ease-in-out infinite' }} />
             </svg>
-          </div>
+          </div> */}
         </div>
       </div>
 

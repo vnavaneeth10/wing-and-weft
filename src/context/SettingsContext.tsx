@@ -1,4 +1,3 @@
-// src/context/SettingsContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 
@@ -59,7 +58,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ribbon_visible:   map['ribbon_visible']   || DEFAULTS.ribbon_visible,
         });
       })
-      .catch(() => {}); // silently fall back to defaults
+      .catch(() => {});
   }, []);
 
   return (

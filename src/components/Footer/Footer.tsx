@@ -1,24 +1,20 @@
 // src/components/Footer/Footer.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, Mail, MessageCircle, ArrowRight, Heart, PackageSearch } from 'lucide-react';
-import { INSTAGRAM_URL, WHATSAPP_NUMBER } from '../../data/products';
+import { Instagram, Facebook, Mail, MessageCircle, Heart, PackageSearch } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import PolicyModal from '../Policy/PolicyModal';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 import { theme } from '../../theme/heroThemes';
 import { useSettings } from '../../context/SettingsContext';
 
+// ✅ FIX: removed INSTAGRAM_URL, WHATSAPP_NUMBER imports — context is the source of truth now
+// ✅ FIX: removed fetchFooterSettings and local FooterSettings state — replaced by useSettings()
+
 const TRACK_ORDER_URL = 'https://trackcourier.io/';
 
 interface FooterCategory { id: string; name: string; }
 interface FooterPolicy   { id: string; title: string; }
-interface FooterSettings {
-  instagram_url:   string;
-  facebook_url:    string;
-  contact_email:   string;
-  whatsapp_number: string;
-}
 
 const fetchCategories = async (): Promise<FooterCategory[]> => {
   const res = await fetch(
@@ -36,23 +32,6 @@ const fetchPolicies = async (): Promise<FooterPolicy[]> => {
   );
   if (!res.ok) throw new Error('Failed');
   return res.json();
-};
-
-const fetchFooterSettings = async (): Promise<FooterSettings> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/settings?select=key,value`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) throw new Error('Failed');
-  const rows: { key: string; value: string }[] = await res.json();
-  const map: Record<string, string> = {};
-  rows.forEach((r) => { if (r.key && r.value) map[r.key] = r.value; });
-  return {
-    instagram_url:   map['instagram_url']   || INSTAGRAM_URL,
-    facebook_url:    map['facebook_url']    || '#',
-    contact_email:   map['contact_email']   || 'support@wingandweft.com',
-    whatsapp_number: map['whatsapp_number'] || WHATSAPP_NUMBER,
-  };
 };
 
 const saveNewsletterEmail = async (email: string) => {
@@ -93,56 +72,66 @@ function useFadeIn() {
 
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
+
+  // ✅ FIX: all social/contact values now come from SettingsContext — single source of truth
+  const {
+    whatsapp_number,
+    contact_email,
+    instagram_url,
+    facebook_url,
+  } = useSettings();
+
   const [email, setEmail]             = useState('');
+  const [agreed, setAgreed]           = useState(false);
+  const [agreeError, setAgreeError]   = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [openPolicy, setOpenPolicy]   = useState<string | null>(null);
   const [categories, setCategories]   = useState<FooterCategory[]>([]);
   const [footerPolicies, setFooterPolicies] = useState<FooterPolicy[]>([]);
-  const [settings, setSettings]       = useState<FooterSettings>({
-    instagram_url:   INSTAGRAM_URL,
-    facebook_url:    '#',
-    contact_email:   'support@wingandweft.com',
-    whatsapp_number: WHATSAPP_NUMBER,
-  });
 
   const banner = useFadeIn();
   const grid   = useFadeIn();
   const bottom = useFadeIn();
 
-  const siteSettings = useSettings();
-
   useEffect(() => {
     fetchCategories().then(setCategories).catch(() => {});
-    fetchFooterSettings().then(setSettings).catch(() => {});
     fetchPolicies().then(setFooterPolicies).catch(() => {});
+    // ✅ FIX: fetchFooterSettings removed — SettingsContext handles it app-wide
   }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+
+    if (!agreed) {
+      setAgreeError(true);
+      setTimeout(() => setAgreeError(false), 3500);
+      return;
+    }
+
     setEmailStatus('saving');
     try {
       await saveNewsletterEmail(email.trim());
       setEmail('');
+      setAgreed(false);
       setEmailStatus('success');
-      setTimeout(() => setEmailStatus('idle'), 3000);
+      setTimeout(() => setEmailStatus('idle'), 3500);
     } catch {
       setEmailStatus('error');
-      setTimeout(() => setEmailStatus('idle'), 3000);
+      setTimeout(() => setEmailStatus('idle'), 3500);
     }
   };
 
-  const fadeStyle = (visible: boolean, delay = 0): React.CSSProperties => ({
-    opacity:    visible ? 1 : 0,
-    transform:  visible ? 'translateY(0)' : 'translateY(20px)',
+  const fadeStyle = (vis: boolean, delay = 0): React.CSSProperties => ({
+    opacity:    vis ? 1 : 0,
+    transform:  vis ? 'translateY(0)' : 'translateY(20px)',
     transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
   });
 
   const bg      = isDark ? 'bg-stone-900 border-stone-800' : 'bg-stone-100 border-stone-200';
-  const text    = isDark ? 'text-stone-400' : 'text-stone-500';
+  const text    = isDark ? 'text-stone-300' : 'text-stone-600';
   const heading = isDark ? 'text-brand-cream' : 'text-brand-ink';
 
-  // Link hover — theme-coloured
   const linkHoverStyle = (e: React.MouseEvent, enter: boolean) => {
     (e.currentTarget as HTMLElement).style.color = enter
       ? (isDark ? theme.naviLinkColor : theme.accentPrimary)
@@ -153,10 +142,18 @@ const Footer: React.FC = () => {
 
   return (
     <>
+      {/* ── Scoped style: bright placeholder text inside the newsletter input ── */}
+      <style>{`
+        .ww-newsletter-input::placeholder {
+          color: rgba(255, 255, 255, 0.82);
+          opacity: 1;
+        }
+      `}</style>
+
       <footer className={`${bg} border-t pt-14 pb-6`} role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
-          {/* ── Subscribe banner — theme-coloured ── */}
+          {/* ── Subscribe banner ── */}
           <div
             ref={banner.ref}
             className="rounded-2xl p-8 md:p-10 mb-14 relative overflow-hidden"
@@ -164,11 +161,11 @@ const Footer: React.FC = () => {
           >
             <div className="absolute inset-0 pattern-overlay opacity-20" />
 
-            {/* Subtle thread decoration */}
+            {/* Thread decoration */}
             <svg
               aria-hidden="true"
               viewBox="0 0 800 160" preserveAspectRatio="none"
-              style={{ position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',opacity:0.25 }}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.25 }}
             >
               <defs>
                 <linearGradient id="footer-banner-t" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -181,7 +178,9 @@ const Footer: React.FC = () => {
                 stroke="url(#footer-banner-t)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
             </svg>
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="relative z-10 flex flex-col gap-5">
+
+              {/* Heading */}
               <div>
                 <h3
                   className="text-brand-cream mb-1"
@@ -194,51 +193,90 @@ const Footer: React.FC = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleEmailSubmit} className="flex gap-2 w-full md:w-auto">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email address"
-                  required
-                  disabled={emailStatus === 'saving'}
-                  className="flex-1 md:w-64 px-4 py-3 rounded-full text-sm font-body outline-none focus:ring-2 focus:ring-brand-cream/50 disabled:opacity-60"
-                  style={{
-                    background: 'rgba(255,255,255,0.15)',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    color: '#FAF6EF',
-                  }}
-                  aria-label="Email address for newsletter"
-                />
-                {/* Subscribe button — theme-coloured */}
-                <button
-                  type="submit"
-                  disabled={emailStatus === 'saving'}
-                  className="px-5 py-3 rounded-full font-semibold font-body text-sm transition-all hover:scale-105 disabled:opacity-60"
-                  style={{
-                    background: theme.footerButtonBg,
-                    color:      theme.footerButtonText,
-                  }}
-                  aria-label="Subscribe to newsletter"
-                >
-                  {emailStatus === 'saving' ? '...'
-                   : emailStatus === 'success' ? '✓'
-                   : emailStatus === 'error'   ? '✗'
-                   : <ArrowRight size={18} />}
-                </button>
-              </form>
-            </div>
+              {/* ── Form ── */}
+              <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3" noValidate>
 
-            {emailStatus === 'success' && (
-              <p className="relative z-10 text-brand-cream/80 text-xs font-body mt-3 text-center md:text-right">
-                ✓ You're subscribed! We'll be in touch.
-              </p>
-            )}
-            {emailStatus === 'error' && (
-              <p className="relative z-10 text-brand-cream/60 text-xs font-body mt-3 text-center md:text-right">
-                Something went wrong. Please try again.
-              </p>
-            )}
+                {/* Input + button row */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email address"
+                    required
+                    disabled={emailStatus === 'saving' || emailStatus === 'success'}
+                    className="ww-newsletter-input flex-1 px-4 py-3 rounded-full text-sm font-body outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-60"
+                    style={{
+                      background: 'rgba(255,255,255,0.18)',
+                      border:     '1px solid rgba(255,255,255,0.55)',
+                      color:      '#FFFFFF',
+                    }}
+                    aria-label="Email address for newsletter"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={emailStatus === 'saving' || emailStatus === 'success'}
+                    className="px-6 py-3 rounded-full font-semibold font-body text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-60 whitespace-nowrap"
+                    style={{
+                      background: theme.footerButtonBg,
+                      color:      theme.footerButtonText,
+                      minWidth:   '160px',
+                    }}
+                    aria-label="Agree to promotional emails and subscribe"
+                  >
+                    {emailStatus === 'saving'
+                      ? 'Subscribing…'
+                      : emailStatus === 'success'
+                      ? "✓ You're in!"
+                      : emailStatus === 'error'
+                      ? 'Try Again'
+                      : 'Agree & Subscribe'}
+                  </button>
+                </div>
+
+                <label
+                  className="flex items-start gap-2.5 cursor-pointer select-none"
+                  style={{ maxWidth: '560px' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => {
+                      setAgreed(e.target.checked);
+                      if (agreeError) setAgreeError(false);
+                    }}
+                    disabled={emailStatus === 'saving' || emailStatus === 'success'}
+                    className="mt-0.5 flex-shrink-0 cursor-pointer"
+                    style={{ accentColor: '#FAF6EF' }}
+                    aria-label="I agree to receive promotional emails from Wing & Weft"
+                  />
+                  <span
+                    className="text-xs font-body leading-relaxed"
+                    style={{
+                      color:      agreeError ? '#FCA5A5' : 'rgba(250,246,239,0.72)',
+                      transition: 'color 0.3s ease',
+                    }}
+                  >
+                    {agreeError
+                      ? '⚠ Please check this box to continue — your consent is required.'
+                      : 'By subscribing, I agree to receive promotional emails about new arrivals, exclusive offers, and style updates from Wing\u00a0&\u00a0Weft. You can unsubscribe at any time.'}
+                  </span>
+                </label>
+              </form>
+
+              {/* Status feedback */}
+              {emailStatus === 'success' && (
+                <p className="text-brand-cream/80 text-xs font-body">
+                  ✓ Welcome aboard! Check your inbox for our latest updates.
+                </p>
+              )}
+              {emailStatus === 'error' && (
+                <p className="text-red-300 text-xs font-body">
+                  Something went wrong. Please try again in a moment.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* ── Footer grid ── */}
@@ -278,6 +316,7 @@ const Footer: React.FC = () => {
                       <Link
                         to={l.to}
                         className={`${text} text-sm font-body transition-colors`}
+                        style={{ fontWeight: 500 }}
                         onMouseEnter={e => linkHoverStyle(e, true)}
                         onMouseLeave={e => linkHoverStyle(e, false)}
                       >
@@ -286,20 +325,21 @@ const Footer: React.FC = () => {
                     </li>
                   ))}
 
-                  {/* ── Track your Order ── */}
+                  {/* Track your Order */}
                   <li>
                     <a
                       href={TRACK_ORDER_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`inline-flex items-center gap-1.5 text-sm font-body transition-colors ${text}`}
+                      style={{ fontWeight: 500 }}
                       onMouseEnter={e => linkHoverStyle(e, true)}
                       onMouseLeave={e => linkHoverStyle(e, false)}
                       aria-label="Track your courier order (opens in new tab)"
                       title="Track your courier order"
                     >
                       <PackageSearch size={13} aria-hidden="true" className="flex-shrink-0" />
-                      Track your Order
+                      Track Your Order
                     </a>
                   </li>
                 </ul>
@@ -317,6 +357,7 @@ const Footer: React.FC = () => {
                           <Link
                             to={`/category/${cat.id}`}
                             className={`${text} text-sm font-body transition-colors`}
+                            style={{ fontWeight: 500 }}
                             onMouseEnter={e => linkHoverStyle(e, true)}
                             onMouseLeave={e => linkHoverStyle(e, false)}
                           >
@@ -346,6 +387,7 @@ const Footer: React.FC = () => {
                         <button
                           onClick={() => setOpenPolicy(p.id)}
                           className={`${text} text-sm font-body text-left transition-colors`}
+                          style={{ fontWeight: 500 }}
                           onMouseEnter={e => linkHoverStyle(e, true)}
                           onMouseLeave={e => linkHoverStyle(e, false)}
                         >
@@ -368,21 +410,33 @@ const Footer: React.FC = () => {
 
           {/* ── Bottom bar ── */}
           <div ref={bottom.ref} className="flex flex-col items-center gap-3" style={fadeStyle(bottom.visible, 200)}>
-            {/* Social icons */}
+            {/* Social icons — ✅ FIX: all values from SettingsContext, not local state */}
             <div className="flex items-center gap-2.5">
               {[
-                { href: settings.instagram_url,
-                  icon: <Instagram size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
-                  label: 'Instagram', bg: '' },
-                { href: settings.facebook_url !== '#' ? settings.facebook_url : '#',
-                  icon: <Facebook size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
-                  label: 'Facebook', bg: '' },
-                { href: `mailto:${settings.contact_email}`,
-                  icon: <Mail size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
-                  label: 'Email', bg: '' },
-                { href: `https://wa.me/${settings.whatsapp_number}`,
-                  icon: <MessageCircle size={14} color="white" />,
-                  label: 'WhatsApp', bg: '#25D366' },
+                {
+                  href:  instagram_url || '#',
+                  icon:  <Instagram size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
+                  label: 'Instagram',
+                  bg:    '',
+                },
+                {
+                  href:  facebook_url && facebook_url !== '#' ? facebook_url : '#',
+                  icon:  <Facebook size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
+                  label: 'Facebook',
+                  bg:    '',
+                },
+                {
+                  href:  `mailto:${contact_email}`,
+                  icon:  <Mail size={14} color={isDark ? '#FAF6EF' : '#44403c'} />,
+                  label: 'Email',
+                  bg:    '',
+                },
+                {
+                  href:  `https://wa.me/${whatsapp_number}`,
+                  icon:  <MessageCircle size={14} color="white" />,
+                  label: 'WhatsApp',
+                  bg:    '#25D366',
+                },
               ].map(({ href, icon, label, bg }) => (
                 <a
                   key={label}
@@ -401,15 +455,13 @@ const Footer: React.FC = () => {
               ))}
             </div>
 
-            {/* Copyright line */}
+            {/* Copyright line — ✅ FIX: contact_email from context */}
             <p className={`${text} text-xs font-body text-center`}>
               © 2026 Wing &amp; Weft. All Rights Reserved.
               &nbsp;·&nbsp;
-              {/* Heart — theme-coloured fill */}
               Crafted with{' '}
               <Heart size={9} className="inline" style={{ color: theme.accentPrimary, fill: theme.heartFill }} />
               {' '}by{' '}
-              {/* Navi credit — theme-coloured */}
               <a
                 href="https://vnvne.vercel.app/"
                 target="_blank"
@@ -423,12 +475,12 @@ const Footer: React.FC = () => {
               </a>
               &nbsp;·&nbsp;
               <a
-                href={`mailto:${settings.contact_email}`}
+                href={`mailto:${contact_email}`}
                 className="transition-colors"
                 onMouseEnter={e => linkHoverStyle(e, true)}
                 onMouseLeave={e => linkHoverStyle(e, false)}
               >
-                {settings.contact_email}
+                {contact_email}
               </a>
             </p>
           </div>

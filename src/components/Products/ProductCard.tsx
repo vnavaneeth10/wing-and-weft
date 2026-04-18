@@ -3,7 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { WHATSAPP_NUMBER } from '../../data/products';
 import { useSettings } from '../../context/SettingsContext';
 
 export interface Product {
@@ -48,11 +47,10 @@ export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating
   </div>
 );
 
-
-
 const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const { isDark } = useTheme();
-  const { whatsapp_number } = useSettings(); 
+  // ✅ whatsapp_number comes from SettingsContext — reflects admin dashboard value
+  const { whatsapp_number } = useSettings();
 
   const buildWhatsAppLink = () => {
     const text = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g, ' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
@@ -63,6 +61,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
+  // ✅ handleShare uses buildWhatsAppLink() which reads from context — hover icon works correctly
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -135,7 +134,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   return (
     <div className={`product-card group rounded-xl overflow-hidden border ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100'}`}>
       <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-        {/* KEY FIX: strict 3:4 aspect ratio container with absolute-positioned image */}
+        {/* Strict 3:4 aspect ratio container with absolute-positioned image */}
         <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
           <img
             src={product.images[0]}
@@ -170,7 +169,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </div>
           )}
 
-          {/* Quick share */}
+          {/* ✅ Hover WhatsApp share button — uses handleShare → buildWhatsAppLink() → context number */}
           <button
             onClick={handleShare}
             className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
@@ -219,10 +218,15 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </p>
           </div>
 
-          <a href={buildWhatsAppLink()} target="_blank" rel="noopener noreferrer"
+          {/* ✅ Buy button — uses buildWhatsAppLink() → context number */}
+          <a
+            href={buildWhatsAppLink()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105"
             style={{ background: '#25D366', color: '#fff' }}
-            aria-label={`Buy ${product.name} on WhatsApp`}>
+            aria-label={`Buy ${product.name} on WhatsApp`}
+          >
             <MessageCircle size={12} />
             Buy
           </a>
