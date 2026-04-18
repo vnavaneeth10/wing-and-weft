@@ -12,7 +12,6 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../admin/lib/supabase';
 type SortOption = 'featured' | 'rating' | 'az' | 'za' | 'low-high' | 'high-low';
 type ViewMode   = '2col' | '3col' | '4col';
 
-// FIX 7: Added image to CategoryMeta so we can pass it to og:image
 interface CategoryMeta {
   id:          string;
   name:        string;
@@ -20,7 +19,6 @@ interface CategoryMeta {
   image?:      string;
 }
 
-// FIX 7: Also select image field for og:image
 const fetchCategoryMeta = async (id: string): Promise<CategoryMeta | null> => {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/categories?id=eq.${encodeURIComponent(id)}&select=id,name,description,image`,
@@ -31,7 +29,6 @@ const fetchCategoryMeta = async (id: string): Promise<CategoryMeta | null> => {
   return data[0] ?? null;
 };
 
-// ─── Coming Soon empty state ──────────────────────────────────────────────────
 // ─── Coming Soon empty state ──────────────────────────────────────────────────
 const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ categoryName, isDark }) => {
   const [vis, setVis] = useState(false);
@@ -47,8 +44,6 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
       position: 'relative',
       overflow: 'hidden',
     }}>
-
-      {/* ── Ambient background orbs ── */}
       <div style={{
         position: 'absolute', top: '10%', left: '5%',
         width: '340px', height: '340px', borderRadius: '50%',
@@ -64,7 +59,6 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
         animation: 'cs-breathe 9s ease-in-out 2s infinite',
       }} />
 
-      {/* ── Decorative corner marks ── */}
       {[
         { top: 24, left: 24 },
         { top: 24, right: 24 },
@@ -131,15 +125,10 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
           transform: translateY(-2px);
           box-shadow: 0 12px 32px rgba(188,61,62,0.35);
         }
-        .cs-btn svg {
-          transition: transform 0.3s ease;
-        }
-        .cs-btn:hover svg {
-          transform: translateX(4px);
-        }
+        .cs-btn svg { transition: transform 0.3s ease; }
+        .cs-btn:hover svg { transform: translateX(4px); }
       `}</style>
 
-      {/* ── Main card ── */}
       <div style={{
         position: 'relative',
         maxWidth: '520px',
@@ -149,13 +138,7 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
         transform: vis ? 'translateY(0)' : 'translateY(28px)',
         transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
       }}>
-
-        {/* Rotating outer ring */}
-        <div style={{
-          position: 'relative',
-          width: '100px', height: '100px',
-          margin: '0 auto 32px',
-        }}>
+        <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 32px' }}>
           <svg
             width="100" height="100" viewBox="0 0 100 100"
             style={{
@@ -166,13 +149,7 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
             }}
             aria-hidden="true"
           >
-            <circle cx="50" cy="50" r="46"
-              fill="none"
-              stroke="url(#cs-ring-grad)"
-              strokeWidth="0.8"
-              strokeDasharray="6 10"
-              strokeLinecap="round"
-            />
+            <circle cx="50" cy="50" r="46" fill="none" stroke="url(#cs-ring-grad)" strokeWidth="0.8" strokeDasharray="6 10" strokeLinecap="round" />
             <defs>
               <linearGradient id="cs-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%"   stopColor="#bc3d3e" />
@@ -180,11 +157,8 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
               </linearGradient>
             </defs>
           </svg>
-
-          {/* Center icon */}
           <div style={{
-            position: 'absolute', inset: '14px',
-            borderRadius: '50%',
+            position: 'absolute', inset: '14px', borderRadius: '50%',
             background: isDark
               ? 'linear-gradient(135deg, rgba(188,61,62,0.12), rgba(182,137,60,0.1))'
               : 'linear-gradient(135deg, rgba(188,61,62,0.08), rgba(182,137,60,0.07))',
@@ -195,79 +169,25 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
             boxShadow: isDark
               ? '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
               : '0 8px 24px rgba(26,20,16,0.08)',
-          }}>
-            🪡
-          </div>
+          }}>🪡</div>
         </div>
 
-        {/* Category label */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-          marginBottom: '14px',
-          opacity: vis ? 1 : 0,
-          transition: 'opacity 0.6s ease 0.3s',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '14px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.3s' }}>
           <div style={{ width: '24px', height: '1px', background: 'linear-gradient(to right, transparent, #bc3d3e)' }} />
-          <p style={{
-            color: '#bc3d3e',
-            fontSize: '0.55rem', letterSpacing: '0.4em',
-            textTransform: 'uppercase',
-            fontFamily: '"Raleway", sans-serif', fontWeight: 700,
-            margin: 0,
-          }}>
-            {categoryName}
-          </p>
+          <p style={{ color: '#bc3d3e', fontSize: '0.55rem', letterSpacing: '0.4em', textTransform: 'uppercase', fontFamily: '"Raleway", sans-serif', fontWeight: 700, margin: 0 }}>{categoryName}</p>
           <div style={{ width: '24px', height: '1px', background: 'linear-gradient(to left, transparent, #bc3d3e)' }} />
         </div>
 
-        {/* Headline */}
-        <h2 style={{
-          fontFamily: '"Cormorant Garamond", serif',
-          fontSize: 'clamp(2.4rem, 5vw, 3.4rem)',
-          fontWeight: 300,
-          lineHeight: 1.1,
-          color: isDark ? '#f0e8d6' : '#1a1410',
-          marginBottom: '8px',
-          letterSpacing: '-0.01em',
-          opacity: vis ? 1 : 0,
-          transform: vis ? 'translateY(0)' : 'translateY(12px)',
-          transition: 'opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s',
-        }}>
+        <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(2.4rem, 5vw, 3.4rem)', fontWeight: 300, lineHeight: 1.1, color: isDark ? '#f0e8d6' : '#1a1410', marginBottom: '8px', letterSpacing: '-0.01em', opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s' }}>
           Coming Soon
         </h2>
 
-        {/* Gold italic sub-headline */}
-        <p style={{
-          fontFamily: '"Cormorant Garamond", serif',
-          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
-          fontStyle: 'italic',
-          fontWeight: 400,
-          color: '#b6893c',
-          marginBottom: '20px',
-          opacity: vis ? 1 : 0,
-          transition: 'opacity 0.6s ease 0.5s',
-        }}>
+        <p style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(1rem, 2vw, 1.2rem)', fontStyle: 'italic', fontWeight: 400, color: '#b6893c', marginBottom: '20px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.5s' }}>
           Something extraordinary is being woven
         </p>
 
-        {/* Animated thread divider */}
-        <svg viewBox="0 0 400 32" fill="none"
-          style={{
-            width: '100%', maxWidth: '360px', height: '24px',
-            display: 'block', margin: '0 auto 20px',
-          }}
-          aria-hidden="true"
-        >
-          <path
-            d="M0,16 C50,4 80,28 130,14 C180,0 210,28 260,14 C310,0 350,24 400,14"
-            stroke="url(#cs-thread-grad)"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeDasharray="300"
-            style={{
-              animation: vis ? 'cs-thread 1.6s ease 0.6s both' : 'none',
-            }}
-          />
+        <svg viewBox="0 0 400 32" fill="none" style={{ width: '100%', maxWidth: '360px', height: '24px', display: 'block', margin: '0 auto 20px' }} aria-hidden="true">
+          <path d="M0,16 C50,4 80,28 130,14 C180,0 210,28 260,14 C310,0 350,24 400,14" stroke="url(#cs-thread-grad)" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="300" style={{ animation: vis ? 'cs-thread 1.6s ease 0.6s both' : 'none' }} />
           <defs>
             <linearGradient id="cs-thread-grad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%"   stopColor="#bc3d3e" stopOpacity="0" />
@@ -278,25 +198,11 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
           </defs>
         </svg>
 
-        {/* Body text */}
-        <p style={{
-          fontFamily: '"Raleway", sans-serif',
-          fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.85,
-          color: isDark ? 'rgba(240,232,214,0.5)' : 'rgba(26,20,16,0.5)',
-          marginBottom: '36px', maxWidth: '380px', margin: '0 auto 36px',
-          opacity: vis ? 1 : 0,
-          transition: 'opacity 0.6s ease 0.65s',
-        }}>
-          Our artisans are handcrafting this collection with the utmost care.
-          Each piece will be worth the wait.
+        <p style={{ fontFamily: '"Raleway", sans-serif', fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.85, color: isDark ? 'rgba(240,232,214,0.5)' : 'rgba(26,20,16,0.5)', marginBottom: '36px', maxWidth: '380px', margin: '0 auto 36px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.65s' }}>
+          Our artisans are handcrafting this collection with the utmost care. Each piece will be worth the wait.
         </p>
 
-        {/* CTA button */}
-        <div style={{
-          opacity: vis ? 1 : 0,
-          transform: vis ? 'translateY(0)' : 'translateY(8px)',
-          transition: 'opacity 0.6s ease 0.75s, transform 0.6s ease 0.75s',
-        }}>
+        <div style={{ opacity: vis ? 1 : 0, transform: vis ? 'translateY(0)' : 'translateY(8px)', transition: 'opacity 0.6s ease 0.75s, transform 0.6s ease 0.75s' }}>
           <Link to="/categories" className="cs-btn">
             Explore Other Collections
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -306,32 +212,20 @@ const ComingSoonEmpty: React.FC<{ categoryName: string; isDark: boolean }> = ({ 
           </Link>
         </div>
 
-        {/* Bottom signature */}
-        <p style={{
-          fontFamily: '"Cormorant Garamond", serif',
-          fontSize: '0.85rem', fontStyle: 'italic',
-          color: isDark ? 'rgba(240,232,214,0.25)' : 'rgba(26,20,16,0.25)',
-          marginTop: '40px',
-          opacity: vis ? 1 : 0,
-          transition: 'opacity 0.6s ease 0.9s',
-        }}>
+        <p style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '0.85rem', fontStyle: 'italic', color: isDark ? 'rgba(240,232,214,0.25)' : 'rgba(26,20,16,0.25)', marginTop: '40px', opacity: vis ? 1 : 0, transition: 'opacity 0.6s ease 0.9s' }}>
           — Wing &amp; Weft
         </p>
-
       </div>
     </div>
   );
 };
 
 // ─── View toggle ──────────────────────────────────────────────────────────────
-// FIX 4: Active state changed from maroon-brown gradient to amber family —
-// consistent with the site's warm gold palette and the fix applied to CategorySection
 const ViewBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string; isDark: boolean }> =
   ({ active, onClick, icon, label, isDark }) => (
   <button onClick={onClick} aria-label={label} title={label} aria-pressed={active}
     className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200"
     style={{
-      // FIX 4: was linear-gradient(135deg,#7A1F2E,#9C6F2E) — maroon clashed with palette
       background: active ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
       color:  active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
       border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
@@ -381,24 +275,48 @@ const SmartProductCard: React.FC<{ product: Parameters<typeof ProductCard>[0]['p
   return (
     <div onMouseEnter={startHoverCycle} onMouseLeave={stopHoverCycle} style={{ position: 'relative' }}>
       <ProductCard product={displayProduct} />
-      {/* FIX 8: Dot indicator position changed from hardcoded bottom:72px to
-          a percentage-based bottom so it doesn't break if ProductCard info height changes */}
+
+      {/* ✅ Dot indicator — placed INSIDE the image area at the TOP so it never
+          overlaps the product name or info below the card image.
+          Uses absolute positioning relative to the parent wrapper, offset to sit
+          just inside the top of the 3:4 image. A small semi-transparent pill
+          keeps it readable against any image. */}
       {hasMultiple && (
-        <div style={{
-          position: 'absolute',
-          bottom: '22%',       // FIX 8: was '72px' — now relative so it scales with card height
-          left: 0, right: 0,
-          display: 'flex', justifyContent: 'center', gap: '4px',
-          pointerEvents: 'none',
-        }}>
+        <div
+          style={{
+            position:        'absolute',
+            // The image is 3:4 aspect. We place dots near the top of the image,
+            // clear of the top badges (which sit at ~top:12px).
+            // "calc(X% - Y)" places it relative to the wrapper height.
+            // Since the image is 3/4 of the card width, and cards vary,
+            // we use a fixed top offset that lands inside the image safely.
+            top:             '10px',
+            left:            '50%',
+            transform:       'translateX(-50%)',
+            display:         'flex',
+            alignItems:      'center',
+            justifyContent:  'center',
+            gap:             '4px',
+            pointerEvents:   'none',
+            zIndex:          10,
+            // Pill background for legibility over any image colour
+            background:      'rgba(0,0,0,0.28)',
+            backdropFilter:  'blur(4px)',
+            padding:         '4px 8px',
+            borderRadius:    '20px',
+          }}
+        >
           {product.images.map((_, i) => (
-            <div key={i} style={{
-              width: i === imgIdx ? '16px' : '5px',
-              height: '5px',
-              borderRadius: '3px',
-              background: i === imgIdx ? '#b6893c' : 'rgba(255,255,255,0.6)',
-              transition: 'width 0.3s ease',
-            }} />
+            <div
+              key={i}
+              style={{
+                width:        i === imgIdx ? '14px' : '5px',
+                height:       '5px',
+                borderRadius: '3px',
+                background:   i === imgIdx ? '#f0e8d6' : 'rgba(255,255,255,0.5)',
+                transition:   'width 0.3s ease, background 0.3s ease',
+              }}
+            />
           ))}
         </div>
       )}
@@ -475,28 +393,18 @@ const CategoryPage: React.FC = () => {
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
-  // FIX 5+6: categoryName now uses category.name from DB first,
-  // then falls back to formatting the URL slug cleanly.
-  // This matches the eyebrow fix pattern — no raw URL slugs shown to users.
   const categoryName = category?.name
     ?? (categoryId
-      ? categoryId
-          .split('-')
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ')
+      ? categoryId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
       : '');
 
-  // FIX 6: SEO description uses the category's actual DB description if available,
-  // falls back to a generic template. No longer ignores the description field entirely.
   const seoDescription = category?.description?.trim()
     ? category.description
     : categoryName
       ? `Shop authentic handwoven ${categoryName} at Wing & Weft. Free shipping above ₹2000.`
       : 'Browse our curated collection of authentic handwoven sarees.';
 
-  // FIX 5: Canonical URL updated — replace with your actual production domain.
-  // Was hardcoded to wingandweft.vercel.app which is the Vercel preview, not production.
-  const PRODUCTION_DOMAIN = 'https://www.wingandweft.com'; // ← update to your GoDaddy domain
+  const PRODUCTION_DOMAIN = 'https://www.wingandweft.com';
   const canonicalUrl = `${PRODUCTION_DOMAIN}/category/${categoryId}`;
 
   usePageMeta({
@@ -506,14 +414,10 @@ const CategoryPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${bg} pt-20`}>
-      {/* FIX 5, 6, 7: canonical fixed, description uses DB field, og:image added */}
       <SEO
         title={categoryName || 'Collections'}
         description={seoDescription}
         canonical={canonicalUrl}
-        // FIX 7: Pass category image as og:image if your SEO component supports it.
-        // This improves link previews on WhatsApp, Twitter, Facebook significantly.
-        // If your SEO component doesn't accept ogImage yet, add that prop to it.
         ogImage={category?.image}
       />
 
@@ -622,7 +526,6 @@ const CategoryPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                {/* Price range — label updates live as slider moves */}
                 <h3 className={`text-sm font-semibold mb-3 font-body ${textPrimary}`}>
                   Price: ₹{priceRange[0].toLocaleString('en-IN')} – ₹{priceRange[1].toLocaleString('en-IN')}
                 </h3>
@@ -631,10 +534,7 @@ const CategoryPage: React.FC = () => {
                   onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
                   className="w-full accent-brand-gold"
                   aria-label={`Maximum price ₹${priceRange[1]}`}
-                  style={{
-                    // FIX: Tint the range slider thumb to brand gold — browser default is jarring in dark mode
-                    accentColor: '#b6893c',
-                  }}
+                  style={{ accentColor: '#b6893c' }}
                 />
                 <div className={`flex justify-between text-xs font-body mt-1 ${textMuted}`}>
                   <span>₹0</span><span>₹20,000</span>

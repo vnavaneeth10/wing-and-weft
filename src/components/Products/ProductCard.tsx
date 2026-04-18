@@ -49,7 +49,6 @@ export const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating
 
 const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   const { isDark } = useTheme();
-  // ✅ whatsapp_number comes from SettingsContext — reflects admin dashboard value
   const { whatsapp_number } = useSettings();
 
   const buildWhatsAppLink = () => {
@@ -61,7 +60,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-  // ✅ handleShare uses buildWhatsAppLink() which reads from context — hover icon works correctly
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -77,7 +75,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
         style={{ width: '200px' }}
         aria-label={`View ${product.name}`}
       >
-        {/* Strict 3:4 image box */}
         <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
           <img
             src={product.images[0]}
@@ -134,7 +131,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   return (
     <div className={`product-card group rounded-xl overflow-hidden border ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100'}`}>
       <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
-        {/* Strict 3:4 aspect ratio container with absolute-positioned image */}
         <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
           <img
             src={product.images[0]}
@@ -143,92 +139,212 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             loading="lazy"
           />
 
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-1">
+          {/* Top-left: New Arrival / Best Seller badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1" style={{ zIndex: 2 }}>
             {product.is_new_arrival && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#bc3d3e', color: '#e9e3cb' }}>
-                New Arrival
+              <span
+                className="font-body font-bold"
+                style={{
+                  fontSize:      '0.62rem',
+                  letterSpacing: '0.08em',
+                  padding:       '3px 9px',
+                  borderRadius:  '20px',
+                  background:    '#bc3d3e',
+                  color:         '#faf6ef',
+                }}
+              >
+                NEW ARRIVAL
               </span>
             )}
             {product.is_best_seller && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#b6893c', color: '#e9e3cb' }}>
-                Best Seller
+              <span
+                className="font-body font-bold"
+                style={{
+                  fontSize:      '0.62rem',
+                  letterSpacing: '0.08em',
+                  padding:       '3px 9px',
+                  borderRadius:  '20px',
+                  background:    '#b6893c',
+                  color:         '#faf6ef',
+                }}
+              >
+                BEST SELLER
               </span>
             )}
           </div>
 
+          {/* ✅ Discount badge — bottom-left of image, large + bold for easy customer catch.
+              Moved away from top-right (cluttered with badges) to stand alone prominently. */}
           {discount > 0 && (
-            <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold" style={{ background: '#e69358', color: '#fff' }}>
-              -{discount}%
-            </span>
+            <div className="absolute bottom-3 left-3" style={{ zIndex: 2 }}>
+              <span
+                className="font-body"
+                style={{
+                  display:       'inline-flex',
+                  alignItems:    'center',
+                  background:    'linear-gradient(135deg, #e05c1a 0%, #c94a10 100%)',
+                  color:         '#fff',
+                  fontSize:      '0.8rem',
+                  fontWeight:    900,
+                  letterSpacing: '0.03em',
+                  padding:       '5px 10px',
+                  borderRadius:  '6px',
+                  boxShadow:     '0 2px 10px rgba(0,0,0,0.4)',
+                  lineHeight:    1,
+                }}
+              >
+                {discount}% OFF
+              </span>
+            </div>
           )}
 
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center" style={{ zIndex: 3 }}>
               <span className="text-white font-semibold font-body">Out of Stock</span>
             </div>
           )}
 
-          {/* ✅ Hover WhatsApp share button — uses handleShare → buildWhatsAppLink() → context number */}
+          {/* ✅ WhatsApp hover button — bottom-right, clear of discount badge */}
           <button
             onClick={handleShare}
-            className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
-            style={{ background: '#25D366', color: '#fff' }}
+            className="absolute bottom-3 right-3 w-9 h-9 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
+            style={{
+              background: '#25D366',
+              color:      '#fff',
+              boxShadow:  '0 2px 10px rgba(37,211,102,0.5)',
+              zIndex:     2,
+            }}
             aria-label={`Share ${product.name} on WhatsApp`}
           >
-            <MessageCircle size={14} />
+            <MessageCircle size={15} />
           </button>
         </div>
       </Link>
 
+      {/* ── Card info ── */}
       <div className="p-4">
-        <p className="text-xs mb-1 font-body uppercase tracking-wide text-brand-gold">{product.fabric}</p>
+        {/* Fabric label — small, golden, spaced caps */}
+        <p
+          className="font-body mb-1"
+          style={{
+            fontSize:      '0.58rem',
+            letterSpacing: '0.2em',
+            fontWeight:    700,
+            textTransform: 'uppercase',
+            color:         '#b6893c',
+          }}
+        >
+          {product.fabric}
+        </p>
+
+        {/* ✅ Product name — notably bolder + slightly larger for readability */}
         <Link to={`/product/${product.id}`}>
-          <h3 className={`font-semibold mb-2 line-clamp-2 font-body hover:text-brand-red transition-colors ${isDark ? 'text-dark-text' : 'text-stone-800'}`}>
+          <h3
+            className="mb-2 line-clamp-2 transition-colors"
+            style={{
+              fontFamily:  '"Raleway", sans-serif',
+              fontSize:    '0.9rem',
+              fontWeight:  800,
+              lineHeight:  1.35,
+              color:       isDark ? '#f0e8d6' : '#1a1410',
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#bc3d3e'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = isDark ? '#f0e8d6' : '#1a1410'}
+          >
             {product.name}
           </h3>
         </Link>
 
         <div className="flex items-center gap-2 mb-2">
           <StarRating rating={product.rating} />
-          <span className={`text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}>({product.review_count})</span>
+          <span className={`font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}
+            style={{ fontSize: '0.7rem' }}>
+            ({product.review_count})
+          </span>
         </div>
 
-        {/* Colors — only render if colors exist and have actual values */}
+        {/* Color swatches */}
         {product.colors && product.colors.length > 0 && (
-          <div className="flex gap-1 mb-3">
+          <div className="flex gap-1.5 mb-3">
             {product.colors.map((c) => (
-              <div key={c} className="w-4 h-4 rounded-full border border-white/20" style={{ background: c }} aria-label={`Color: ${c}`} />
+              <div
+                key={c}
+                className="w-4 h-4 rounded-full"
+                style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
+                aria-label={`Color: ${c}`}
+              />
             ))}
           </div>
         )}
 
-        <div className="flex items-center justify-between">
+        {/* Price row */}
+        <div className="flex items-center justify-between mt-1">
           <div>
             {product.discount_price ? (
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-brand-red font-body">₹{product.discount_price.toLocaleString()}</span>
-                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>₹{product.price.toLocaleString()}</span>
+              <div className="flex items-baseline gap-2">
+                {/* ✅ Sale price — larger, heavier weight */}
+                <span
+                  className="font-body"
+                  style={{ fontSize: '1.05rem', fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.01em' }}
+                >
+                  ₹{product.discount_price.toLocaleString()}
+                </span>
+                {/* Original — struck through, clearly muted */}
+                <span
+                  className="font-body line-through"
+                  style={{ fontSize: '0.76rem', fontWeight: 500, color: isDark ? '#64748b' : '#a8a29e' }}
+                >
+                  ₹{product.price.toLocaleString()}
+                </span>
               </div>
             ) : (
-              <span className="font-bold text-brand-red font-body">₹{product.price.toLocaleString()}</span>
+              <span
+                className="font-body"
+                style={{ fontSize: '1.05rem', fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.01em' }}
+              >
+                ₹{product.price.toLocaleString()}
+              </span>
             )}
-            <p className={`text-xs mt-0.5 font-body ${product.stock === 0 ? 'text-red-500' : product.stock <= 5 ? 'text-orange-500' : isDark ? 'text-dark-muted' : 'text-stone-500'}`}>
-              {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
+            {/* Stock status */}
+            <p
+              className="font-body mt-0.5"
+              style={{
+                fontSize:   '0.68rem',
+                fontWeight: 600,
+                color: product.stock === 0
+                  ? '#ef4444'
+                  : product.stock <= 5
+                    ? '#f97316'
+                    : isDark ? '#6b7280' : '#9ca3af',
+              }}
+            >
+              {product.stock === 0
+                ? 'Out of Stock'
+                : product.stock <= 5
+                  ? `Only ${product.stock} left`
+                  : 'In Stock'}
             </p>
           </div>
 
-          {/* ✅ Buy button — uses buildWhatsAppLink() → context number */}
+          {/* ✅ Buy button — bolder text, slightly larger tap target */}
           <a
             href={buildWhatsAppLink()}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold font-body transition-all hover:scale-105"
-            style={{ background: '#25D366', color: '#fff' }}
+            className="flex items-center gap-1.5 rounded-lg font-body transition-all hover:scale-105 active:scale-95"
+            style={{
+              background:    '#25D366',
+              color:         '#fff',
+              fontSize:      '0.7rem',
+              fontWeight:    900,
+              letterSpacing: '0.07em',
+              padding:       '8px 14px',
+              boxShadow:     '0 2px 8px rgba(37,211,102,0.4)',
+            }}
             aria-label={`Buy ${product.name} on WhatsApp`}
           >
-            <MessageCircle size={12} />
-            Buy
+            <MessageCircle size={13} />
+            BUY
           </a>
         </div>
       </div>
