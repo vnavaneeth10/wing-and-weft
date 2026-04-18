@@ -1,7 +1,7 @@
 // src/pages/ProductDetailPage.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle, X, ZoomIn, Truck, ShieldCheck, Gem } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import SEO from '../components/SEO/SEO';
 import { StarRating } from '../components/Products/ProductCard';
@@ -36,6 +36,10 @@ const STYLES = `
     from { opacity: 0; transform: scale(0.85) translateY(4px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
+  @keyframes pdp-lightbox-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+  }
 
   .pdp-wa-btn {
     position: relative; overflow: hidden;
@@ -55,14 +59,158 @@ const STYLES = `
   .pdp-accordion-btn { transition: color 0.25s ease; }
 
   .pdp-thumb {
-    transition: border-color 0.25s ease, transform 0.25s ease;
+    transition: border-color 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
   }
-  .pdp-thumb:hover { transform: scale(1.05); }
+  .pdp-thumb:hover { transform: scale(1.05); opacity: 0.9; }
 
   .pdp-share-icon {
     transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
   }
   .pdp-share-icon:hover { transform: scale(1.12) rotate(4deg); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+
+  /* ── Image zoom ── */
+  .pdp-main-image-wrap {
+    overflow: hidden;
+    cursor: zoom-in;
+    position: relative;
+  }
+  .pdp-main-img {
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center center;
+    will-change: transform;
+    animation: pdp-fade-in 0.35s ease both;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .pdp-main-image-wrap.zoomed .pdp-main-img {
+    transform: scale(1.08);
+  }
+  .pdp-zoom-hint {
+    position: absolute;
+    bottom: 48px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .pdp-main-image-wrap.zoomed .pdp-zoom-hint {
+    opacity: 1;
+  }
+
+  /* ── Lightbox ── */
+  .pdp-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: pdp-fade-in 0.25s ease;
+    cursor: zoom-out;
+  }
+  .pdp-lightbox-img {
+    max-width: 92vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+    animation: pdp-lightbox-in 0.3s cubic-bezier(0.22,1,0.36,1);
+    cursor: default;
+  }
+  .pdp-lightbox-close {
+    position: fixed;
+    top: 18px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+  }
+  .pdp-lightbox-close:hover {
+    background: rgba(255,255,255,0.22);
+    transform: scale(1.08);
+  }
+  .pdp-lightbox-counter {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.55);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    font-family: "Raleway", sans-serif;
+  }
+  .pdp-lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+  }
+  .pdp-lightbox-nav:hover { background: rgba(255,255,255,0.22); }
+  .pdp-lightbox-nav.prev { left: 16px; }
+  .pdp-lightbox-nav.next { right: 16px; }
+
+  /* ── Trust badges ── */
+  .pdp-trust-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 12px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .pdp-trust-badge:hover {
+    transform: translateY(-2px);
+  }
+  .pdp-trust-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -109,6 +257,151 @@ const ThreadDivider: React.FC = () => (
   </svg>
 );
 
+// ─── Lightbox ────────────────────────────────────────────────────────────────
+interface LightboxProps {
+  images: string[];
+  initialIndex: number;
+  productName: string;
+  onClose: () => void;
+}
+const Lightbox: React.FC<LightboxProps> = ({ images, initialIndex, productName, onClose }) => {
+  const [current, setCurrent] = useState(initialIndex);
+
+  const prev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrent(i => (i - 1 + images.length) % images.length);
+  };
+  const next = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrent(i => (i + 1) % images.length);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft')  setCurrent(i => (i - 1 + images.length) % images.length);
+      if (e.key === 'ArrowRight') setCurrent(i => (i + 1) % images.length);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [images.length, onClose]);
+
+  // Prevent background scroll
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  return (
+    <div className="pdp-lightbox-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Image viewer">
+      <button className="pdp-lightbox-close" onClick={onClose} aria-label="Close image viewer">
+        <X size={20} />
+      </button>
+
+      <img
+        key={current}
+        src={images[current]}
+        alt={`${productName} — full size image ${current + 1}`}
+        className="pdp-lightbox-img"
+        onClick={e => e.stopPropagation()}
+        loading="eager"
+      />
+
+      {images.length > 1 && (
+        <>
+          <button className="pdp-lightbox-nav prev" onClick={prev} aria-label="Previous image">
+            <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+          <button className="pdp-lightbox-nav next" onClick={next} aria-label="Next image">
+            <ChevronRight size={20} />
+          </button>
+          <p className="pdp-lightbox-counter">{current + 1} / {images.length}</p>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── Trust badges ─────────────────────────────────────────────────────────────
+interface TrustBadgesProps { isDark: boolean; }
+const TrustBadges: React.FC<TrustBadgesProps> = ({ isDark }) => {
+  const badges = [
+    {
+      icon: <Truck size={18} />,
+      label: 'Fast Delivery',
+      sub: '3–5 business days',
+      iconBg: isDark ? 'rgba(34,197,94,0.15)' : '#dcfce7',
+      iconColor: '#16a34a',
+    },
+    {
+      icon: <ShieldCheck size={18} />,
+      label: 'Quality Approved',
+      sub: 'Artisan certified',
+      iconBg: isDark ? 'rgba(59,130,246,0.15)' : '#dbeafe',
+      iconColor: '#2563eb',
+    },
+    {
+      icon: <Gem size={18} />,
+      label: 'Premium Material',
+      sub: 'Finest handwoven',
+      iconBg: isDark ? 'rgba(168,85,247,0.15)' : '#f3e8ff',
+      iconColor: '#9333ea',
+    },
+  ];
+
+  const wrapBg    = isDark ? 'rgba(255,255,255,0.04)' : '#FAFAF8';
+  const wrapBdr   = isDark ? 'rgba(255,255,255,0.08)' : '#EDE8DF';
+  const labelClr  = isDark ? '#e5e7eb' : '#1c1917';
+  const subClr    = isDark ? '#9ca3af' : '#78716c';
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: '8px',
+        background: wrapBg,
+        border: `1px solid ${wrapBdr}`,
+        borderRadius: '14px',
+        padding: '10px 6px',
+        marginBottom: '28px',
+      }}
+    >
+      {badges.map((b, i) => (
+        <div key={i} className="pdp-trust-badge">
+          <div
+            className="pdp-trust-icon"
+            style={{ background: b.iconBg, color: b.iconColor }}
+          >
+            {b.icon}
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              fontFamily: '"Raleway", sans-serif',
+              letterSpacing: '0.04em',
+              color: labelClr,
+              lineHeight: 1.2,
+              marginBottom: '2px',
+            }}>
+              {b.label}
+            </p>
+            <p style={{
+              fontSize: '0.6rem',
+              fontFamily: '"DM Sans", sans-serif',
+              color: subClr,
+              lineHeight: 1.2,
+            }}>
+              {b.sub}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ─── Not Found component ──────────────────────────────────────────────────────
 const NotFound: React.FC<{ bg: string; textPrimary: string }> = ({ bg, textPrimary }) => (
   <div className={`min-h-screen ${bg} pt-24 flex items-center justify-center`}>
@@ -138,7 +431,6 @@ const ProductDetailPage: React.FC = () => {
   const { productId }   = useParams<{ productId: string }>();
   const { isDark }      = useTheme();
 
-  // ✅ FIX: pass productId directly — useProduct handles the empty/undefined case
   const { product, loading } = useProduct(productId ?? '');
   const styleRef = useRef(false);
 
@@ -146,15 +438,24 @@ const ProductDetailPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>('description');
   const [settings, setSettings]           = useState<Record<string, string>>({});
+  const [lightboxOpen, setLightboxOpen]   = useState(false);
+  const [isImageHovered, setIsImageHovered] = useState(false);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ✅ All social values from SettingsContext
   const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
-  const bg          = isDark ? 'bg-dark-bg'    : 'bg-brand-cream';
-  const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
+  // ── Background: warm off-white for light mode ──────────────────────────────
+  // #FDFAF6 = a luxe, warm off-white (slightly warmer than pure white, avoids
+  // the current cream token which can feel too yellow). In dark mode the
+  // existing dark-bg token is kept.
+  const bgStyle   = isDark ? undefined : { backgroundColor: '#FDFAF6' };
+  const bg        = isDark ? 'bg-dark-bg' : '';          // no tailwind bg in light mode; inline style does it
+  const card      = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
+
+  // Product ID text color: rich warm brown in light, soft gold-ish in dark
+  const productIdColor = isDark ? '#c9a96e' : '#7c5c3a';
 
   useEffect(() => {
     if (!styleRef.current) {
@@ -166,10 +467,15 @@ const ProductDetailPage: React.FC = () => {
     fetchSettings().then(setSettings);
   }, []);
 
+  const [animKey, setAnimKey] = useState(0); // increments to re-trigger fade-in CSS animation
+
   const startAutoSlide = useCallback(() => {
     if (!product || product.images.length <= 1) return;
     autoRef.current = setInterval(() => {
-      setSelectedImage(prev => (prev + 1) % product.images.length);
+      setSelectedImage(prev => {
+        setAnimKey(k => k + 1);
+        return (prev + 1) % product.images.length;
+      });
     }, 3000);
   }, [product]);
 
@@ -182,7 +488,13 @@ const ProductDetailPage: React.FC = () => {
     return stopAutoSlide;
   }, [product, startAutoSlide, stopAutoSlide]);
 
-  const handleThumbClick = (i: number) => { stopAutoSlide(); setSelectedImage(i); };
+  const handleThumbClick = (i: number) => {
+    stopAutoSlide();
+    setIsImageHovered(false);
+    setAnimKey(k => k + 1);
+    setSelectedImage(i);
+  };
+  const handleMainImageClick = () => { stopAutoSlide(); setLightboxOpen(true); };
 
   usePageMeta({
     title: product
@@ -199,21 +511,19 @@ const ProductDetailPage: React.FC = () => {
     : 'Browse handwoven sarees at Wing & Weft.';
   const seoImage = product?.images?.[0];
 
-  // ✅ FIX: guard against missing productId in URL entirely — don't show skeleton forever
   if (!productId) {
     return <NotFound bg={bg} textPrimary={textPrimary} />;
   }
 
-  // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className={`min-h-screen ${bg} pt-20`}>
+      <div className={`min-h-screen ${bg} pt-20`} style={bgStyle}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
             <div className="space-y-3">
               <div className="shimmer rounded-2xl w-full" style={{ height: '500px' }} />
               <div className="grid grid-cols-4 gap-2">
-                {[...Array(4)].map((_,i) => <div key={i} className="shimmer rounded-xl" style={{ height: '90px' }} />)}
+                {[...Array(4)].map((_,i) => <div key={i} className="shimmer rounded-xl" style={{ height: '80px' }} />)}
               </div>
             </div>
             <div className="space-y-4">
@@ -227,7 +537,6 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
-  // ── Not found ───────────────────────────────────────────────────────────────
   if (!product) {
     return <NotFound bg={bg} textPrimary={textPrimary} />;
   }
@@ -236,7 +545,6 @@ const ProductDetailPage: React.FC = () => {
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-  // ✅ All social links from context
   const whatsappText    = `Hi! I'm interested in:\n*${product.name}*...`;
   const whatsappLink    = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
   const facebookShareLink = facebook_url && facebook_url !== '#'
@@ -244,7 +552,6 @@ const ProductDetailPage: React.FC = () => {
     : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
   const instagramLink   = instagram_url || 'https://www.instagram.com/';
 
-  // ── Derived guards ──────────────────────────────────────────────────────────
   const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
   const hasColors    = (product as any).show_colors !== false && activeColors.length > 0;
 
@@ -314,7 +621,7 @@ const ProductDetailPage: React.FC = () => {
   ];
 
   return (
-    <div className={`min-h-screen ${bg} pt-20`}>
+    <div className={`min-h-screen ${bg} pt-20`} style={bgStyle}>
       <SEO
         title={seoTitle}
         description={seoDescription}
@@ -322,6 +629,16 @@ const ProductDetailPage: React.FC = () => {
         image={seoImage}
         type="product"
       />
+
+      {/* ── Lightbox ── */}
+      {lightboxOpen && (
+        <Lightbox
+          images={product.images}
+          initialIndex={selectedImage}
+          productName={product.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
@@ -353,21 +670,44 @@ const ProductDetailPage: React.FC = () => {
 
           {/* ── Left: Images ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
-            <div className={`rounded-2xl overflow-hidden mb-3 ${card} border relative`} style={{ height: '500px' }}>
+
+            {/* Main image with zoom + click-to-lightbox */}
+            <div
+              className={`pdp-main-image-wrap rounded-2xl mb-3 ${card} border relative${isImageHovered ? ' zoomed' : ''}`}
+              style={{ height: '500px' }}
+              onMouseEnter={() => setIsImageHovered(true)}
+              onMouseLeave={() => setIsImageHovered(false)}
+              onPointerUp={e => {
+                // Only fire lightbox if it was a real click (not a drag/scroll)
+                if (e.button === 0) handleMainImageClick();
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="Click to view full size image"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleMainImageClick(); }}
+            >
+              {/* key= used only to re-trigger fade-in animation on image change; zoom is on wrapper via .zoomed class, not affected by img remount */}
               <img
-                key={selectedImage}
+                key={`img-${selectedImage}-${animKey}`}
                 src={product.images[selectedImage]}
                 alt={`${product.name} — image ${selectedImage + 1}`}
-                className="w-full h-full object-cover"
-                style={{ animation: 'pdp-fade-in 0.4s ease' }}
+                className="w-full h-full object-cover pdp-main-img"
                 loading="eager"
               />
+
+              {/* Zoom hint tooltip */}
+              <div className="pdp-zoom-hint">
+                <ZoomIn size={11} />
+                Click to zoom
+              </div>
 
               {product.images.length > 1 && (
                 <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
                   {product.images.map((_, i) => (
                     <button
-                      key={i} onClick={() => handleThumbClick(i)}
+                      key={i}
+                      onClick={e => e.stopPropagation()}
+                      onPointerUp={e => { e.stopPropagation(); handleThumbClick(i); }}
                       className="transition-all duration-300 rounded-full"
                       style={{
                         width:  i === selectedImage ? '20px' : '6px',
@@ -381,7 +721,6 @@ const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* ✅ Discount badge on main image */}
               {discount > 0 && (
                 <div className="absolute top-4 left-4" style={{ zIndex: 2 }}>
                   <span
@@ -413,14 +752,14 @@ const ProductDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Thumbnails */}
+            {/* Thumbnails — narrower height to avoid stretched look */}
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img, i) => (
                 <button
                   key={i} onClick={() => handleThumbClick(i)}
                   className={`pdp-thumb rounded-xl overflow-hidden border-2`}
                   style={{
-                    height:      '90px',
+                    height:      '72px',   // ← reduced from 90px
                     borderColor: i === selectedImage ? theme.accentPrimary : 'transparent',
                     borderWidth: '2px',
                   }}
@@ -435,7 +774,7 @@ const ProductDetailPage: React.FC = () => {
 
             {product.images.length > 1 && (
               <p className={`text-xs text-center mt-2 font-body ${textMuted}`} style={{ opacity: 0.6 }}>
-                Auto-cycling images · click a thumbnail to pause
+                Auto-cycling · click thumbnail to pause · click main image to zoom
               </p>
             )}
           </div>
@@ -472,8 +811,25 @@ const ProductDetailPage: React.FC = () => {
               <ThreadDivider />
             </div>
 
-            <p className={`text-xs mb-4 font-body ${textMuted}`} style={{ opacity: 0.7 }}>
-              Product ID: <span className="font-mono tracking-wider">{product.id}</span>
+            {/* ── Product ID — bigger, richer colour ── */}
+            <p className="font-body mb-4" style={{ fontSize: '0.82rem', opacity: 0.85 }}>
+              <span style={{
+                fontWeight:    700,
+                color:         productIdColor,
+                letterSpacing: '0.03em',
+                fontSize:      '0.78rem',
+              }}>
+                Product ID:
+              </span>{' '}
+              <span style={{
+                fontFamily:    '"DM Mono", "Courier New", monospace',
+                fontWeight:    600,
+                fontSize:      '0.82rem',
+                letterSpacing: '0.12em',
+                color:         productIdColor,
+              }}>
+                {product.id}
+              </span>
             </p>
 
             {/* Star rating */}
@@ -592,7 +948,7 @@ const ProductDetailPage: React.FC = () => {
             )}
 
             {/* WhatsApp CTA */}
-            <div className="mb-8">
+            <div className="mb-4">
               <a
                 href={whatsappLink}
                 target="_blank"
@@ -615,6 +971,9 @@ const ProductDetailPage: React.FC = () => {
                 {product.stock === 0 ? 'Out of Stock' : 'Order via WhatsApp'}
               </a>
             </div>
+
+            {/* ── Trust Badges ── */}
+            <TrustBadges isDark={isDark} />
 
             {/* Accordions */}
             <div className="space-y-2 mb-6">
