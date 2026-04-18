@@ -353,9 +353,9 @@ const StoryText: React.FC<{ isDark: boolean; visible: boolean }> = ({ isDark, vi
   const dividerColor = isDark ? theme.storyDivider.dark : theme.storyDivider.light;
 
   const paras = [
-  'What began as a friendship in college has continued to grow over the years. One day, while reminiscing and sharing ideas, our conversation turned to entrepreneurship — and today, we are proud to announce the beginning of our own clothing startup.',
-  'Cheers to new beginnings. We believe that every hue tells a story, and through Wing and Weft, we hope to create meaningful stories together with all of you.',
-  'We have travelled across India — visiting weaving villages, sitting beside the loom, and learning the quiet art of making a saree from thread to drape. Every piece in our collection carries with it the extraordinary skill of the weavers and designers who brought it to life.',  // ← new
+  'We began as a friendship in college has continued to grow over the years. One day, while reminiscing and sharing ideas, our conversation turned to entrepreneurship — and today, we are proud to announce the beginning of our own clothing startup.',
+  'Cheers to new beginnings. We believe that every hue tells a story, through Wing and Weft, we hope to create meaningful stories together with all of you.',
+  'We have travelled across India — visiting weaving villages, sitting beside the loom, and learning the quiet art of making a saree from thread to drape. Artistic and incredible talents of weavers and designers created each and every product of wing and weft.',  // ← new
   'We sincerely appreciate the support and prayers from everyone as we begin this journey.',
   'A heartfelt thank you to our friends and family for standing by us.',
 ];
