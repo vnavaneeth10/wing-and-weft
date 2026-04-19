@@ -103,7 +103,6 @@ const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({
         <p
           style={{
             fontFamily: '"Raleway", sans-serif',
-            // Minimum 0.75rem so it stays legible on narrow 375px screens
             fontSize: 'clamp(0.75rem, 1.8vw, 0.8rem)',
             fontWeight: 300,
             lineHeight: 1.6,
@@ -184,12 +183,10 @@ const CategoriesPage: React.FC = () => {
   const [error, setError]           = useState('');
   const [animKey, setAnimKey]       = useState(0);
 
-  // Default to scroll on mobile, 3-col grid on desktop — detected once on mount
   const [view, setView] = useState<ViewMode>(() =>
     typeof window !== 'undefined' && window.innerWidth < 640 ? 'scroll' : 'three'
   );
 
-  // ── Uses shared cache — no duplicate network call
   useEffect(() => {
     getCategories()
       .then(data => { setCategories(data); setLoading(false); })
@@ -207,8 +204,9 @@ const CategoriesPage: React.FC = () => {
     description: 'Browse our full range of authentic handwoven saree collections at Wing & Weft.',
   });
 
-  const bg          = isDark ? 'bg-dark-bg'    : 'bg-brand-cream';
-  const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
+  // ── White page body gives clear separation from the cream navbar
+  const bg          = isDark ? 'bg-dark-bg'    : 'bg-white';
+  const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-stone-50 border-stone-200';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
@@ -239,32 +237,55 @@ const CategoriesPage: React.FC = () => {
 
       {/* ── Page header ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4">
-        <nav className="flex items-center gap-2 text-xs font-body mb-6" aria-label="Breadcrumb">
+
+        {/* Breadcrumb — left aligned always */}
+        <nav className="flex items-center gap-2 text-xs font-body mb-8" aria-label="Breadcrumb">
           <Link to="/" className={`${textMuted} hover:text-brand-red transition-colors`}>Home</Link>
           <span className={textMuted} aria-hidden="true">›</span>
           <span className="text-brand-red font-medium">Collections</span>
         </nav>
 
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-2">
-          <div>
-            <p
-              className="text-brand-gold text-xs uppercase font-label mb-1"
-              style={{ letterSpacing: '0.28em' }}
-            >
-              Explore by Category
-            </p>
-            <h1
-              className={textPrimary}
-              style={{
-                fontFamily: '"Cormorant Garamond",serif',
-                fontSize: 'clamp(2rem,4vw,3rem)',
-                fontWeight: 400,
-                lineHeight: 1.1,
-              }}
-            >
-              All Collections
-            </h1>
+        {/*
+          ── Centered decorative header block ─────────────────────────────────
+          Eyebrow label + h1 + ornamental divider centered as a editorial unit.
+          The view toggle toolbar below stays left-right functional.
+        */}
+        <div className="text-center mb-8">
+          <p
+            className="text-brand-gold text-xs uppercase font-label mb-2"
+            style={{ letterSpacing: '0.28em' }}
+          >
+            Explore by Category
+          </p>
+          <h1
+            className={textPrimary}
+            style={{
+              fontFamily: '"Cormorant Garamond",serif',
+              fontSize: 'clamp(2rem,4vw,3rem)',
+              fontWeight: 400,
+              lineHeight: 1.1,
+            }}
+          >
+            All Collections
+          </h1>
+
+          {/* Ornamental divider — centered */}
+          <div className="flex items-center justify-center gap-3 mt-5" aria-hidden="true">
+            <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.5))' }} />
+            <div style={{ width: '5px', height: '5px', background: '#b6893c', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.5))' }} />
           </div>
+        </div>
+
+        {/* ── Toolbar row — count left, toggles right ── */}
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+          {!loading && !error && categories.length > 0 ? (
+            <p className={`text-sm font-body ${textMuted}`} aria-live="polite">
+              {categories.length} {categories.length === 1 ? 'collection' : 'collections'}
+            </p>
+          ) : (
+            <div /> // spacer so toggles stay right when count is absent
+          )}
 
           <div className="flex items-center gap-1.5" role="group" aria-label="Grid view options">
             <ToggleBtn
@@ -289,13 +310,6 @@ const CategoriesPage: React.FC = () => {
               isDark={isDark}
             />
           </div>
-        </div>
-
-        {/* Ornamental divider */}
-        <div className="flex items-center gap-3 mb-8" aria-hidden="true">
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.5))' }} />
-          <div style={{ width: '5px', height: '5px', background: '#b6893c', transform: 'rotate(45deg)' }} />
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.5))' }} />
         </div>
       </div>
 
@@ -328,13 +342,6 @@ const CategoriesPage: React.FC = () => {
             scroll-snap-align: start;
           }
         `}</style>
-
-        {/* Results count */}
-        {!loading && !error && categories.length > 0 && (
-          <p className={`text-sm mb-6 font-body ${textMuted}`} aria-live="polite">
-            {categories.length} {categories.length === 1 ? 'collection' : 'collections'}
-          </p>
-        )}
 
         {/* Error */}
         {error && (

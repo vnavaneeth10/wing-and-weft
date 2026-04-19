@@ -16,7 +16,6 @@ const DEFAULT_POLICY_POINTS = [
   'Free shipping on orders above ₹2000.',
 ];
 
-// Default spec rows shown when adding a new product — client can edit/remove/add freely
 const DEFAULT_SPECS: ProductSpec[] = [
   { key: 'Saree Fabric', value: '' },
   { key: 'Saree Length', value: '' },
@@ -40,7 +39,30 @@ const EMPTY_PRODUCT: Omit<DBProduct, 'id' | 'created_at'> = {
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
-// ─── Collapsible section wrapper ─────────────────────────────────────────────
+// ─── Download helper ──────────────────────────────────────────────────────────
+// Fetch the image as a blob and trigger a browser download.
+// Falls back to opening in a new tab if CORS blocks the fetch.
+const downloadImageFromUrl = async (url: string, filename: string): Promise<void> => {
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('fetch failed');
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // If CORS blocks the blob download, open in a new tab so the client
+    // can right-click → Save As
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+};
+
+// ─── Collapsible section ──────────────────────────────────────────────────────
 const CollapsibleSection: React.FC<{
   title: string;
   hint?: string;
@@ -63,8 +85,7 @@ const CollapsibleSection: React.FC<{
         </div>
         {open
           ? <ChevronUp size={14} style={{ color: tk.textMuted }} />
-          : <ChevronDown size={14} style={{ color: tk.textMuted }} />
-        }
+          : <ChevronDown size={14} style={{ color: tk.textMuted }} />}
       </button>
       {open && (
         <div className="px-4 pb-4 pt-3" style={{ borderTop: `1px solid ${tk.border}` }}>
@@ -75,46 +96,139 @@ const CollapsibleSection: React.FC<{
   );
 };
 
-// ─── Star picker (1–5 clickable stars) ───────────────────────────────────────
-const StarPicker: React.FC<{
-  value: number;
-  onChange: (v: number) => void;
-}> = ({ value, onChange }) => {
+// ─── Star picker ─────────────────────────────────────────────────────────────
+const StarPicker: React.FC<{ value: number; onChange: (v: number) => void }> = ({ value, onChange }) => {
   const [hovered, setHovered] = useState(0);
   const display = hovered || value;
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map(s => (
-        <button
-          key={s}
-          type="button"
+        <button key={s} type="button"
           onMouseEnter={() => setHovered(s)}
           onMouseLeave={() => setHovered(0)}
           onClick={() => onChange(s)}
-          aria-label={`Set rating ${s}`}
-        >
-          <Star
-            size={22}
+          aria-label={`Set rating ${s}`}>
+          <Star size={22}
             fill={s <= display ? '#b6893c' : 'none'}
-            style={{ color: s <= display ? '#b6893c' : '#6b7280', transition: 'color 0.15s' }}
-          />
+            style={{ color: s <= display ? '#b6893c' : '#6b7280', transition: 'color 0.15s' }} />
         </button>
       ))}
       {value > 0 && (
-        <button
-          type="button"
-          onClick={() => onChange(0)}
-          className="text-xs ml-1"
-          style={{ color: '#6b7280', fontFamily: '"Raleway",sans-serif' }}
-          title="Clear rating"
-        >
-          ✕
-        </button>
+        <button type="button" onClick={() => onChange(0)}
+          className="text-xs ml-1" style={{ color: '#6b7280', fontFamily: '"Raleway",sans-serif' }}
+          title="Clear rating">✕</button>
       )}
     </div>
   );
 };
 
+// ─── Single image card with download button ───────────────────────────────────
+// IMPORTANT: defined OUTSIDE AdminProducts so React never remounts it on re-render.
+const ExistingImageItem: React.FC<{
+  url: string;
+  index: number;
+  productId: string;
+  tk: ReturnType<typeof useAdminTk>;
+}> = ({ url, index, productId, tk }) => {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    const ext = url.split('?')[0].split('.').pop() ?? 'jpg';
+    await downloadImageFromUrl(url, `${productId}-img${index + 1}.${ext}`);
+    setDownloading(false);
+  };
+
+  return (
+    <div className="relative group rounded-xl overflow-hidden flex-shrink-0"
+      style={{ border: `1px solid ${tk.border}`, minWidth: 0 }}>
+      <img src={url} alt={`Product image ${index + 1}`}
+        className="w-full object-cover block" style={{ height: '88px' }} />
+      {/* Hover overlay with download button */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        style={{ background: 'rgba(0,0,0,0.55)' }}>
+        <span className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.7)', fontFamily: '"Raleway",sans-serif' }}>
+          Image {index + 1}
+        </span>
+        <button type="button" onClick={handleDownload} disabled={downloading}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          style={{
+            background: downloading ? 'rgba(182,137,60,0.5)' : '#b6893c',
+            color: '#fff',
+            fontFamily: '"Raleway",sans-serif',
+            border: 'none',
+            cursor: downloading ? 'wait' : 'pointer',
+          }}>
+          <Download size={11} />
+          {downloading ? 'Saving…' : 'Download'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Panel showing all saved images with download buttons ─────────────────────
+// Also defined OUTSIDE AdminProducts to avoid React reconciliation issues.
+const ExistingImagesPanel: React.FC<{
+  images: string[];
+  productId: string;
+  tk: ReturnType<typeof useAdminTk>;
+}> = ({ images, productId, tk }) => {
+  const existingUrls = images.filter(Boolean);
+  if (existingUrls.length === 0) return null;
+
+  const handleDownloadAll = async () => {
+    for (let i = 0; i < existingUrls.length; i++) {
+      const ext = existingUrls[i].split('?')[0].split('.').pop() ?? 'jpg';
+      await downloadImageFromUrl(existingUrls[i], `${productId}-img${i + 1}.${ext}`);
+      if (i < existingUrls.length - 1) {
+        await new Promise(r => setTimeout(r, 450));
+      }
+    }
+  };
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${tk.borderMed}` }}>
+      {/* Header */}
+      <div className="px-4 py-2.5 flex items-center justify-between"
+        style={{ background: 'rgba(182,137,60,0.08)', borderBottom: `1px solid ${tk.border}` }}>
+        <div>
+          <span className="text-xs font-bold" style={{ fontFamily: '"Raleway",sans-serif', color: '#b6893c' }}>
+            📷 Current Images
+          </span>
+          <span className="text-xs ml-2" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+            hover any image to download
+          </span>
+        </div>
+        <button type="button" onClick={handleDownloadAll}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+          style={{
+            background: 'rgba(182,137,60,0.15)',
+            border: '1px solid rgba(182,137,60,0.35)',
+            color: '#b6893c',
+            fontFamily: '"Raleway",sans-serif',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(182,137,60,0.28)'}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(182,137,60,0.15)'}>
+          <Download size={12} />
+          Download All
+        </button>
+      </div>
+      {/* Image grid — flex so it works for 1–4 images */}
+      <div className="p-3 flex gap-2">
+        {existingUrls.map((url, i) => (
+          <div key={`${productId}-img-${i}`} style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ExistingImageItem url={url} index={i} productId={productId} tk={tk} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
 const AdminProducts: React.FC = () => {
   const tk = useAdminTk();
   const is = useAdminInputStyle();
@@ -144,20 +258,21 @@ const AdminProducts: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const categoryOptions = useMemo(
-    () => dbCategories.filter(c => c.is_active),
-    [dbCategories]
-  );
+  const categoryOptions = useMemo(() => dbCategories.filter(c => c.is_active), [dbCategories]);
 
   const displayed = useMemo(() => {
     let list = [...products];
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q) || p.fabric.toLowerCase().includes(q));
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.id?.toLowerCase().includes(q) ||
+        p.fabric.toLowerCase().includes(q)
+      );
     }
     if (catFilter !== 'all') list = list.filter(p => p.category === catFilter);
-    if (tagFilter === 'new') list = list.filter(p => p.is_new_arrival);
-    if (tagFilter === 'best') list = list.filter(p => p.is_best_seller);
+    if (tagFilter === 'new')      list = list.filter(p => p.is_new_arrival);
+    if (tagFilter === 'best')     list = list.filter(p => p.is_best_seller);
     if (tagFilter === 'featured') list = list.filter(p => p.is_featured);
     if (stockFilter === 'out') list = list.filter(p => p.stock === 0);
     if (stockFilter === 'low') list = list.filter(p => p.stock > 0 && p.stock <= 3);
@@ -188,15 +303,17 @@ const AdminProducts: React.FC = () => {
       images: p.images || [], description: p.description,
       saree_fabric: p.saree_fabric, saree_length: p.saree_length,
       blouse_length: p.blouse_length, blouse_fabric: p.blouse_fabric,
-      specifications: p.specifications?.length ? p.specifications : DEFAULT_SPECS.map(s => ({ ...s })),
-      policy_points: p.policy_points?.length ? p.policy_points : [...DEFAULT_POLICY_POINTS],
+      specifications: p.specifications?.length
+        ? p.specifications : DEFAULT_SPECS.map(s => ({ ...s })),
+      policy_points: p.policy_points?.length
+        ? p.policy_points : [...DEFAULT_POLICY_POINTS],
       is_best_seller: p.is_best_seller, is_new_arrival: p.is_new_arrival,
       is_featured: p.is_featured,
-      show_rating: p.show_rating ?? false,
-      rating: p.rating ?? 0,
+      show_rating:  p.show_rating  ?? false,
+      rating:       p.rating       ?? 0,
       review_count: p.review_count ?? 0,
-      is_visible: p.is_visible ?? true,
-      show_colors: p.show_colors ?? true,
+      is_visible:   p.is_visible   ?? true,
+      show_colors:  p.show_colors  ?? true,
       washing_instructions: p.washing_instructions || [],
     });
     setPendingImages([null, null, null, null]);
@@ -204,16 +321,20 @@ const AdminProducts: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim())    { showToast('Product name is required', 'error'); return; }
-    if (form.price <= 0)      { showToast('Price must be greater than 0', 'error'); return; }
+    if (!form.name.trim())     { showToast('Product name is required', 'error'); return; }
+    if (form.price <= 0)       { showToast('Price must be greater than 0', 'error'); return; }
     if (!form.category.trim()) { showToast('Please select a category', 'error'); return; }
-    // Filter out spec rows that have no key AND no value
     const cleanedSpecs = form.specifications.filter(s => s.key.trim() || s.value.trim());
     const toSave = { ...form, specifications: cleanedSpecs };
     setSaving(true);
     try {
-      if (editProduct) { await updateProduct(editProduct.id, toSave, pendingImages); showToast('Product updated successfully', 'success'); }
-      else             { await addProduct(toSave, pendingImages); showToast('Product added successfully', 'success'); }
+      if (editProduct) {
+        await updateProduct(editProduct.id, toSave, pendingImages);
+        showToast('Product updated successfully', 'success');
+      } else {
+        await addProduct(toSave, pendingImages);
+        showToast('Product added successfully', 'success');
+      }
       setModalOpen(false);
     } catch (e) { showToast(e instanceof Error ? e.message : 'Save failed', 'error'); }
     finally { setSaving(false); }
@@ -222,8 +343,11 @@ const AdminProducts: React.FC = () => {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    try { await deleteProduct(deleteTarget.id); setDeleteTarget(null); showToast('Product deleted', 'success'); }
-    catch { showToast('Delete failed', 'error'); }
+    try {
+      await deleteProduct(deleteTarget.id);
+      setDeleteTarget(null);
+      showToast('Product deleted', 'success');
+    } catch { showToast('Delete failed', 'error'); }
     finally { setDeleting(false); }
   };
 
@@ -247,56 +371,44 @@ const AdminProducts: React.FC = () => {
     else { setSortCol(col); setSortAsc(true); }
   };
 
-  const SortIcon = ({ col }: { col: keyof DBProduct }) => {
-    if (sortCol !== col) return <ChevronDown size={12} style={{ color: tk.textMuted }} />;
-    return sortAsc
-      ? <ChevronUp size={12} className="text-brand-orange" />
-      : <ChevronDown size={12} className="text-brand-orange" />;
-  };
+  const SortIcon = ({ col }: { col: keyof DBProduct }) =>
+    sortCol !== col
+      ? <ChevronDown size={12} style={{ color: tk.textMuted }} />
+      : sortAsc
+        ? <ChevronUp size={12} className="text-brand-orange" />
+        : <ChevronDown size={12} className="text-brand-orange" />;
 
-  // ── Specifications helpers ────────────────────────────────────────────────
   const addSpec = () =>
     setForm(f => ({ ...f, specifications: [...f.specifications, { key: '', value: '' }] }));
-
   const updateSpec = (idx: number, field: 'key' | 'value', val: string) =>
     setForm(f => {
       const updated = [...f.specifications];
       updated[idx] = { ...updated[idx], [field]: val };
       return { ...f, specifications: updated };
     });
-
   const removeSpec = (idx: number) =>
     setForm(f => ({ ...f, specifications: f.specifications.filter((_, i) => i !== idx) }));
 
-  // ── Washing instructions helpers ─────────────────────────────────────────
   const addWashInstruction = () =>
     setForm(f => ({ ...f, washing_instructions: [...(f.washing_instructions || []), ''] }));
-
   const updateWashInstruction = (idx: number, val: string) =>
     setForm(f => {
       const updated = [...(f.washing_instructions || [])];
       updated[idx] = val;
       return { ...f, washing_instructions: updated };
     });
-
   const removeWashInstruction = (idx: number) =>
-    setForm(f => ({
-      ...f,
-      washing_instructions: (f.washing_instructions || []).filter((_, i) => i !== idx),
-    }));
+    setForm(f => ({ ...f, washing_instructions: (f.washing_instructions || []).filter((_, i) => i !== idx) }));
 
-  // ── Tag badge colors ──────────────────────────────────────────────────────
-  const tagBadgeStyle = (type: 'new' | 'best' | 'featured') => {
-    const map = {
-      new:      { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.4)',  color: '#a5b4fc' },
-      best:     { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)',  color: '#fcd34d' },
-      featured: { bg: 'rgba(14,165,233,0.15)', border: 'rgba(14,165,233,0.4)',  color: '#7dd3fc' },
-    };
-    return map[type];
-  };
+  const tagBadgeStyle = (type: 'new' | 'best' | 'featured') => ({
+    new:      { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.4)',  color: '#a5b4fc' },
+    best:     { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)',  color: '#fcd34d' },
+    featured: { bg: 'rgba(14,165,233,0.15)', border: 'rgba(14,165,233,0.4)',  color: '#7dd3fc' },
+  }[type]);
 
   return (
     <div className="space-y-6">
+
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
@@ -310,6 +422,7 @@ const AdminProducts: React.FC = () => {
             onClick={() => exportToExcel(products.map(p => ({
               ID: p.id, Name: p.name, Category: p.category, Fabric: p.fabric,
               Price: p.price, 'Discount Price': p.discount_price ?? '',
+              'Discount %': p.discount_price ? Math.round(((p.price - p.discount_price) / p.price) * 100) + '%' : '',
               Stock: p.stock, Visible: (p.is_visible ?? true) ? 'Yes' : 'No',
               Rating: p.show_rating ? p.rating : 'Hidden',
               'New Arrival': p.is_new_arrival ? 'Yes' : 'No',
@@ -319,8 +432,13 @@ const AdminProducts: React.FC = () => {
             className="text-xs py-2 px-3">Excel</AdminBtn>
           <AdminBtn variant="secondary" icon={<FileDown size={14} />}
             onClick={() => exportToPDF('Products',
-              ['ID', 'Name', 'Category', 'Fabric', 'Price', 'Stock', 'Visible'],
-              products.map(p => [p.id, p.name, p.category, p.fabric, `₹${p.price}`, p.stock, (p.is_visible ?? true) ? 'Yes' : 'No']),
+              ['ID', 'Name', 'Category', 'Price', 'Discount', 'Stock', 'Visible'],
+              products.map(p => [
+                p.id, p.name, p.category,
+                `₹${p.price}`,
+                p.discount_price ? `₹${p.discount_price} (-${Math.round(((p.price - p.discount_price) / p.price) * 100)}%)` : '-',
+                p.stock, (p.is_visible ?? true) ? 'Yes' : 'No',
+              ]),
               'products')}
             className="text-xs py-2 px-3">PDF</AdminBtn>
           <AdminBtn icon={<Plus size={16} />} onClick={openAdd}>Add Product</AdminBtn>
@@ -367,17 +485,17 @@ const AdminProducts: React.FC = () => {
               <thead>
                 <tr className="border-b" style={{ borderColor: tk.border }}>
                   {[
-                    { label: 'Product',  col: 'name' as keyof DBProduct },
+                    { label: 'Product',  col: 'name'     as keyof DBProduct },
                     { label: 'Category', col: 'category' as keyof DBProduct },
-                    { label: 'Price',    col: 'price' as keyof DBProduct },
-                    { label: 'Stock',    col: 'stock' as keyof DBProduct },
+                    { label: 'Price',    col: 'price'    as keyof DBProduct },
+                    { label: 'Stock',    col: 'stock'    as keyof DBProduct },
                     { label: 'Tags',     col: null },
                     { label: 'Visible',  col: null },
                     { label: 'Actions',  col: null },
                   ].map(({ label, col }) => (
                     <th key={label}
                       className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${col ? 'cursor-pointer' : ''}`}
-                      style={{ fontFamily: '"Raleway", sans-serif', letterSpacing: '0.1em', color: tk.textMuted }}
+                      style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}
                       onClick={col ? () => toggleSort(col) : undefined}>
                       <span className="flex items-center gap-1">{label}{col && <SortIcon col={col} />}</span>
                     </th>
@@ -387,24 +505,28 @@ const AdminProducts: React.FC = () => {
               <tbody>
                 {displayed.map(p => {
                   const isVisible = p.is_visible ?? true;
+                  // Whole-number discount % for table display
+                  const rowDiscount = p.discount_price
+                    ? Math.round(((p.price - p.discount_price) / p.price) * 100)
+                    : 0;
                   return (
                     <tr key={p.id} className="border-b transition-colors"
                       style={{ borderColor: tk.border, opacity: isVisible ? 1 : 0.55 }}
                       onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = tk.cardBgHover}
                       onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}>
 
+                      {/* Product */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
                             style={{ background: tk.inputBg, border: `1px solid ${tk.border}` }}>
                             {p.images?.[0]
                               ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
-                              : <Package size={14} style={{ color: tk.textMuted }} />
-                            }
+                              : <Package size={14} style={{ color: tk.textMuted }} />}
                           </div>
                           <div>
-                            <p className="font-medium text-xs" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textPrimary }}>{p.name}</p>
-                            <p className="text-xs" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>{p.id}</p>
+                            <p className="font-medium text-xs" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textPrimary }}>{p.name}</p>
+                            <p className="text-xs" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>{p.id}</p>
                             {p.show_rating && p.rating > 0 && (
                               <div className="flex items-center gap-1 mt-0.5">
                                 <Star size={10} fill="#b6893c" style={{ color: '#b6893c' }} />
@@ -415,33 +537,44 @@ const AdminProducts: React.FC = () => {
                         </div>
                       </td>
 
+                      {/* Category */}
                       <td className="px-4 py-3">
-                        <span className="text-xs capitalize" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>
+                        <span className="text-xs capitalize" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>
                           {categoryOptions.find(c => c.id === p.category)?.name || p.category}
                         </span>
                       </td>
 
+                      {/* Price + whole-number discount % */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs font-bold text-brand-red" style={{ fontFamily: '"Raleway", sans-serif' }}>
+                        <span className="text-xs font-bold text-brand-red" style={{ fontFamily: '"Raleway",sans-serif' }}>
                           ₹{(p.discount_price || p.price).toLocaleString()}
                         </span>
                         {p.discount_price && (
-                          <span className="text-xs line-through ml-1.5" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>
-                            ₹{p.price.toLocaleString()}
-                          </span>
+                          <>
+                            <span className="text-xs line-through ml-1.5" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+                              ₹{p.price.toLocaleString()}
+                            </span>
+                            <span className="text-xs ml-1 font-bold" style={{ color: '#e05c1a', fontFamily: '"Raleway",sans-serif' }}>
+                              -{rowDiscount}%
+                            </span>
+                          </>
                         )}
                       </td>
 
+                      {/* Stock */}
                       <td className="px-4 py-3">
                         {inlineStockId === p.id ? (
                           <div className="flex items-center gap-2">
                             <input type="number" min={0} value={inlineStockVal}
                               onChange={e => setInlineStockVal(Number(e.target.value))}
-                              className="w-16 px-2 py-1 rounded-lg text-xs outline-none focus:ring-1 focus:ring-brand-red/50"
-                              style={{ background: tk.inputBg, border: '1px solid rgba(188,61,62,0.4)', color: tk.textPrimary, fontFamily: '"Raleway", sans-serif' }}
+                              className="w-16 px-2 py-1 rounded-lg text-xs outline-none"
+                              style={{ background: tk.inputBg, border: '1px solid rgba(188,61,62,0.4)', color: tk.textPrimary }}
                               autoFocus
-                              onKeyDown={e => { if (e.key === 'Enter') saveInlineStock(p.id); if (e.key === 'Escape') setInlineStockId(null); }} />
-                            <button onClick={() => saveInlineStock(p.id)} className="text-green-400 text-xs hover:text-green-300">✓</button>
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') saveInlineStock(p.id);
+                                if (e.key === 'Escape') setInlineStockId(null);
+                              }} />
+                            <button onClick={() => saveInlineStock(p.id)} className="text-green-400 text-xs">✓</button>
                             <button onClick={() => setInlineStockId(null)} className="text-xs" style={{ color: tk.textMuted }}>✕</button>
                           </div>
                         ) : (
@@ -455,47 +588,43 @@ const AdminProducts: React.FC = () => {
                         )}
                       </td>
 
+                      {/* Tags */}
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
                           {p.is_new_arrival && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ fontFamily: '"Raleway",sans-serif', background: tagBadgeStyle('new').bg, border: `1px solid ${tagBadgeStyle('new').border}`, color: tagBadgeStyle('new').color }}>
-                              New
-                            </span>
+                              style={{ background: tagBadgeStyle('new').bg, border: `1px solid ${tagBadgeStyle('new').border}`, color: tagBadgeStyle('new').color, fontFamily: '"Raleway",sans-serif' }}>New</span>
                           )}
                           {p.is_best_seller && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ fontFamily: '"Raleway",sans-serif', background: tagBadgeStyle('best').bg, border: `1px solid ${tagBadgeStyle('best').border}`, color: tagBadgeStyle('best').color }}>
-                              Best
-                            </span>
+                              style={{ background: tagBadgeStyle('best').bg, border: `1px solid ${tagBadgeStyle('best').border}`, color: tagBadgeStyle('best').color, fontFamily: '"Raleway",sans-serif' }}>Best</span>
                           )}
                           {p.is_featured && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ fontFamily: '"Raleway",sans-serif', background: tagBadgeStyle('featured').bg, border: `1px solid ${tagBadgeStyle('featured').border}`, color: tagBadgeStyle('featured').color }}>
-                              Featured
-                            </span>
+                              style={{ background: tagBadgeStyle('featured').bg, border: `1px solid ${tagBadgeStyle('featured').border}`, color: tagBadgeStyle('featured').color, fontFamily: '"Raleway",sans-serif' }}>Featured</span>
                           )}
                         </div>
                       </td>
 
+                      {/* Visible */}
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleToggleVisibility(p)}
+                        <button onClick={() => handleToggleVisibility(p)}
                           disabled={togglingId === p.id}
-                          title={isVisible ? 'Visible on website — click to hide' : 'Hidden — click to show'}
+                          title={isVisible ? 'Visible — click to hide' : 'Hidden — click to show'}
                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
                           style={{
-                            fontFamily: '"Raleway",sans-serif',
                             background: isVisible ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
                             border: `1px solid ${isVisible ? 'rgba(34,197,94,0.3)' : tk.border}`,
                             color: isVisible ? '#4ade80' : tk.textMuted,
                             opacity: togglingId === p.id ? 0.5 : 1,
+                            fontFamily: '"Raleway",sans-serif',
                           }}>
                           {isVisible ? <Eye size={12} /> : <EyeOff size={12} />}
                           {isVisible ? 'Live' : 'Hidden'}
                         </button>
                       </td>
 
+                      {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => openEdit(p)}
@@ -561,17 +690,17 @@ const AdminProducts: React.FC = () => {
               </Field>
 
               {!editProduct ? (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                <div className="px-3 py-2 rounded-lg"
                   style={{ background: 'rgba(182,137,60,0.08)', border: '1px solid rgba(182,137,60,0.2)' }}>
                   <span style={{ fontSize: '0.7rem', fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
-                    🔑 Product ID auto-generated on save — pattern: <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>WW-YYYYMMDD-XXXX</span>
+                    🔑 ID auto-generated on save — <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>WW-YYYYMMDD-XXXX</span>
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                <div className="px-3 py-2 rounded-lg"
                   style={{ background: 'rgba(182,137,60,0.06)', border: '1px solid rgba(182,137,60,0.15)' }}>
                   <span style={{ fontSize: '0.7rem', fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
-                    🔑 Product ID: <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>{editProduct.id}</span>
+                    🔑 ID: <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>{editProduct.id}</span>
                   </span>
                 </div>
               )}
@@ -580,15 +709,12 @@ const AdminProducts: React.FC = () => {
                 <select className={inputCls} style={is} value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   <option value="">— Select a category —</option>
-                  {categoryOptions.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  {categoryOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Field>
 
-              <Field label="Fabric" required hint="Type freely e.g. Pure Silk, Handloom Cotton…">
-                <input className={inputCls} style={is}
-                  placeholder="e.g. Pure Silk, Handloom Cotton, Georgette…"
+              <Field label="Fabric" required hint="e.g. Pure Silk, Handloom Cotton…">
+                <input className={inputCls} style={is} placeholder="e.g. Pure Silk, Handloom Cotton…"
                   value={form.fabric}
                   onChange={e => setForm(f => ({ ...f, fabric: e.target.value }))} />
               </Field>
@@ -606,6 +732,19 @@ const AdminProducts: React.FC = () => {
                 </Field>
               </div>
 
+              {/* Live discount preview — always whole-number % */}
+              {form.discount_price && form.price > 0 && form.discount_price < form.price && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                  style={{ background: 'rgba(224,92,26,0.08)', border: '1px solid rgba(224,92,26,0.25)' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#e05c1a', fontFamily: '"Raleway",sans-serif' }}>
+                    {Math.round(((form.price - form.discount_price) / form.price) * 100)}% OFF
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
+                    · Customer saves ₹{(form.price - form.discount_price).toLocaleString()}
+                  </span>
+                </div>
+              )}
+
               <Field label="Stock Count" required>
                 <input type="number" min={0} className={inputCls} style={is} placeholder="10"
                   value={form.stock}
@@ -622,7 +761,6 @@ const AdminProducts: React.FC = () => {
               {/* ── Star Rating ── */}
               <CollapsibleSection title="Star Rating" hint="shown on product page" tk={tk}>
                 <div className="space-y-4">
-                  {/* Show/hide toggle */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>
                       Show rating on product page
@@ -636,30 +774,25 @@ const AdminProducts: React.FC = () => {
                         color: form.show_rating ? '#b6893c' : tk.textMuted,
                         fontFamily: '"Raleway",sans-serif',
                       }}>
-                      <Star size={12} fill={form.show_rating ? '#b6893c' : 'none'} style={{ color: form.show_rating ? '#b6893c' : tk.textMuted }} />
+                      <Star size={12} fill={form.show_rating ? '#b6893c' : 'none'}
+                        style={{ color: form.show_rating ? '#b6893c' : tk.textMuted }} />
                       {form.show_rating ? 'Visible' : 'Hidden'}
                     </button>
                   </div>
 
-                  {/* Star picker — only useful when visible */}
                   <div style={{ opacity: form.show_rating ? 1 : 0.4, pointerEvents: form.show_rating ? 'auto' : 'none' }}>
-                    <p className="text-xs mb-2" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+                    <p className="text-xs mb-2" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
                       Star rating (click to set)
                     </p>
-                    <StarPicker
-                      value={form.rating}
-                      onChange={v => setForm(f => ({ ...f, rating: v }))}
-                    />
-                    <p className="text-xs mt-1" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+                    <StarPicker value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
+                    <p className="text-xs mt-1" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
                       Current: {form.rating > 0 ? `${form.rating} / 5` : 'Not set'}
                     </p>
                   </div>
 
-                  {/* Review count */}
                   <div style={{ opacity: form.show_rating ? 1 : 0.4, pointerEvents: form.show_rating ? 'auto' : 'none' }}>
                     <Field label="Number of Reviews" hint="Shown next to the stars">
-                      <input type="number" min={0} className={inputCls} style={is}
-                        placeholder="0"
+                      <input type="number" min={0} className={inputCls} style={is} placeholder="0"
                         value={form.review_count || ''}
                         onChange={e => setForm(f => ({ ...f, review_count: Number(e.target.value) }))} />
                     </Field>
@@ -676,7 +809,7 @@ const AdminProducts: React.FC = () => {
                     background: form.is_visible ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
                     border: `1px solid ${form.is_visible ? 'rgba(34,197,94,0.3)' : tk.border}`,
                     color: form.is_visible ? '#4ade80' : tk.textMuted,
-                    fontFamily: '"Raleway", sans-serif',
+                    fontFamily: '"Raleway",sans-serif',
                   }}>
                   {form.is_visible ? <Eye size={14} /> : <EyeOff size={14} />}
                   {form.is_visible ? 'Visible' : 'Hidden'}
@@ -687,9 +820,9 @@ const AdminProducts: React.FC = () => {
               <Field label="Tags">
                 <div className="flex gap-3 flex-wrap">
                   {([
-                    { key: 'is_new_arrival' as const, label: 'New Arrival',  style: tagBadgeStyle('new') },
-                    { key: 'is_best_seller' as const, label: 'Best Seller',  style: tagBadgeStyle('best') },
-                    { key: 'is_featured'    as const, label: 'Featured',     style: tagBadgeStyle('featured') },
+                    { key: 'is_new_arrival' as const, label: 'New Arrival', style: tagBadgeStyle('new') },
+                    { key: 'is_best_seller' as const, label: 'Best Seller', style: tagBadgeStyle('best') },
+                    { key: 'is_featured'    as const, label: 'Featured',    style: tagBadgeStyle('featured') },
                   ] as const).map(({ key, label, style }) => (
                     <label key={key} className="flex items-center gap-2 cursor-pointer">
                       <div
@@ -702,7 +835,7 @@ const AdminProducts: React.FC = () => {
                         role="checkbox" aria-checked={form[key]} aria-label={label}>
                         {form[key] && <span style={{ color: style.color, fontSize: '10px' }}>✓</span>}
                       </div>
-                      <span className="text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>{label}</span>
+                      <span className="text-sm" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>{label}</span>
                     </label>
                   ))}
                 </div>
@@ -712,19 +845,29 @@ const AdminProducts: React.FC = () => {
             {/* ── Right column ── */}
             <div className="space-y-4">
 
-              <Field label="Product Images" hint="Upload up to 4 photos — main, side, detail, border" required>
+              {/* ── Current images download panel — only shows in edit mode ── */}
+              {editProduct && (
+                <ExistingImagesPanel
+                  images={form.images}
+                  productId={editProduct.id}
+                  tk={tk}
+                />
+              )}
+
+              <Field label="Product Images" hint="Upload up to 4 photos" required>
                 <MultiImageUploader
                   values={form.images}
-                  onChange={(urls, files) => { setForm(f => ({ ...f, images: urls })); setPendingImages(files); }} />
+                  onChange={(urls, files) => {
+                    setForm(f => ({ ...f, images: urls }));
+                    setPendingImages(files);
+                  }} />
               </Field>
 
-              {/* ── Colours (collapsible) ── */}
+              {/* ── Colours ── */}
               <CollapsibleSection title="Colours" hint="optional" tk={tk}>
                 <p className="text-xs mb-3" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
                   Add colour swatches and choose whether to show them on the product page.
                 </p>
-
-                {/* ── Show/hide colours toggle ── */}
                 <div className="flex items-center justify-between mb-4 pb-3"
                   style={{ borderBottom: `1px solid ${tk.border}` }}>
                   <span className="text-sm" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>
@@ -743,8 +886,6 @@ const AdminProducts: React.FC = () => {
                     {form.show_colors ? 'Visible' : 'Hidden'}
                   </button>
                 </div>
-
-                {/* Swatches — dimmed when hidden */}
                 <div style={{ opacity: form.show_colors ? 1 : 0.4, pointerEvents: form.show_colors ? 'auto' : 'none' }}>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {form.colors.map((color, i) => (
@@ -759,55 +900,42 @@ const AdminProducts: React.FC = () => {
                           style={{ borderColor: tk.borderMed, padding: '2px' }}
                           title={`Colour ${i + 1}`} />
                         {form.colors.length > 1 && (
-                          <button
-                            type="button"
+                          <button type="button"
                             onClick={() => setForm(f => ({ ...f, colors: f.colors.filter((_, ci) => ci !== i) }))}
                             className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ background: '#ef4444', fontSize: '10px' }}>
-                            ✕
-                          </button>
+                            style={{ background: '#ef4444', fontSize: '10px' }}>✕</button>
                         )}
                       </div>
                     ))}
                     <button type="button"
                       onClick={() => setForm(f => ({ ...f, colors: [...f.colors, '#bc3d3e'] }))}
                       className="w-9 h-9 rounded-full flex items-center justify-center text-xl transition-all"
-                      style={{ border: `2px dashed ${tk.borderMed}`, color: tk.textMuted }}>
-                      +
-                    </button>
+                      style={{ border: `2px dashed ${tk.borderMed}`, color: tk.textMuted }}>+</button>
                   </div>
                 </div>
               </CollapsibleSection>
 
-              {/* ── Specifications (free-form key-value) ── */}
+              {/* ── Specifications ── */}
               <CollapsibleSection title="Specifications" hint="shown on product page" defaultOpen tk={tk}>
                 <p className="text-xs mb-3" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
-                  Add any details — e.g. Saree Length, Fabric, Blouse Length. What you add here appears on the product page.
+                  Add any details — e.g. Saree Length, Fabric, Blouse Length.
                 </p>
-
-                {/* Column headers */}
                 {form.specifications.length > 0 && (
                   <div className="grid grid-cols-2 gap-2 mb-1 px-1">
                     <span className="text-xs font-semibold" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>Label</span>
                     <span className="text-xs font-semibold" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>Value</span>
                   </div>
                 )}
-
                 <div className="space-y-2">
                   {form.specifications.map((spec, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <input
-                        className={`${inputCls} flex-1 text-sm`} style={is}
-                        value={spec.key}
-                        placeholder="e.g. Saree Length"
+                      <input className={`${inputCls} flex-1 text-sm`} style={is}
+                        value={spec.key} placeholder="e.g. Saree Length"
                         onChange={e => updateSpec(idx, 'key', e.target.value)} />
-                      <input
-                        className={`${inputCls} flex-1 text-sm`} style={is}
-                        value={spec.value}
-                        placeholder="e.g. 6.3 meters"
+                      <input className={`${inputCls} flex-1 text-sm`} style={is}
+                        value={spec.value} placeholder="e.g. 6.3 meters"
                         onChange={e => updateSpec(idx, 'value', e.target.value)} />
-                      <button type="button"
-                        onClick={() => removeSpec(idx)}
+                      <button type="button" onClick={() => removeSpec(idx)}
                         className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
                         style={{ color: tk.textMuted }}
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#f87171'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)'; }}
@@ -816,7 +944,6 @@ const AdminProducts: React.FC = () => {
                       </button>
                     </div>
                   ))}
-
                   <button type="button" onClick={addSpec}
                     className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-all mt-1"
                     style={{ border: `1px dashed ${tk.borderMed}`, color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}
@@ -827,10 +954,10 @@ const AdminProducts: React.FC = () => {
                 </div>
               </CollapsibleSection>
 
-              {/* ── Washing Instructions (collapsible) ── */}
+              {/* ── Washing Instructions ── */}
               <CollapsibleSection title="Washing Instructions" hint="optional" tk={tk}>
                 <p className="text-xs mb-3" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
-                  Add care instructions — e.g. "Dry clean only", "Gentle handwash with mild detergent".
+                  Add care instructions — e.g. "Dry clean only".
                 </p>
                 <div className="space-y-2">
                   {(form.washing_instructions || []).map((instr, idx) => (
@@ -839,13 +966,10 @@ const AdminProducts: React.FC = () => {
                         style={{ background: 'rgba(14,165,233,0.12)', color: '#7dd3fc', fontFamily: '"Raleway",sans-serif' }}>
                         {idx + 1}
                       </span>
-                      <input
-                        className={`${inputCls} flex-1 text-sm`} style={is}
-                        value={instr}
-                        placeholder="e.g. Dry clean only"
+                      <input className={`${inputCls} flex-1 text-sm`} style={is}
+                        value={instr} placeholder="e.g. Dry clean only"
                         onChange={e => updateWashInstruction(idx, e.target.value)} />
-                      <button type="button"
-                        onClick={() => removeWashInstruction(idx)}
+                      <button type="button" onClick={() => removeWashInstruction(idx)}
                         className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-1 transition-all"
                         style={{ color: tk.textMuted }}
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#f87171'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)'; }}
@@ -864,7 +988,7 @@ const AdminProducts: React.FC = () => {
                 </div>
               </CollapsibleSection>
 
-              {/* ── Policy Points (collapsible) ── */}
+              {/* ── Policy Points ── */}
               <CollapsibleSection title="Policy Points" hint="shown on product page" defaultOpen tk={tk}>
                 <div className="space-y-2">
                   {(form.policy_points || []).map((point, idx) => (
@@ -900,7 +1024,6 @@ const AdminProducts: React.FC = () => {
                   </button>
                 </div>
               </CollapsibleSection>
-
             </div>
           </div>
         </Modal>

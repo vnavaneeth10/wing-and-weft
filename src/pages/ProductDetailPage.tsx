@@ -11,8 +11,6 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { theme } from '../theme/heroThemes';
 import { useSettings } from '../context/SettingsContext';
 
-// ✅ All social values come exclusively from SettingsContext
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const STYLES = `
   @keyframes pdp-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -276,7 +274,6 @@ const Lightbox: React.FC<LightboxProps> = ({ images, initialIndex, productName, 
     setCurrent(i => (i + 1) % images.length);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -287,7 +284,6 @@ const Lightbox: React.FC<LightboxProps> = ({ images, initialIndex, productName, 
     return () => window.removeEventListener('keydown', handler);
   }, [images.length, onClose]);
 
-  // Prevent background scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -369,30 +365,18 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ isDark }) => {
     >
       {badges.map((b, i) => (
         <div key={i} className="pdp-trust-badge">
-          <div
-            className="pdp-trust-icon"
-            style={{ background: b.iconBg, color: b.iconColor }}
-          >
+          <div className="pdp-trust-icon" style={{ background: b.iconBg, color: b.iconColor }}>
             {b.icon}
           </div>
           <div style={{ textAlign: 'center' }}>
             <p style={{
-              fontSize: '0.7rem',
-              fontWeight: 800,
-              fontFamily: '"Raleway", sans-serif',
-              letterSpacing: '0.04em',
-              color: labelClr,
-              lineHeight: 1.2,
-              marginBottom: '2px',
+              fontSize: '0.7rem', fontWeight: 800,
+              fontFamily: '"Raleway", sans-serif', letterSpacing: '0.04em',
+              color: labelClr, lineHeight: 1.2, marginBottom: '2px',
             }}>
               {b.label}
             </p>
-            <p style={{
-              fontSize: '0.6rem',
-              fontFamily: '"DM Sans", sans-serif',
-              color: subClr,
-              lineHeight: 1.2,
-            }}>
+            <p style={{ fontSize: '0.6rem', fontFamily: '"DM Sans", sans-serif', color: subClr, lineHeight: 1.2 }}>
               {b.sub}
             </p>
           </div>
@@ -402,15 +386,12 @@ const TrustBadges: React.FC<TrustBadgesProps> = ({ isDark }) => {
   );
 };
 
-// ─── Not Found component ──────────────────────────────────────────────────────
+// ─── Not Found ────────────────────────────────────────────────────────────────
 const NotFound: React.FC<{ bg: string; textPrimary: string }> = ({ bg, textPrimary }) => (
   <div className={`min-h-screen ${bg} pt-24 flex items-center justify-center`}>
     <div className="text-center">
       <p className="text-6xl mb-4">🕊️</p>
-      <h2
-        className={textPrimary}
-        style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}
-      >
+      <h2 className={textPrimary} style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 400 }}>
         Product Not Found
       </h2>
       <Link
@@ -430,7 +411,6 @@ const NotFound: React.FC<{ bg: string; textPrimary: string }> = ({ bg, textPrima
 const ProductDetailPage: React.FC = () => {
   const { productId }   = useParams<{ productId: string }>();
   const { isDark }      = useTheme();
-
   const { product, loading } = useProduct(productId ?? '');
   const styleRef = useRef(false);
 
@@ -444,17 +424,11 @@ const ProductDetailPage: React.FC = () => {
 
   const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
-  // ── Background: warm off-white for light mode ──────────────────────────────
-  // #FDFAF6 = a luxe, warm off-white (slightly warmer than pure white, avoids
-  // the current cream token which can feel too yellow). In dark mode the
-  // existing dark-bg token is kept.
   const bgStyle   = isDark ? undefined : { backgroundColor: '#FDFAF6' };
-  const bg        = isDark ? 'bg-dark-bg' : '';          // no tailwind bg in light mode; inline style does it
+  const bg        = isDark ? 'bg-dark-bg' : '';
   const card      = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
-
-  // Product ID text color: rich warm brown in light, soft gold-ish in dark
   const productIdColor = isDark ? '#c9a96e' : '#7c5c3a';
 
   useEffect(() => {
@@ -467,7 +441,7 @@ const ProductDetailPage: React.FC = () => {
     fetchSettings().then(setSettings);
   }, []);
 
-  const [animKey, setAnimKey] = useState(0); // increments to re-trigger fade-in CSS animation
+  const [animKey, setAnimKey] = useState(0);
 
   const startAutoSlide = useCallback(() => {
     if (!product || product.images.length <= 1) return;
@@ -501,19 +475,17 @@ const ProductDetailPage: React.FC = () => {
       ? `${product.name} — ${product.category.replace(/-/g,' ')}`
       : 'Product',
     description: product
-      ? `${product.name} — ${product.fabric} saree. ₹${product.discount_price || product.price}. ${product.description?.slice(0, 100) || 'Authentic handwoven saree from Wing & Weft.'}`
+      ? `${product.name} — ${(product as any).fabric} saree. ₹${product.discount_price || product.price}. ${(product as any).description?.slice(0, 100) || 'Authentic handwoven saree from Wing & Weft.'}`
       : 'Authentic handwoven saree from Wing & Weft.',
   });
 
-  const seoTitle       = product?.name ?? 'Product';
+  const seoTitle       = (product as any)?.name ?? 'Product';
   const seoDescription = product
-    ? `${product.name} — ${product.fabric} saree. ₹${product.discount_price || product.price}. Handwoven by artisans. Free shipping above ₹2000.`
+    ? `${(product as any).name} — ${(product as any).fabric} saree. ₹${product.discount_price || product.price}. Handwoven by artisans.`
     : 'Browse handwoven sarees at Wing & Weft.';
   const seoImage = product?.images?.[0];
 
-  if (!productId) {
-    return <NotFound bg={bg} textPrimary={textPrimary} />;
-  }
+  if (!productId) return <NotFound bg={bg} textPrimary={textPrimary} />;
 
   if (loading) {
     return (
@@ -537,38 +509,44 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
-  if (!product) {
-    return <NotFound bg={bg} textPrimary={textPrimary} />;
-  }
+  if (!product) return <NotFound bg={bg} textPrimary={textPrimary} />;
 
+  // ── Compute values from DB fields ─────────────────────────────────────────
+  // Cast to any only once here so the rest of the JSX stays clean
+  const p = product as any;
+
+  // Discount % — always whole number
   const discount = product.discount_price
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-  const whatsappText    = `Hi! I'm interested in:\n*${product.name}*...`;
+  // ── Rating: must be explicitly enabled by admin AND have real values ───────
+  const globalRatingsOn = settings['show_ratings'] !== 'false';
+  const showRating = (
+    globalRatingsOn &&
+    p.show_rating === true &&          // admin toggled ON
+    p.rating > 0 &&                    // has a star value
+    p.review_count > 0                 // has at least 1 review count
+  );
+
+  // ── Colours: must be explicitly enabled by admin ──────────────────────────
+  const activeColors = (p.colors || []).filter((c: string) => c && c.trim() !== '');
+  const hasColors    = p.show_colors !== false && activeColors.length > 0;
+
+  // Specifications
+  interface SpecRow { key: string; value: string; }
+  const specRows: SpecRow[] = (p.specifications || []).filter(
+    (s: SpecRow) => s.key?.trim() && s.value?.trim()
+  );
+  const hasSpecs = specRows.length > 0;
+  const specDividerColor = isDark ? theme.specRowDivider.dark : theme.specRowDivider.light;
+
+  const whatsappText    = `Hi! I'm interested in:\n*${p.name}*...`;
   const whatsappLink    = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
   const facebookShareLink = facebook_url && facebook_url !== '#'
     ? facebook_url
     : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
   const instagramLink   = instagram_url || 'https://www.instagram.com/';
-
-  const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
-  const hasColors    = (product as any).show_colors !== false && activeColors.length > 0;
-
-  const globalRatingsOn = settings['show_ratings'] !== 'false';
-  const showRating = (
-    globalRatingsOn &&
-    (product as any).show_rating === true &&
-    product.rating > 0 &&
-    product.review_count > 0
-  );
-
-  interface SpecRow { key: string; value: string; }
-  const specRows: SpecRow[] = ((product as any).specifications || []).filter(
-    (s: SpecRow) => s.key?.trim() && s.value?.trim()
-  );
-  const hasSpecs = specRows.length > 0;
-  const specDividerColor = isDark ? theme.specRowDivider.dark : theme.specRowDivider.light;
 
   const accordions = [
     {
@@ -576,7 +554,7 @@ const ProductDetailPage: React.FC = () => {
       title: 'Detailed Description',
       content: (
         <p className={`text-sm font-body leading-relaxed ${textMuted}`} style={{ lineHeight: 1.8 }}>
-          {product.description || 'No description available.'}
+          {p.description || 'No description available.'}
         </p>
       ),
     },
@@ -600,8 +578,8 @@ const ProductDetailPage: React.FC = () => {
       title: 'Policy',
       content: (
         <ul className="space-y-2">
-          {(product.policy_points?.length
-            ? product.policy_points
+          {(p.policy_points?.length
+            ? p.policy_points
             : [
                 'Exchange accepted within 7 days of delivery.',
                 'Product must be unused and in original packaging.',
@@ -609,7 +587,7 @@ const ProductDetailPage: React.FC = () => {
                 'Refunds processed within 5–7 business days.',
                 'Free shipping on orders above ₹2000.',
               ]
-          ).filter(Boolean).map((item, i) => (
+          ).filter(Boolean).map((item: string, i: number) => (
             <li key={i} className="flex gap-2 text-sm font-body">
               <span style={{ color: theme.accentSecondary }} className="mt-0.5 font-bold">•</span>
               <span className={textMuted}>{item}</span>
@@ -630,12 +608,11 @@ const ProductDetailPage: React.FC = () => {
         type="product"
       />
 
-      {/* ── Lightbox ── */}
       {lightboxOpen && (
         <Lightbox
           images={product.images}
           initialIndex={selectedImage}
-          productName={product.name}
+          productName={p.name}
           onClose={() => setLightboxOpen(false)}
         />
       )}
@@ -643,25 +620,20 @@ const ProductDetailPage: React.FC = () => {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <nav className="flex items-center gap-2 text-xs font-body" aria-label="Breadcrumb">
-          <Link
-            to="/"
-            className={`transition-colors ${textMuted}`}
+          <Link to="/" className={`transition-colors ${textMuted}`}
             onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
-            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
-          >
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}>
             Home
           </Link>
           <ChevronRight size={12} className={textMuted} aria-hidden="true" />
-          <Link
-            to={`/category/${product.category}`}
+          <Link to={`/category/${p.category}`}
             className={`transition-colors capitalize ${textMuted}`}
             onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = theme.productLinkHover}
-            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}
-          >
-            {product.category.replace(/-/g,' ')}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = ''}>
+            {p.category.replace(/-/g,' ')}
           </Link>
           <ChevronRight size={12} className={textMuted} aria-hidden="true" />
-          <span style={{ color: theme.accentPrimary, fontWeight: 600 }} className="truncate max-w-[180px]">{product.name}</span>
+          <span style={{ color: theme.accentPrimary, fontWeight: 600 }} className="truncate max-w-[180px]">{p.name}</span>
         </nav>
       </div>
 
@@ -670,32 +642,23 @@ const ProductDetailPage: React.FC = () => {
 
           {/* ── Left: Images ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
-
-            {/* Main image with zoom + click-to-lightbox */}
             <div
               className={`pdp-main-image-wrap rounded-2xl mb-3 ${card} border relative${isImageHovered ? ' zoomed' : ''}`}
               style={{ height: '500px' }}
               onMouseEnter={() => setIsImageHovered(true)}
               onMouseLeave={() => setIsImageHovered(false)}
-              onPointerUp={e => {
-                // Only fire lightbox if it was a real click (not a drag/scroll)
-                if (e.button === 0) handleMainImageClick();
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label="Click to view full size image"
+              onPointerUp={e => { if (e.button === 0) handleMainImageClick(); }}
+              role="button" tabIndex={0} aria-label="Click to view full size image"
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleMainImageClick(); }}
             >
-              {/* key= used only to re-trigger fade-in animation on image change; zoom is on wrapper via .zoomed class, not affected by img remount */}
               <img
                 key={`img-${selectedImage}-${animKey}`}
                 src={product.images[selectedImage]}
-                alt={`${product.name} — image ${selectedImage + 1}`}
+                alt={`${p.name} — image ${selectedImage + 1}`}
                 className="w-full h-full object-cover pdp-main-img"
                 loading="eager"
               />
 
-              {/* Zoom hint tooltip */}
               <div className="pdp-zoom-hint">
                 <ZoomIn size={11} />
                 Click to zoom
@@ -723,23 +686,14 @@ const ProductDetailPage: React.FC = () => {
 
               {discount > 0 && (
                 <div className="absolute top-4 left-4" style={{ zIndex: 2 }}>
-                  <span
-                    style={{
-                      display:       'inline-flex',
-                      alignItems:    'center',
-                      background:    'linear-gradient(135deg, #e05c1a, #c94a10)',
-                      color:         '#fff',
-                      fontSize:      '0.95rem',
-                      fontWeight:    900,
-                      letterSpacing: '0.02em',
-                      padding:       '6px 14px',
-                      borderRadius:  '8px',
-                      boxShadow:     '0 3px 14px rgba(0,0,0,0.4)',
-                      fontFamily:    '"Raleway", sans-serif',
-                      lineHeight:    1,
-                      animation:     'pdp-badge-in 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both',
-                    }}
-                  >
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: 'linear-gradient(135deg, #e05c1a, #c94a10)',
+                    color: '#fff', fontSize: '0.95rem', fontWeight: 900,
+                    letterSpacing: '0.02em', padding: '6px 14px', borderRadius: '8px',
+                    boxShadow: '0 3px 14px rgba(0,0,0,0.4)', fontFamily: '"Raleway", sans-serif',
+                    lineHeight: 1, animation: 'pdp-badge-in 0.5s cubic-bezier(0.22,1,0.36,1) 0.3s both',
+                  }}>
                     {discount}% OFF
                   </span>
                 </div>
@@ -752,21 +706,21 @@ const ProductDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Thumbnails — narrower height to avoid stretched look */}
+            {/* Thumbnails */}
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img, i) => (
                 <button
                   key={i} onClick={() => handleThumbClick(i)}
-                  className={`pdp-thumb rounded-xl overflow-hidden border-2`}
+                  className="pdp-thumb rounded-xl overflow-hidden border-2"
                   style={{
-                    height:      '72px',   // ← reduced from 90px
+                    height: '72px',
                     borderColor: i === selectedImage ? theme.accentPrimary : 'transparent',
                     borderWidth: '2px',
                   }}
                   aria-label={`View image ${i + 1}`}
                   aria-pressed={i === selectedImage}
                 >
-                  <img src={img} alt={`${product.name} thumbnail ${i + 1}`}
+                  <img src={img} alt={`${p.name} thumbnail ${i + 1}`}
                     className="w-full h-full object-cover" loading="lazy" />
                 </button>
               ))}
@@ -782,62 +736,40 @@ const ProductDetailPage: React.FC = () => {
           {/* ── Right: Details ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.22s both' }}>
 
-            <p
-              className="font-label mb-2"
-              style={{
-                letterSpacing: '0.26em',
-                color:         theme.accentSecondary,
-                fontSize:      '0.62rem',
-                fontWeight:    800,
-                textTransform: 'uppercase',
-              }}
-            >
-              {product.fabric} · {product.category.replace(/-/g,' ')}
+            <p className="font-label mb-2" style={{
+              letterSpacing: '0.26em', color: theme.accentSecondary,
+              fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase',
+            }}>
+              {p.fabric} · {p.category.replace(/-/g,' ')}
             </p>
 
-            <h1
-              className={`mb-3 leading-tight ${textPrimary}`}
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize:   'clamp(2rem, 3.5vw, 2.9rem)',
-                fontWeight: 600,
-                lineHeight: 1.08,
-              }}
-            >
-              {product.name}
+            <h1 className={`mb-3 leading-tight ${textPrimary}`} style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: 'clamp(2rem, 3.5vw, 2.9rem)', fontWeight: 600, lineHeight: 1.08,
+            }}>
+              {p.name}
             </h1>
 
             <div style={{ marginBottom: '16px' }}>
               <ThreadDivider />
             </div>
 
-            {/* ── Product ID — bigger, richer colour ── */}
+            {/* Product ID */}
             <p className="font-body mb-4" style={{ fontSize: '0.82rem', opacity: 0.85 }}>
-              <span style={{
-                fontWeight:    700,
-                color:         productIdColor,
-                letterSpacing: '0.03em',
-                fontSize:      '0.78rem',
-              }}>
+              <span style={{ fontWeight: 700, color: productIdColor, letterSpacing: '0.03em', fontSize: '0.78rem' }}>
                 Product ID:
               </span>{' '}
-              <span style={{
-                fontFamily:    '"DM Mono", "Courier New", monospace',
-                fontWeight:    600,
-                fontSize:      '0.82rem',
-                letterSpacing: '0.12em',
-                color:         productIdColor,
-              }}>
+              <span style={{ fontFamily: '"DM Mono", "Courier New", monospace', fontWeight: 600, fontSize: '0.82rem', letterSpacing: '0.12em', color: productIdColor }}>
                 {product.id}
               </span>
             </p>
 
-            {/* Star rating */}
+            {/* ── Star rating — only rendered when admin set show_rating = true ── */}
             {showRating && (
               <div className="flex items-center gap-3 mb-4">
-                <StarRating rating={product.rating} size={16} />
+                <StarRating rating={p.rating} size={16} />
                 <span className={`text-sm font-body font-semibold ${textMuted}`}>
-                  {product.rating} ({product.review_count} {product.review_count === 1 ? 'review' : 'reviews'})
+                  {p.rating} ({p.review_count} {p.review_count === 1 ? 'review' : 'reviews'})
                 </span>
               </div>
             )}
@@ -846,96 +778,55 @@ const ProductDetailPage: React.FC = () => {
             <div className="flex items-end gap-4 mb-2">
               {product.discount_price ? (
                 <>
-                  <span
-                    style={{
-                      fontFamily:    '"Raleway", sans-serif',
-                      fontSize:      '2.2rem',
-                      fontWeight:    900,
-                      color:         '#bc3d3e',
-                      letterSpacing: '-0.02em',
-                      lineHeight:    1,
-                    }}
-                  >
+                  <span style={{
+                    fontFamily: '"Raleway", sans-serif', fontSize: '2.2rem', fontWeight: 900,
+                    color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1,
+                  }}>
                     ₹{product.discount_price.toLocaleString()}
                   </span>
-                  <span
-                    className={`font-body line-through`}
-                    style={{
-                      fontSize:   '1.1rem',
-                      fontWeight: 500,
-                      color:      isDark ? '#64748b' : '#a8a29e',
-                      marginBottom: '3px',
-                    }}
-                  >
+                  <span className="font-body line-through" style={{ fontSize: '1.1rem', fontWeight: 500, color: isDark ? '#64748b' : '#a8a29e', marginBottom: '3px' }}>
                     ₹{product.price.toLocaleString()}
                   </span>
                 </>
               ) : (
-                <span
-                  style={{
-                    fontFamily:    '"Raleway", sans-serif',
-                    fontSize:      '2.2rem',
-                    fontWeight:    900,
-                    color:         '#bc3d3e',
-                    letterSpacing: '-0.02em',
-                    lineHeight:    1,
-                  }}
-                >
+                <span style={{
+                  fontFamily: '"Raleway", sans-serif', fontSize: '2.2rem', fontWeight: 900,
+                  color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1,
+                }}>
                   ₹{product.price.toLocaleString()}
                 </span>
               )}
             </div>
 
-            {/* Savings callout */}
+            {/* Savings callout — discount % always whole number */}
             {product.discount_price && discount > 0 && (
-              <p
-                className="mb-4 font-body"
-                style={{
-                  fontSize:   '0.8rem',
-                  fontWeight: 700,
-                  color:      '#16a34a',
-                  letterSpacing: '0.02em',
-                }}
-              >
+              <p className="mb-4 font-body" style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', letterSpacing: '0.02em' }}>
                 You save ₹{(product.price - product.discount_price).toLocaleString()} ({discount}% off)
               </p>
             )}
 
             {/* Stock status */}
-            <p
-              className="font-body mb-5"
-              style={{
-                fontSize:   '0.85rem',
-                fontWeight: 800,
-                letterSpacing: '0.04em',
-                color: product.stock === 0
-                  ? '#ef4444'
-                  : product.stock <= 5
-                    ? '#f97316'
-                    : '#16a34a',
-              }}
-            >
-              {product.stock === 0
-                ? '✗  Out of Stock'
-                : product.stock <= 5
-                  ? `⚠  Only ${product.stock} left in stock!`
-                  : '✓  In Stock'}
+            <p className="font-body mb-5" style={{
+              fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.04em',
+              color: product.stock === 0 ? '#ef4444' : product.stock <= 5 ? '#f97316' : '#16a34a',
+            }}>
+              {product.stock === 0 ? '✗  Out of Stock' : product.stock <= 5 ? `⚠  Only ${product.stock} left in stock!` : '✓  In Stock'}
             </p>
 
-            {/* Colour swatches */}
+            {/* ── Colour swatches — only rendered when admin set show_colors = true ── */}
             {hasColors && (
               <div className="mb-6">
                 <p className={`font-body mb-2 ${textPrimary}`} style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Colour
                 </p>
                 <div className="flex gap-2">
-                  {activeColors.map((color, i) => (
+                  {activeColors.map((color: string, i: number) => (
                     <button
                       key={color} onClick={() => setSelectedColor(i)}
                       className="w-8 h-8 rounded-full transition-all hover:scale-110"
                       style={{
                         background: color,
-                        border:    `2px solid ${i === selectedColor ? theme.accentPrimary : 'transparent'}`,
+                        border: `2px solid ${i === selectedColor ? theme.accentPrimary : 'transparent'}`,
                         transform: i === selectedColor ? 'scale(1.12)' : 'scale(1)',
                         boxShadow: i === selectedColor ? `0 0 0 3px ${theme.accentPrimary}30` : 'none',
                       }}
@@ -950,21 +841,14 @@ const ProductDetailPage: React.FC = () => {
             {/* WhatsApp CTA */}
             <div className="mb-4">
               <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={whatsappLink} target="_blank" rel="noopener noreferrer"
                 className={`pdp-wa-btn w-full flex items-center justify-center gap-3 py-4 rounded-full font-body ${product.stock === 0 ? 'disabled' : ''}`}
                 style={{
-                  background:     '#25D366',
-                  color:          '#fff',
-                  boxShadow:      '0 4px 20px rgba(37,211,102,0.4)',
-                  letterSpacing:  '0.18em',
-                  fontSize:       '0.78rem',
-                  fontWeight:     900,
-                  textTransform:  'uppercase',
-                  pointerEvents:  product.stock === 0 ? 'none' : 'auto',
-                  opacity:        product.stock === 0 ? 0.5 : 1,
-                  textDecoration: 'none',
+                  background: '#25D366', color: '#fff', boxShadow: '0 4px 20px rgba(37,211,102,0.4)',
+                  letterSpacing: '0.18em', fontSize: '0.78rem', fontWeight: 900,
+                  textTransform: 'uppercase',
+                  pointerEvents: product.stock === 0 ? 'none' : 'auto',
+                  opacity: product.stock === 0 ? 0.5 : 1, textDecoration: 'none',
                 }}
               >
                 <MessageCircle size={20} />
@@ -972,7 +856,6 @@ const ProductDetailPage: React.FC = () => {
               </a>
             </div>
 
-            {/* ── Trust Badges ── */}
             <TrustBadges isDark={isDark} />
 
             {/* Accordions */}
@@ -1009,48 +892,28 @@ const ProductDetailPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Share section */}
+            {/* Share */}
             <div>
-              <p
-                className={`mb-3 font-body ${textPrimary}`}
-                style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' }}
-              >
+              <p className={`mb-3 font-body ${textPrimary}`} style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 Share this product
               </p>
               <div className="flex gap-3">
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
                   className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ background: '#25D366', boxShadow: '0 2px 10px rgba(37,211,102,0.4)' }}
-                  aria-label="Share on WhatsApp"
-                >
+                  aria-label="Share on WhatsApp">
                   <MessageCircle size={18} color="white" />
                 </a>
-
-                <a
-                  href={instagramLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={instagramLink} target="_blank" rel="noopener noreferrer"
                   className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{
-                    background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
-                    boxShadow:  '0 2px 10px rgba(220,39,67,0.35)',
-                  }}
-                  aria-label="Follow us on Instagram"
-                >
+                  style={{ background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', boxShadow: '0 2px 10px rgba(220,39,67,0.35)' }}
+                  aria-label="Follow us on Instagram">
                   <Instagram size={18} color="white" />
                 </a>
-
-                <a
-                  href={facebookShareLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={facebookShareLink} target="_blank" rel="noopener noreferrer"
                   className="pdp-share-icon w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ background: '#1877F2', boxShadow: '0 2px 10px rgba(24,119,242,0.35)' }}
-                  aria-label="Share on Facebook"
-                >
+                  aria-label="Share on Facebook">
                   <Facebook size={18} color="white" />
                 </a>
               </div>

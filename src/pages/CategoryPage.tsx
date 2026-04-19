@@ -275,35 +275,23 @@ const SmartProductCard: React.FC<{ product: Parameters<typeof ProductCard>[0]['p
   return (
     <div onMouseEnter={startHoverCycle} onMouseLeave={stopHoverCycle} style={{ position: 'relative' }}>
       <ProductCard product={displayProduct} />
-
-      {/* ✅ Dot indicator — placed INSIDE the image area at the TOP so it never
-          overlaps the product name or info below the card image.
-          Uses absolute positioning relative to the parent wrapper, offset to sit
-          just inside the top of the 3:4 image. A small semi-transparent pill
-          keeps it readable against any image. */}
       {hasMultiple && (
         <div
           style={{
-            position:        'absolute',
-            // The image is 3:4 aspect. We place dots near the top of the image,
-            // clear of the top badges (which sit at ~top:12px).
-            // "calc(X% - Y)" places it relative to the wrapper height.
-            // Since the image is 3/4 of the card width, and cards vary,
-            // we use a fixed top offset that lands inside the image safely.
-            top:             '10px',
-            left:            '50%',
-            transform:       'translateX(-50%)',
-            display:         'flex',
-            alignItems:      'center',
-            justifyContent:  'center',
-            gap:             '4px',
-            pointerEvents:   'none',
-            zIndex:          10,
-            // Pill background for legibility over any image colour
-            background:      'rgba(0,0,0,0.28)',
-            backdropFilter:  'blur(4px)',
-            padding:         '4px 8px',
-            borderRadius:    '20px',
+            position:       'absolute',
+            top:            '10px',
+            left:           '50%',
+            transform:      'translateX(-50%)',
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            '4px',
+            pointerEvents:  'none',
+            zIndex:         10,
+            background:     'rgba(0,0,0,0.28)',
+            backdropFilter: 'blur(4px)',
+            padding:        '4px 8px',
+            borderRadius:   '20px',
           }}
         >
           {product.images.map((_, i) => (
@@ -331,7 +319,10 @@ const CategoryPage: React.FC = () => {
 
   const [category, setCategory] = useState<CategoryMeta | null>(null);
   const [view, setView]         = useState<ViewMode>('4col');
-  const { products: allProducts, loading } = useProductsByCategory(categoryId || '');
+
+  // ✅ useProductsByCategory now returns already-normalised, already-visible-filtered
+  // products — no need to filter is_visible here any more.
+  const { products, loading } = useProductsByCategory(categoryId || '');
 
   const [sortBy, setSortBy]               = useState<SortOption>('featured');
   const [filterTag, setFilterTag]         = useState('All');
@@ -345,18 +336,14 @@ const CategoryPage: React.FC = () => {
     fetchCategoryMeta(categoryId).then(setCategory).catch(() => {});
   }, [categoryId]);
 
-  const visibleProducts = useMemo(
-    () => allProducts.filter(p => p.is_visible !== false),
-    [allProducts]
-  );
-
+  // ✅ All products from the hook are already visible — no secondary filter needed
   const allFabrics = useMemo(
-    () => [...new Set(visibleProducts.map(p => p.fabric))],
-    [visibleProducts]
+    () => [...new Set(products.map(p => p.fabric))],
+    [products]
   );
 
   const filtered = useMemo(() => {
-    let list = [...visibleProducts];
+    let list = [...products];
     if (filterTag === 'Best Sellers') list = list.filter(p => p.is_best_seller);
     else if (filterTag === 'New Arrivals') list = list.filter(p => p.is_new_arrival);
     else if (filterTag === 'Featured') list = list.filter(p => p.is_featured);
@@ -377,7 +364,7 @@ const CategoryPage: React.FC = () => {
       case 'high-low': return [...list].sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
       default: return list;
     }
-  }, [visibleProducts, sortBy, filterTag, filterFabrics, priceRange, searchQuery]);
+  }, [products, sortBy, filterTag, filterFabrics, priceRange, searchQuery]);
 
   const toggleFabric = (fabric: string) =>
     setFilterFabrics(prev => prev.includes(fabric) ? prev.filter(f => f !== fabric) : [...prev, fabric]);
@@ -388,8 +375,8 @@ const CategoryPage: React.FC = () => {
     '4col': 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
   };
 
-  const bg          = isDark ? 'bg-dark-bg'    : 'bg-brand-cream';
-  const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark';
+  const bg          = isDark ? 'bg-dark-bg'    : 'bg-white';
+  const card        = isDark ? 'bg-dark-card border-dark-border' : 'bg-stone-50 border-stone-200';
   const textPrimary = isDark ? 'text-dark-text'  : 'text-brand-ink';
   const textMuted   = isDark ? 'text-dark-muted' : 'text-brand-ink-muted';
 
@@ -423,41 +410,50 @@ const CategoryPage: React.FC = () => {
 
       {/* ── Page header ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-4">
-        <nav className="flex items-center gap-2 text-xs font-body mb-6" aria-label="Breadcrumb">
+
+        <nav className="flex items-center gap-2 text-xs font-body mb-8" aria-label="Breadcrumb">
           <Link to="/" className={`${textMuted} hover:text-brand-red transition-colors`}>Home</Link>
+          <span className={textMuted} aria-hidden="true">›</span>
+          <Link to="/categories" className={`${textMuted} hover:text-brand-red transition-colors`}>Collections</Link>
           <span className={textMuted} aria-hidden="true">›</span>
           <span className="text-brand-red font-medium capitalize">{categoryName}</span>
         </nav>
 
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-2">
-          <div>
-            <p className="text-brand-gold text-xs uppercase font-label mb-1" style={{ letterSpacing: '0.28em' }}>
-              Browse Collection
+        <div className="text-center mb-8">
+          <p className="text-brand-gold text-xs uppercase font-label mb-2" style={{ letterSpacing: '0.28em' }}>
+            Browse Collection
+          </p>
+          <h1 className={textPrimary} style={{
+            fontFamily: '"Cormorant Garamond",serif',
+            fontSize: 'clamp(2rem,4vw,3rem)', fontWeight: 400, lineHeight: 1.1,
+          }}>
+            {categoryName}
+          </h1>
+          {category?.description && (
+            <p className={`mt-3 text-sm font-body max-w-xl mx-auto leading-relaxed ${textMuted}`}>
+              {category.description}
             </p>
-            <h1 className={textPrimary} style={{
-              fontFamily: '"Cormorant Garamond",serif',
-              fontSize: 'clamp(2rem,4vw,3rem)', fontWeight: 400, lineHeight: 1.1,
-            }}>
-              {categoryName}
-            </h1>
+          )}
+
+          <div className="flex items-center justify-center gap-3 mt-5" aria-hidden="true">
+            <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.5))' }} />
+            <div style={{ width: '5px', height: '5px', background: '#b6893c', transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.5))' }} />
           </div>
+        </div>
+
+        <div className="flex justify-end mb-4">
           <div className="flex items-center gap-1.5" role="group" aria-label="Grid view options">
             <ViewBtn active={view === '2col'} onClick={() => setView('2col')} icon={<Columns size={15} />} label="2 columns grid" isDark={isDark} />
             <ViewBtn active={view === '3col'} onClick={() => setView('3col')} icon={<LayoutGrid size={15} />} label="3 columns grid" isDark={isDark} />
             <ViewBtn active={view === '4col'} onClick={() => setView('4col')} icon={<Grid size={15} />} label="4 columns grid" isDark={isDark} />
           </div>
         </div>
-
-        <div className="flex items-center gap-3 mb-8" aria-hidden="true">
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to right,transparent,rgba(182,137,60,0.5))' }} />
-          <div style={{ width: '5px', height: '5px', background: '#b6893c', transform: 'rotate(45deg)' }} />
-          <div style={{ width: '40px', height: '1px', background: 'linear-gradient(to left,transparent,rgba(182,137,60,0.5))' }} />
-        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
 
-        {/* ── Toolbar ── */}
+        {/* ── Toolbar: search + sort + filter ── */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textMuted}`} aria-hidden="true" />
@@ -506,7 +502,7 @@ const CategoryPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {['All', 'Best Sellers', 'New Arrivals', 'Featured'].map(tag => (
                     <button key={tag} onClick={() => setFilterTag(tag)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterTag === tag ? 'bg-brand-red text-white border-brand-red' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-red hover:text-brand-red' : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-red hover:text-brand-red'}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterTag === tag ? 'bg-brand-red text-white border-brand-red' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-red hover:text-brand-red' : 'border-stone-200 text-stone-500 hover:border-brand-red hover:text-brand-red'}`}
                       aria-pressed={filterTag === tag}>
                       {tag}
                     </button>
@@ -518,7 +514,7 @@ const CategoryPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {allFabrics.map(fabric => (
                     <button key={fabric} onClick={() => toggleFabric(fabric)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterFabrics.includes(fabric) ? 'bg-brand-gold text-white border-brand-gold' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-gold hover:text-brand-gold' : 'border-brand-cream-dark text-brand-ink-soft hover:border-brand-gold hover:text-brand-gold'}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body border transition-all ${filterFabrics.includes(fabric) ? 'bg-brand-gold text-white border-brand-gold' : isDark ? 'border-dark-border text-dark-muted hover:border-brand-gold hover:text-brand-gold' : 'border-stone-200 text-stone-500 hover:border-brand-gold hover:text-brand-gold'}`}
                       aria-pressed={filterFabrics.includes(fabric)}>
                       {fabric}
                     </button>

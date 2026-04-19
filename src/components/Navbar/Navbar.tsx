@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
 
   const suggestions = useSearchSuggestions(searchQuery);
 
-  // ── Uses shared cache — no duplicate network call if other components already fetched
+  // Shared cache — no duplicate network call if other components already fetched
   useEffect(() => {
     getCategories().then(setNavCategories).catch(() => {});
   }, []);
@@ -49,13 +49,13 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
-      if (catRef.current  && !catRef.current.contains(e.target as Node))  setCatOpen(false);
+      if (catRef.current   && !catRef.current.contains(e.target as Node))     setCatOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // ── Keyboard handler for the dropdown — Arrow keys + Escape
+  // Arrow-key + Escape keyboard navigation for the dropdown
   const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!catOpen) return;
     const items = catRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
@@ -83,7 +83,7 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // ── Active state: /categories and /category/* both highlight the Categories button
+  // /categories and /category/* both highlight the Categories button
   const isCatActive = location.pathname.startsWith('/categor');
 
   const navBg = scrolled
@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
           <Link to="/" className="flex items-center gap-3 flex-shrink-0" aria-label="Wing & Weft Home">
             <picture>
               <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
-              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"  type="image/png" />
+              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"   type="image/png" />
               <img
                 src="/logo@1x.png"
                 alt="Wing & Weft"
@@ -128,21 +128,21 @@ const Navbar: React.FC = () => {
               </span>
               <p
                 style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: '"Raleway", sans-serif' }}
-                className={isDark ? 'text-brand-cream' : 'text-stone-800'}
+                className={isDark ? 'text-brand-cream/70' : 'text-stone-500'}
               >
                 CHEERS TO THE NEW BEGINNINGS
               </p>
             </div>
           </Link>
 
-          {/* ── Center Nav — Desktop ── */}
+          {/* ── Centre Nav — Desktop ── */}
           <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-            <NavLink to="/" label="Home" isDark={isDark} />
+            <NavLink to="/"          label="Home"     isDark={isDark} />
 
-            {/* Categories dropdown */}
+            {/* ── Categories dropdown ── */}
             <div ref={catRef} className="relative" onKeyDown={handleDropdownKeyDown}>
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body ${
+                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
                   isCatActive
                     ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
                     : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -159,11 +159,11 @@ const Navbar: React.FC = () => {
               {catOpen && (
                 <div
                   id="categories-dropdown"
-                  className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-y-auto ${
-                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
-                  }`}
                   role="menu"
                   aria-label="Product categories"
+                  className={`absolute top-full left-0 mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-y-auto ${
+                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark'
+                  }`}
                   style={{ maxHeight: 'min(320px, 60vh)' }}
                 >
                   {navCategories.length > 0 ? (
@@ -172,35 +172,33 @@ const Navbar: React.FC = () => {
                         <Link
                           key={cat.id}
                           to={`/category/${cat.id}`}
-                          className={`flex items-center px-4 py-3 text-sm transition-colors ${
+                          role="menuitem"
+                          tabIndex={0}
+                          className={`flex items-center px-4 py-3 text-sm font-body transition-colors ${
                             isDark
                               ? 'text-dark-text hover:bg-brand-red/10 hover:text-brand-orange'
                               : 'text-stone-700 hover:bg-brand-cream hover:text-brand-red'
                           }`}
-                          role="menuitem"
-                          tabIndex={0}
                         >
-                          <span className="font-body">{cat.name}</span>
+                          {cat.name}
                         </Link>
                       ))}
-
-                      {/* View all collections — SEO internal link + UX shortcut */}
+                      {/* View all collections — SEO internal link */}
                       <Link
                         to="/categories"
+                        role="menuitem"
+                        tabIndex={0}
                         className={`flex items-center justify-between px-4 py-3 text-xs font-semibold font-body border-t transition-colors ${
                           isDark
                             ? 'border-dark-border text-brand-gold hover:bg-brand-red/10'
                             : 'border-brand-cream-dark text-brand-gold hover:bg-brand-cream'
                         }`}
-                        role="menuitem"
-                        tabIndex={0}
                       >
                         View all collections
                         <ArrowRight size={12} />
                       </Link>
                     </>
                   ) : (
-                    // Skeleton while loading
                     [1, 2, 3].map(n => (
                       <div key={n} className="flex items-center px-4 py-3">
                         <div className={`h-3 w-28 rounded animate-pulse ${isDark ? 'bg-white/10' : 'bg-stone-200'}`} />
@@ -213,26 +211,9 @@ const Navbar: React.FC = () => {
 
             <NavLink to="/our-story" label="About Us" isDark={isDark} />
             <NavLink to="/contact"   label="Contact"  isDark={isDark} />
-
-            {/* ── Track your Order — external link ── */}
-            <a
-              href={TRACK_ORDER_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
-                isDark
-                  ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50'
-                  : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
-              }`}
-              aria-label="Track your courier order (opens in new tab)"
-              title="Track your courier order"
-            >
-              <PackageSearch size={14} aria-hidden="true" />
-              Track Your Order
-            </a>
           </div>
 
-          {/* ── Right side ── */}
+          {/* ── Right side icon cluster ── */}
           <div className="flex items-center gap-2">
 
             {/* Search */}
@@ -243,6 +224,7 @@ const Navbar: React.FC = () => {
                   isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-700 hover:text-brand-red hover:bg-brand-cream'
                 }`}
                 aria-label="Open search"
+                aria-expanded={searchOpen}
               >
                 <Search size={18} />
               </button>
@@ -250,14 +232,14 @@ const Navbar: React.FC = () => {
               {searchOpen && (
                 <div
                   className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl border overflow-hidden z-50 ${
-                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream'
+                    isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-brand-cream-dark'
                   }`}
                 >
                   <form onSubmit={handleSearchSubmit} className="p-3">
                     <div className="flex gap-2">
                       <input
                         autoFocus
-                        type="text"
+                        type="search"
                         placeholder="Search sarees, fabrics…"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
@@ -267,6 +249,7 @@ const Navbar: React.FC = () => {
                             : 'bg-brand-cream/50 border-brand-cream-dark text-stone-800 placeholder-stone-400 focus:border-brand-red'
                         }`}
                         aria-label="Search products"
+                        autoComplete="off"
                       />
                       <button
                         type="submit"
@@ -312,13 +295,57 @@ const Navbar: React.FC = () => {
                   )}
 
                   {searchQuery.trim().length > 1 && suggestions.length === 0 && (
-                    <div className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
+                    <p className={`px-4 py-3 text-xs font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
                       No products found for "{searchQuery}"
-                    </div>
+                    </p>
                   )}
                 </div>
               )}
             </div>
+
+            {/*
+              ── Track Your Order — icon button with CSS tooltip ─────────────
+              Desktop only. Icon-only so it doesn't widen the bar; the tooltip
+              on hover makes the action self-explanatory without needing a label.
+              Hidden on mobile — the full text link lives in the mobile menu.
+            */}
+            <a
+              href={TRACK_ORDER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`relative hidden md:inline-flex group p-2 rounded-lg transition-colors ${
+                isDark
+                  ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card'
+                  : 'text-stone-700 hover:text-brand-red hover:bg-brand-cream'
+              }`}
+              aria-label="Track your courier order (opens in new tab)"
+            >
+              <PackageSearch size={18} aria-hidden="true" />
+
+              {/* Tooltip */}
+              <span
+                className={`
+                  pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+                  px-2.5 py-1 rounded-md text-xs font-semibold font-body whitespace-nowrap
+                  opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0
+                  transition-all duration-150 z-50
+                  ${isDark
+                    ? 'bg-dark-card text-dark-text border border-dark-border shadow-lg'
+                    : 'bg-stone-800 text-white shadow-lg'
+                  }
+                `}
+                role="tooltip"
+              >
+                Track Your Order
+                {/* Arrow */}
+                <span
+                  className={`absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent ${
+                    isDark ? 'border-t-dark-card' : 'border-t-stone-800'
+                  }`}
+                  aria-hidden="true"
+                />
+              </span>
+            </a>
 
             {/* Instagram */}
             <a
@@ -344,7 +371,7 @@ const Navbar: React.FC = () => {
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            {/* Mobile menu button */}
+            {/* Mobile menu toggle */}
             <button
               className={`md:hidden p-2 rounded-lg transition-colors ${
                 isDark ? 'text-dark-text hover:bg-dark-card' : 'text-stone-700 hover:bg-brand-cream'
@@ -352,6 +379,7 @@ const Navbar: React.FC = () => {
               onClick={() => setMenuOpen(v => !v)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
             >
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -362,26 +390,30 @@ const Navbar: React.FC = () => {
       {/* ── Mobile menu ── */}
       {menuOpen && (
         <div
+          id="mobile-nav"
+          role="navigation"
+          aria-label="Mobile navigation"
           className={`md:hidden border-t px-4 py-4 space-y-1 ${
             isDark ? 'bg-dark-bg border-dark-border' : 'bg-brand-cream border-brand-cream-dark'
           }`}
-          role="navigation"
-          aria-label="Mobile navigation"
         >
           <MobileLink to="/" label="Home" isDark={isDark} />
+
+          {/* Mobile — Categories accordion */}
           <div>
             <button
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold font-body ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold font-body transition-colors ${
                 isCatActive
                   ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/5'
-                  : isDark ? 'text-dark-text' : 'text-stone-800'
+                  : isDark ? 'text-dark-text hover:bg-dark-card' : 'text-stone-800 hover:bg-white/50'
               }`}
               onClick={() => setCatOpen(v => !v)}
               aria-expanded={catOpen}
             >
               Categories
-              <ChevronDown size={14} className={`transition-transform ${catOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
             </button>
+
             {catOpen && (
               <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-gold'}`}>
                 {navCategories.length > 0 ? (
@@ -390,14 +422,16 @@ const Navbar: React.FC = () => {
                       <Link
                         key={cat.id}
                         to={`/category/${cat.id}`}
-                        className={`block py-2 text-sm font-body ${isDark ? 'text-dark-muted hover:text-brand-orange' : 'text-stone-600 hover:text-brand-red'}`}
+                        className={`block py-2 text-sm font-body transition-colors ${
+                          isDark ? 'text-dark-muted hover:text-brand-orange' : 'text-stone-600 hover:text-brand-red'
+                        }`}
                       >
                         {cat.name}
                       </Link>
                     ))}
                     <Link
                       to="/categories"
-                      className={`flex items-center gap-1.5 py-2 text-xs font-semibold font-body ${isDark ? 'text-brand-gold' : 'text-brand-gold'}`}
+                      className="flex items-center gap-1.5 py-2 text-xs font-semibold font-body text-brand-gold"
                     >
                       View all collections
                       <ArrowRight size={11} />
@@ -411,10 +445,11 @@ const Navbar: React.FC = () => {
               </div>
             )}
           </div>
+
           <MobileLink to="/our-story" label="About Us" isDark={isDark} />
           <MobileLink to="/contact"   label="Contact"  isDark={isDark} />
 
-          {/* ── Track your Order — Mobile ── */}
+          {/* Track Order — full text link on mobile since there's no hover/tooltip */}
           <a
             href={TRACK_ORDER_URL}
             target="_blank"
@@ -427,7 +462,7 @@ const Navbar: React.FC = () => {
             aria-label="Track your courier order (opens in new tab)"
           >
             <PackageSearch size={15} aria-hidden="true" />
-            Track your Order
+            Track Your Order
           </a>
         </div>
       )}
@@ -438,8 +473,8 @@ const Navbar: React.FC = () => {
 // ─── NavLink ──────────────────────────────────────────────────────────────────
 
 const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to;
+  const { pathname } = useLocation();
+  const isActive = pathname === to;
   return (
     <Link
       to={to}
@@ -459,7 +494,7 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
 const MobileLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => (
   <Link
     to={to}
-    className={`block px-3 py-2.5 rounded-lg text-sm font-semibold font-body ${
+    className={`block px-3 py-2.5 rounded-lg text-sm font-semibold font-body transition-colors ${
       isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card' : 'text-stone-800 hover:text-brand-red hover:bg-white/50'
     }`}
   >
