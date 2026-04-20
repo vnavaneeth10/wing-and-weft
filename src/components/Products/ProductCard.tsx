@@ -58,7 +58,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     return `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(text)}`;
   };
 
-  // Always a whole number — Math.round eliminates decimals
   const discount = product.discount_price
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
@@ -69,17 +68,15 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     window.open(buildWhatsAppLink(), '_blank', 'noopener,noreferrer');
   };
 
-  // ── show_rating: must be explicitly true AND have real rating + review count
-  // We use ?? false so any undefined (shouldn't happen after normalise) is safe
+  // ── Explicit boolean check — avoids truthy-string pitfalls after normalise ──
   const shouldShowRating =
-    (product.show_rating ?? false) === true &&
+    product.show_rating === true &&
     product.rating > 0 &&
     product.review_count > 0;
 
-  // ── show_colors: default true for old rows, hide only when explicitly false
   const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
   const shouldShowColors =
-    (product.show_colors ?? true) !== false &&
+    product.show_colors !== false &&
     activeColors.length > 0;
 
   // ── Compact card ──────────────────────────────────────────────────────────
@@ -97,15 +94,11 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             loading="lazy" />
           {product.is_new_arrival && (
             <span className="absolute top-3 left-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
-              style={{ background: '#bc3d3e', color: '#e9e3cb' }}>
-              New
-            </span>
+              style={{ background: '#bc3d3e', color: '#e9e3cb' }}>New</span>
           )}
           {discount > 0 && (
             <span className="absolute top-3 right-3 text-xs px-2 py-0.5 rounded-full font-body font-semibold"
-              style={{ background: '#b6893c', color: '#e9e3cb' }}>
-              -{discount}%
-            </span>
+              style={{ background: '#b6893c', color: '#e9e3cb' }}>-{discount}%</span>
           )}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -117,6 +110,15 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
           <p className="text-xs mb-0.5 font-body text-brand-gold" style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {product.category.replace(/-/g, ' ')}
           </p>
+          {/* Colors above name in compact too */}
+          {shouldShowColors && (
+            <div className="flex gap-1 mb-1">
+              {activeColors.map(c => (
+                <div key={c} className="w-3 h-3 rounded-full"
+                  style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)' }} />
+              ))}
+            </div>
+          )}
           <h3 className={`text-sm font-semibold mb-1 line-clamp-2 leading-tight ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
             style={{ fontFamily: '"Raleway", sans-serif' }}>
             {product.name}
@@ -163,7 +165,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             )}
           </div>
 
-          {/* Discount badge — always whole number */}
+          {/* Discount badge — bottom left */}
           {discount > 0 && (
             <div className="absolute bottom-3 left-3" style={{ zIndex: 2 }}>
               <span className="font-body" style={{
@@ -195,14 +197,36 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
         </div>
       </Link>
 
-      {/* Card info */}
+      {/* ── Card info ── */}
       <div className="p-4">
-        <p className="font-body mb-1" style={{
+        <p className="font-body mb-1.5" style={{
           fontSize: '0.58rem', letterSpacing: '0.2em',
           fontWeight: 700, textTransform: 'uppercase', color: '#b6893c',
         }}>
           {product.fabric}
         </p>
+
+        {/* ── Star rating — directly under fabric label, above colors & name ── */}
+        {shouldShowRating && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <StarRating rating={product.rating} />
+            <span className={`font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}
+              style={{ fontSize: '0.68rem' }}>
+              ({product.review_count})
+            </span>
+          </div>
+        )}
+
+        {/* ── Color swatches — NOW above product name ── */}
+        {shouldShowColors && (
+          <div className="flex gap-1.5 mb-2">
+            {activeColors.map(c => (
+              <div key={c} className="w-4 h-4 rounded-full"
+                style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
+                aria-label={`Color: ${c}`} />
+            ))}
+          </div>
+        )}
 
         <Link to={`/product/${product.id}`}>
           <h3 className="mb-2 line-clamp-2 transition-colors" style={{
@@ -216,28 +240,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             {product.name}
           </h3>
         </Link>
-
-        {/* Star rating — only when admin explicitly enabled + has values */}
-        {shouldShowRating && (
-          <div className="flex items-center gap-2 mb-2">
-            <StarRating rating={product.rating} />
-            <span className={`font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}
-              style={{ fontSize: '0.7rem' }}>
-              ({product.review_count})
-            </span>
-          </div>
-        )}
-
-        {/* Color swatches — only when admin enabled them */}
-        {shouldShowColors && (
-          <div className="flex gap-1.5 mb-3">
-            {activeColors.map(c => (
-              <div key={c} className="w-4 h-4 rounded-full"
-                style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
-                aria-label={`Color: ${c}`} />
-            ))}
-          </div>
-        )}
 
         {/* Price row */}
         <div className="flex items-center justify-between mt-1">

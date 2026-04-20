@@ -129,7 +129,7 @@ export function useProducts() {
         specifications: Array.isArray(p.specifications)
           ? p.specifications
           : (() => { try { return JSON.parse(p.specifications as unknown as string); } catch { return []; } })(),
-        show_rating: p.show_rating ?? true,
+        show_rating: p.show_rating ?? false,
         is_visible:  p.is_visible  ?? true,
         show_colors: p.show_colors ?? true,
       }));
