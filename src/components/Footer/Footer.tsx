@@ -310,6 +310,7 @@ const Footer: React.FC = () => {
                   {[
                     { to: '/',          label: 'Home'     },
                     { to: '/our-story', label: 'About Us' },
+                    { to: '/faq',       label: 'FAQs'     },
                     { to: '/contact',   label: 'Contact'  },
                   ].map((l) => (
                     <li key={l.to}>

@@ -8,6 +8,7 @@ import LoadingScreen from './components/UI/LoadingScreen';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { SettingsProvider } from './context/SettingsContext';
+import FAQPage from './pages/FAQPage';
 import ReactGA from 'react-ga4';
 import './styles/a11y.css';
 
@@ -75,7 +76,9 @@ const PublicLayout: React.FC = () => (
           <Route path="/our-story"            element={<OurStoryPage />} />
           <Route path="/contact"              element={<ContactPage />} />
           <Route path="/search"               element={<SearchPage />} />
+          <Route path="/faq" element={<FAQPage />} />
           <Route path="*"                     element={<NotFoundPage />} />
+          
         </Routes>
       </Suspense>
     </main>
