@@ -8,7 +8,7 @@ interface BannerSlide {
   id:         string;
   title:      string;
   subtitle:   string;
-  eyebrow:    string;   // ADDED: replaces the fragile cta_link parsing
+  eyebrow:    string;
   cta_text:   string;
   cta_link:   string;
   image_url:  string;
@@ -24,8 +24,6 @@ const fetchBanners = async (): Promise<BannerSlide[]> => {
   if (!res.ok) throw new Error('Failed');
   return res.json();
 };
-
-// ── No hardcoded fallback slides — banner only shows what's in the database ──
 
 const RIBBON_ITEMS = [
   'Handwoven Heritage', '◆', 'Free Shipping Above ₹2000', '◆',
@@ -109,13 +107,10 @@ const STYLES = `
                 opacity 0.3s ease, background 0.3s ease;
   }
 
-  /* Mobile dot nav — horizontal pills */
-  .bnr-dots-mobile {
-    display: none;
-  }
-  .bnr-dots-desktop {
-    display: flex;
-  }
+  /* ── Dot nav ── */
+  .bnr-dots-mobile  { display: none; }
+  .bnr-dots-desktop { display: flex; }
+
   @media (max-width: 767px) {
     .bnr-dots-mobile {
       display: flex;
@@ -124,14 +119,12 @@ const STYLES = `
       align-items: center;
       gap: 8px;
       position: absolute;
-      bottom: clamp(28px, 5vh, 48px);
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 20;
     }
-    .bnr-dots-desktop {
-      display: none;
-    }
+    .bnr-dots-desktop { display: none; }
     .bnr-dot-h {
       transition: width 0.4s cubic-bezier(0.22,1,0.36,1),
                   opacity 0.3s ease, background 0.3s ease;
@@ -140,6 +133,74 @@ const STYLES = `
       padding: 0;
       cursor: pointer;
       border-radius: 1px;
+    }
+  }
+
+  /* ── Text block responsive ── */
+  .bnr-text-block {
+    position: absolute;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    bottom: clamp(64px, 10vh, 120px);
+    padding: 0 clamp(20px, 5vw, 64px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  @media (max-width: 767px) {
+    .bnr-text-block {
+      bottom: 48px;                /* sits above the pill dots */
+      padding: 0 20px;
+    }
+    .bnr-title-text {
+      font-size: clamp(1.6rem, 7vw, 2.6rem) !important;
+    }
+    .bnr-sub-text {
+      font-size: 0.8rem !important;
+      max-width: 100% !important;
+    }
+    .bnr-cta-btn {
+      font-size: 0.6rem !important;
+      padding: 9px 22px !important;
+    }
+    .bnr-eyebrow-text {
+      font-size: 0.53rem !important;
+      letter-spacing: 0.3em !important;
+    }
+    .bnr-rule-line { width: 36px !important; }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .bnr-title-text {
+      font-size: clamp(2rem, 4vw, 3rem) !important;
+    }
+    .bnr-text-block {
+      padding: 0 clamp(32px, 5vw, 80px);
+    }
+  }
+
+  /* ── Stage height ── */
+  .bnr-stage {
+    height: clamp(480px, 88vh, 900px);
+  }
+  @media (max-width: 480px) {
+    .bnr-stage {
+      height: clamp(480px, 92svh, 700px);
+    }
+  }
+
+  /* ── Image object-position: center on mobile ── */
+  .bnr-img {
+    object-position: center 25%;
+  }
+  @media (max-width: 767px) {
+    .bnr-img {
+      object-position: center center;
     }
   }
 
@@ -166,13 +227,25 @@ const STYLES = `
   .bnr-skeleton-pulse {
     animation: bnr-skeleton-pulse 1.8s ease-in-out infinite;
   }
+
+  /* Touch swipe hint — fade in then out once */
+  @keyframes bnr-swipe-hint {
+    0%   { opacity: 0; transform: translateX(0); }
+    20%  { opacity: 0.7; }
+    60%  { opacity: 0.7; transform: translateX(-12px); }
+    100% { opacity: 0; transform: translateX(-12px); }
+  }
+  .bnr-swipe-hint {
+    animation: bnr-swipe-hint 2s ease 1.5s 1 forwards;
+    pointer-events: none;
+  }
 `;
 
 // ─── Loading skeleton ────────────────────────────────────────────────────────
 const BannerSkeleton: React.FC = () => (
   <div
-    className="relative w-full flex items-end justify-center overflow-hidden"
-    style={{ height: 'clamp(520px, 88vh, 900px)', background: '#0d0a07' }}
+    className="bnr-stage relative w-full flex items-end justify-center overflow-hidden"
+    style={{ background: '#0d0a07' }}
     aria-label="Loading banner"
     aria-busy="true"
   >
@@ -201,8 +274,8 @@ const BannerSkeleton: React.FC = () => (
         <div style={{ width: '32px', height: '1px', background: 'rgba(182,137,60,0.35)' }} />
       </div>
       <div className="space-y-3 mb-5 bnr-skeleton-pulse" style={{ animationDelay: '0.2s' }}>
-        <div style={{ width: '320px', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', margin: '0 auto' }} />
-        <div style={{ width: '240px', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.07)', margin: '0 auto' }} />
+        <div style={{ width: 'min(320px, 80vw)', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', margin: '0 auto' }} />
+        <div style={{ width: 'min(240px, 60vw)', height: '14px', borderRadius: '6px', background: 'rgba(255,255,255,0.07)', margin: '0 auto' }} />
       </div>
       <div className="flex items-center gap-3 bnr-skeleton-pulse" style={{ animationDelay: '0.4s' }}>
         <div style={{ width: '40px', height: '1px', background: 'rgba(182,137,60,0.2)' }} />
@@ -220,8 +293,8 @@ const BannerSkeleton: React.FC = () => (
 // ─── Empty state ─────────────────────────────────────────────────────────────
 const BannerEmpty: React.FC = () => (
   <div
-    className="relative w-full flex items-center justify-center overflow-hidden"
-    style={{ height: 'clamp(520px, 88vh, 900px)', background: 'linear-gradient(135deg, #0d0a07, #1a0f06)' }}
+    className="bnr-stage relative w-full flex items-center justify-center overflow-hidden"
+    style={{ background: 'linear-gradient(135deg, #0d0a07, #1a0f06)' }}
   >
     <div className="bnr-grain" />
     <div className="relative z-10 text-center px-6">
@@ -260,6 +333,10 @@ const Banner: React.FC = () => {
   const [trans, setTrans]                 = useState(false);
   const styleRef                          = useRef(false);
 
+  // Touch/swipe support
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   useEffect(() => {
     if (styleRef.current) return;
     const s = document.createElement('style');
@@ -272,7 +349,6 @@ const Banner: React.FC = () => {
     fetchBanners()
       .then(data => {
         const active = data.filter(b => b.image_url?.trim());
-        // ADDED: normalise eyebrow — guard against null from rows predating the migration
         const normalised = active.map(b => ({ ...b, eyebrow: b.eyebrow ?? '' }));
         if (normalised.length > 0) { setSlides(normalised); setStatus('ready'); }
         else { setStatus('empty'); }
@@ -299,12 +375,30 @@ const Banner: React.FC = () => {
   }, [trans, current, slides.length]);
 
   const next = useCallback(() => goTo(current + 1), [current, goTo]);
+  const prev_ = useCallback(() => goTo(current - 1), [current, goTo]);
 
   useEffect(() => {
     if (status !== 'ready' || slides.length < 2) return;
     const t = setInterval(next, 6000);
     return () => clearInterval(t);
   }, [next, status, slides.length]);
+
+  // ── Touch handlers for swipe ──
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Only trigger if horizontal swipe is dominant and large enough
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 44) {
+      dx < 0 ? next() : prev_();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   if (status === 'loading') {
     return (
@@ -325,15 +419,17 @@ const Banner: React.FC = () => {
   }
 
   const slide = slides[current];
-
-  // ADDED: clean eyebrow resolution — admin value → 'Featured' fallback, never shows raw URL
   const eyebrowText = slide?.eyebrow?.trim() || 'Featured';
 
   return (
     <section className="relative w-full pt-16 md:pt-20" aria-label="Featured collection">
 
       {/* ── Main stage ── */}
-      <div className="relative w-full overflow-hidden" style={{ height: 'clamp(520px, 88vh, 900px)' }}>
+      <div
+        className="bnr-stage relative w-full overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
 
         <div className="bnr-grain" aria-hidden="true" />
 
@@ -350,9 +446,8 @@ const Banner: React.FC = () => {
               <img
                 src={s.image_url}
                 alt={s.title}
-                className={`w-full h-full object-cover ${isActive ? `bnr-kb-${(i % 3) + 1}` : ''}`}
+                className={`bnr-img w-full h-full object-cover${isActive ? ` bnr-kb-${(i % 3) + 1}` : ''}`}
                 loading={i === 0 ? 'eager' : 'lazy'}
-                style={{ objectPosition: 'center 25%' }}
                 width={1440} height={900}
               />
             </div>
@@ -361,15 +456,16 @@ const Banner: React.FC = () => {
 
         {/* Gradients */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }} aria-hidden="true">
+          {/* Bottom gradient — stronger on mobile so text is always legible */}
           <div style={{ position: 'absolute', inset: 0,
-            background: 'linear-gradient(to top, rgba(4,2,1,0.96) 0%, rgba(4,2,1,0.78) 28%, rgba(4,2,1,0.35) 55%, rgba(4,2,1,0.08) 75%, transparent 100%)'
+            background: 'linear-gradient(to top, rgba(4,2,1,0.97) 0%, rgba(4,2,1,0.82) 30%, rgba(4,2,1,0.35) 58%, rgba(4,2,1,0.08) 75%, transparent 100%)'
           }}/>
           <div style={{ position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 55%, rgba(4,2,1,0.5) 100%)'
           }}/>
         </div>
 
-        {/* Top bar — badge + counter */}
+        {/* Top bar — badge + counter (desktop only) */}
         <div className="hidden md:flex absolute z-20 items-center justify-between"
           style={{ top: '32px', left: 'clamp(32px,4vw,64px)', right: 'clamp(32px,4vw,64px)' }}>
 
@@ -403,59 +499,53 @@ const Banner: React.FC = () => {
           )}
         </div>
 
-        {/* Architectural vertical line */}
+        {/* Architectural vertical line — desktop only */}
         <div className="hidden md:block absolute z-10 pointer-events-none" aria-hidden="true" style={{
           left: 'clamp(32px,4vw,64px)', top: '80px', bottom: '100px', width: '1px',
           background: 'linear-gradient(to bottom,transparent,rgba(156,111,46,0.2) 20%,rgba(156,111,46,0.2) 80%,transparent)',
         }}/>
 
-        {/* TEXT BLOCK */}
-        <div
-          key={`text-${animKey}`}
-          className="absolute z-20"
-          style={{
-            bottom: 'clamp(80px, 11vh, 120px)',
-            left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: '720px',
-            padding: '0 clamp(24px, 4vw, 48px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-          }}
-        >
-          {/* Eyebrow — CHANGED: was fragile cta_link parsing, now uses eyebrowText from DB */}
-          <div className="bnr-eyebrow flex items-center gap-3 mb-5">
-            <div style={{ width: '32px', height: '1px', background: '#c4855a' }} aria-hidden="true"/>
-            <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '0.58rem', fontWeight: 700,
-              letterSpacing: '0.42em', textTransform: 'uppercase', color: '#d4956a' }}>
+        {/* ── TEXT BLOCK ── */}
+        <div key={`text-${animKey}`} className="bnr-text-block">
+
+          {/* Eyebrow */}
+          <div className="bnr-eyebrow flex items-center gap-3 mb-4">
+            <div className="bnr-rule-line" style={{ width: '28px', height: '1px', background: '#c4855a' }} aria-hidden="true"/>
+            <span className="bnr-eyebrow-text" style={{
+              fontFamily: '"Raleway",sans-serif', fontSize: '0.58rem', fontWeight: 700,
+              letterSpacing: '0.42em', textTransform: 'uppercase', color: '#d4956a',
+            }}>
               {eyebrowText}
             </span>
-            <div style={{ width: '32px', height: '1px', background: '#c4855a' }} aria-hidden="true"/>
+            <div className="bnr-rule-line" style={{ width: '28px', height: '1px', background: '#c4855a' }} aria-hidden="true"/>
           </div>
 
           {/* Title */}
-          <h2 className="bnr-title" style={{
+          <h2 className="bnr-title bnr-title-text" style={{
             fontFamily: '"Cormorant Garamond",serif',
-            fontSize: 'clamp(2.2rem, 4.5vw, 3.8rem)',
-            fontWeight: 400, lineHeight: 0.92, letterSpacing: '-0.01em',
+            fontSize: 'clamp(1.9rem, 4.5vw, 3.8rem)',
+            fontWeight: 400, lineHeight: 0.95, letterSpacing: '-0.01em',
             color: '#ffffff', textShadow: '0 6px 40px rgba(0,0,0,0.55)',
             wordBreak: 'break-word',
-            marginBottom: '20px',
+            marginBottom: '16px',
+            maxWidth: '100%',
           }}>
             {slide?.title}
           </h2>
 
           {/* Ornament rule */}
-          <div className="bnr-rule flex items-center gap-3 mb-5" aria-hidden="true">
-            <div style={{ width: '52px', height: '1px', background: 'linear-gradient(to right,transparent,#c8955a)' }}/>
+          <div className="bnr-rule flex items-center gap-3 mb-4" aria-hidden="true">
+            <div className="bnr-rule-line" style={{ width: '44px', height: '1px', background: 'linear-gradient(to right,transparent,#c8955a)' }}/>
             <span style={{ color: 'rgba(210,175,120,0.85)', fontSize: '0.48rem', letterSpacing: '0.3em' }}>◆</span>
-            <div style={{ width: '52px', height: '1px', background: 'linear-gradient(to left,transparent,#c8955a)' }}/>
+            <div className="bnr-rule-line" style={{ width: '44px', height: '1px', background: 'linear-gradient(to left,transparent,#c8955a)' }}/>
           </div>
 
           {/* Subtitle */}
-          <p className="bnr-sub" style={{
+          <p className="bnr-sub bnr-sub-text" style={{
             fontFamily: '"Raleway",sans-serif',
-            fontSize: 'clamp(0.82rem, 1.2vw, 1rem)',
-            fontWeight: 300, letterSpacing: '0.05em', lineHeight: 1.8,
-            color: 'rgba(240,228,208,0.78)', maxWidth: '480px', marginBottom: '0',
+            fontSize: 'clamp(0.78rem, 1.2vw, 1rem)',
+            fontWeight: 300, letterSpacing: '0.05em', lineHeight: 1.75,
+            color: 'rgba(240,228,208,0.78)', maxWidth: 'min(480px, 90vw)', marginBottom: '0',
           }}>
             {slide?.subtitle}
           </p>
@@ -464,7 +554,7 @@ const Banner: React.FC = () => {
           {slide?.cta_link && (
             <Link
               to={slide.cta_link}
-              className="bnr-sub mt-7 inline-flex items-center gap-2 transition-all duration-300"
+              className="bnr-sub bnr-cta-btn mt-6 inline-flex items-center gap-2 transition-all duration-300"
               style={{
                 border: '1px solid rgba(196,154,74,0.6)',
                 color: 'rgba(245,235,210,0.92)',
@@ -472,6 +562,7 @@ const Banner: React.FC = () => {
                 fontFamily: '"Raleway",sans-serif', fontSize: '0.65rem',
                 fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase',
                 backdropFilter: 'blur(4px)',
+                whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(196,154,74,0.18)';
@@ -515,7 +606,7 @@ const Banner: React.FC = () => {
           </nav>
         )}
 
-        {/* Mobile dot nav — horizontal pills, centred */}
+        {/* Mobile dot nav — horizontal pills */}
         {slides.length > 1 && (
           <nav className="bnr-dots-mobile" aria-label="Slide navigation">
             {slides.map((_, i) => (

@@ -16,16 +16,16 @@ const Navbar: React.FC = () => {
   const navigate  = useNavigate();
   const location  = useLocation();
 
-  const [menuOpen, setMenuOpen]       = useState(false);
-  const [catOpen, setCatOpen]         = useState(false);
-  const [searchOpen, setSearchOpen]   = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [scrolled, setScrolled]       = useState(false);
-  const [navCategories, setNavCategories] = useState<CachedCategory[]>([]);
+  const [menuOpen, setMenuOpen]             = useState(false);
+  const [desktopCatOpen, setDesktopCatOpen] = useState(false);
+  const [mobileCatOpen,  setMobileCatOpen]  = useState(false);
+  const [searchOpen, setSearchOpen]         = useState(false);
+  const [searchQuery, setSearchQuery]       = useState('');
+  const [scrolled, setScrolled]             = useState(false);
+  const [navCategories, setNavCategories]   = useState<CachedCategory[]>([]);
 
   const suggestions = useSearchSuggestions(searchQuery);
 
-  // Shared cache — no duplicate network call if other components already fetched
   useEffect(() => {
     getCategories().then(setNavCategories).catch(() => {});
   }, []);
@@ -43,21 +43,22 @@ const Navbar: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     setMenuOpen(false);
     setSearchOpen(false);
-    setCatOpen(false);
+    setDesktopCatOpen(false);
+    setMobileCatOpen(false);
   }, [location]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
-      if (catRef.current   && !catRef.current.contains(e.target as Node))     setCatOpen(false);
+      if (catRef.current   && !catRef.current.contains(e.target as Node))     setDesktopCatOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Arrow-key + Escape keyboard navigation for the dropdown
+  // Arrow-key + Escape keyboard navigation for the desktop dropdown
   const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!catOpen) return;
+    if (!desktopCatOpen) return;
     const items = catRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
     if (!items || items.length === 0) return;
     const focused = document.activeElement as HTMLElement;
@@ -70,9 +71,9 @@ const Navbar: React.FC = () => {
       e.preventDefault();
       items[idx > 0 ? idx - 1 : items.length - 1].focus();
     } else if (e.key === 'Escape') {
-      setCatOpen(false);
+      setDesktopCatOpen(false);
     }
-  }, [catOpen]);
+  }, [desktopCatOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,16 +148,16 @@ const Navbar: React.FC = () => {
                     ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
                     : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
                 }`}
-                onClick={() => setCatOpen(v => !v)}
-                aria-expanded={catOpen}
+                onClick={() => setDesktopCatOpen(v => !v)}
+                aria-expanded={desktopCatOpen}
                 aria-haspopup="true"
                 aria-controls="categories-dropdown"
               >
                 Categories
-                <ChevronDown size={14} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`transition-transform duration-200 ${desktopCatOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {catOpen && (
+              {desktopCatOpen && (
                 <div
                   id="categories-dropdown"
                   role="menu"
@@ -183,7 +184,6 @@ const Navbar: React.FC = () => {
                           {cat.name}
                         </Link>
                       ))}
-                      {/* View all collections — SEO internal link */}
                       <Link
                         to="/categories"
                         role="menuitem"
@@ -303,12 +303,7 @@ const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/*
-              ── Track Your Order — icon button with CSS tooltip ─────────────
-              Desktop only. Icon-only so it doesn't widen the bar; the tooltip
-              on hover makes the action self-explanatory without needing a label.
-              Hidden on mobile — the full text link lives in the mobile menu.
-            */}
+            {/* Track Your Order */}
             <a
               href={TRACK_ORDER_URL}
               target="_blank"
@@ -337,7 +332,6 @@ const Navbar: React.FC = () => {
                 role="tooltip"
               >
                 Track Your Order
-                {/* Arrow */}
                 <span
                   className={`absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent ${
                     isDark ? 'border-t-dark-card' : 'border-t-stone-800'
@@ -407,14 +401,14 @@ const Navbar: React.FC = () => {
                   ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/5'
                   : isDark ? 'text-dark-text hover:bg-dark-card' : 'text-stone-800 hover:bg-white/50'
               }`}
-              onClick={() => setCatOpen(v => !v)}
-              aria-expanded={catOpen}
+              onClick={() => setMobileCatOpen(v => !v)}
+              aria-expanded={mobileCatOpen}
             >
               Categories
-              <ChevronDown size={14} className={`transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${mobileCatOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {catOpen && (
+            {mobileCatOpen && (
               <div className={`ml-4 mt-1 space-y-0.5 border-l-2 pl-4 ${isDark ? 'border-brand-red/30' : 'border-brand-gold'}`}>
                 {navCategories.length > 0 ? (
                   <>
@@ -449,7 +443,7 @@ const Navbar: React.FC = () => {
           <MobileLink to="/our-story" label="About Us" isDark={isDark} />
           <MobileLink to="/contact"   label="Contact"  isDark={isDark} />
 
-          {/* Track Order — full text link on mobile since there's no hover/tooltip */}
+          {/* Track Order — full text link on mobile */}
           <a
             href={TRACK_ORDER_URL}
             target="_blank"

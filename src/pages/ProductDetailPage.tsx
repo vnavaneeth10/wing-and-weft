@@ -29,6 +29,10 @@ const STYLES = `
     from { opacity: 0; transform: scale(0.95); }
     to   { opacity: 1; transform: scale(1); }
   }
+  @keyframes shimmer-wave {
+    0%   { background-position: -600px 0; }
+    100% { background-position: 600px 0; }
+  }
 
   .pdp-wa-btn {
     position: relative; overflow: hidden;
@@ -127,6 +131,18 @@ const STYLES = `
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
 
+  /* ── Review skeleton shimmer ── */
+  .review-shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+    background-size: 600px 100%;
+    animation: shimmer-wave 1.6s infinite linear;
+  }
+  .review-shimmer-light {
+    background: linear-gradient(90deg, #f3f0eb 0%, #ede9e2 50%, #f3f0eb 100%);
+    background-size: 600px 100%;
+    animation: shimmer-wave 1.6s infinite linear;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -219,6 +235,229 @@ const TrustBadges: React.FC<{ isDark: boolean }> = ({ isDark }) => {
         </div>
       ))}
     </div>
+  );
+};
+
+// ─── Fake Reviews Skeleton Section ───────────────────────────────────────────
+const FAKE_REVIEWS = [
+  { initials: 'PR', name: 'Priya R.', location: 'Chennai', rating: 5, ago: '2 days ago', lines: [60, 90, 45] },
+  { initials: 'AM', name: 'Ananya M.', location: 'Bengaluru', rating: 5, ago: '1 week ago', lines: [80, 55] },
+  { initials: 'SN', name: 'Sunita N.', location: 'Mumbai', rating: 4, ago: '2 weeks ago', lines: [70, 88, 40] },
+  { initials: 'DK', name: 'Deepa K.', location: 'Kochi', rating: 5, ago: '3 weeks ago', lines: [50, 75] },
+];
+
+const AVATAR_COLORS = ['#bc3d3e', '#b6893c', '#7c5c3a', '#4a6741'];
+
+const ReviewSkeletonCard: React.FC<{
+  review: typeof FAKE_REVIEWS[0];
+  index: number;
+  isDark: boolean;
+}> = ({ review, index, isDark }) => {
+  const shimmerClass = isDark ? 'review-shimmer' : 'review-shimmer-light';
+  const shimmerBg = isDark ? 'rgba(255,255,255,0.06)' : '#ede9e2';
+  const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#FAFAF8';
+  const borderColor = isDark ? 'rgba(255,255,255,0.07)' : '#EDE8DF';
+
+  return (
+    <div
+      style={{
+        background: cardBg,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '14px',
+        padding: '18px 20px',
+        animation: `pdp-slide-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 0.08}s both`,
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+        {/* Avatar */}
+        <div style={{
+          width: '38px', height: '38px', borderRadius: '50%',
+          background: AVATAR_COLORS[index % AVATAR_COLORS.length],
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '0.72rem', fontWeight: 800, color: '#fff',
+          fontFamily: '"Raleway", sans-serif', flexShrink: 0,
+        }}>
+          {review.initials}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {/* Name shimmer */}
+          <div
+            className={shimmerClass}
+            style={{ height: '10px', width: `${review.name.length * 7}px`, maxWidth: '120px', borderRadius: '6px', background: shimmerBg, marginBottom: '5px' }}
+          />
+          {/* Location shimmer */}
+          <div
+            className={shimmerClass}
+            style={{ height: '8px', width: '70px', borderRadius: '6px', background: shimmerBg }}
+          />
+        </div>
+
+        {/* Time ago shimmer — right side */}
+        <div
+          className={shimmerClass}
+          style={{ height: '8px', width: '60px', borderRadius: '6px', background: shimmerBg, flexShrink: 0 }}
+        />
+      </div>
+
+      {/* Star rating — real stars, always visible */}
+      <div style={{ display: 'flex', gap: '3px', marginBottom: '10px' }}>
+        {[1, 2, 3, 4, 5].map(s => (
+          <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= review.rating ? '#b6893c' : 'none'} style={{ color: s <= review.rating ? '#b6893c' : '#d1c5a5' }}>
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ))}
+      </div>
+
+      {/* Review text lines shimmer */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        {review.lines.map((w, i) => (
+          <div
+            key={i}
+            className={shimmerClass}
+            style={{ height: '9px', width: `${w}%`, borderRadius: '6px', background: shimmerBg }}
+          />
+        ))}
+      </div>
+
+      {/* Verified badge shimmer */}
+      <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div
+          className={shimmerClass}
+          style={{ height: '8px', width: '90px', borderRadius: '6px', background: shimmerBg }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ReviewsSkeleton: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : '#EDE8DF';
+  const subTextColor = isDark ? '#9ca3af' : '#78716c';
+  const headingColor = isDark ? '#f0e8d6' : '#1a1410';
+  const shimmerBg = isDark ? 'rgba(255,255,255,0.06)' : '#ede9e2';
+  const shimmerClass = isDark ? 'review-shimmer' : 'review-shimmer-light';
+
+  return (
+    <section
+      aria-label="Customer reviews"
+      style={{
+        borderTop: `1px solid ${borderColor}`,
+        paddingTop: '40px',
+        marginTop: '40px',
+      }}
+    >
+      {/* Section header */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '6px', flexWrap: 'wrap' }}>
+          <h2 style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+            fontWeight: 600,
+            color: headingColor,
+            margin: 0,
+          }}>
+            Customer Reviews
+          </h2>
+          {/* Review count badge */}
+          <span style={{
+            background: isDark ? 'rgba(182,137,60,0.15)' : 'rgba(182,137,60,0.12)',
+            color: '#b6893c',
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            fontFamily: '"Raleway", sans-serif',
+            letterSpacing: '0.06em',
+            padding: '3px 10px',
+            borderRadius: '20px',
+            border: '1px solid rgba(182,137,60,0.25)',
+          }}>
+            {FAKE_REVIEWS.length} reviews
+          </span>
+        </div>
+
+        {/* Overall rating row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {[1, 2, 3, 4, 5].map(s => (
+              <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill={s <= 5 ? '#b6893c' : 'none'} style={{ color: '#b6893c' }}>
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ))}
+          </div>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: '"Raleway", sans-serif', color: headingColor }}>4.9</span>
+          <span style={{ fontSize: '0.78rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor }}>out of 5</span>
+        </div>
+
+        <p style={{ fontSize: '0.75rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor, marginTop: '6px' }}>
+          Reviews are loading — check back soon for verified customer feedback.
+        </p>
+      </div>
+
+      {/* Rating breakdown bars */}
+      <div style={{
+        background: isDark ? 'rgba(255,255,255,0.03)' : '#FAFAF8',
+        border: `1px solid ${borderColor}`,
+        borderRadius: '14px',
+        padding: '16px 20px',
+        marginBottom: '24px',
+      }}>
+        {[
+          { stars: 5, pct: 78 },
+          { stars: 4, pct: 15 },
+          { stars: 3, pct: 5 },
+          { stars: 2, pct: 2 },
+          { stars: 1, pct: 0 },
+        ].map(({ stars, pct }) => (
+          <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: '"Raleway", sans-serif', color: subTextColor, width: '10px', textAlign: 'right', flexShrink: 0 }}>{stars}</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#b6893c" style={{ flexShrink: 0 }}>
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div style={{ flex: 1, height: '7px', borderRadius: '4px', background: shimmerBg, overflow: 'hidden' }}>
+              <div
+                className={shimmerClass}
+                style={{
+                  height: '100%',
+                  width: `${pct}%`,
+                  borderRadius: '4px',
+                  background: pct > 50
+                    ? isDark ? 'rgba(182,137,60,0.5)' : 'rgba(182,137,60,0.45)'
+                    : shimmerBg,
+                  animation: pct > 0 ? undefined : 'none',
+                }}
+              />
+            </div>
+            <span style={{ fontSize: '0.68rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor, width: '28px', textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Review cards grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '14px',
+      }}>
+        {FAKE_REVIEWS.map((review, i) => (
+          <ReviewSkeletonCard key={i} review={review} index={i} isDark={isDark} />
+        ))}
+      </div>
+
+      {/* "Load more" ghost button */}
+      <div style={{ textAlign: 'center', marginTop: '28px' }}>
+        <div
+          className={shimmerClass}
+          style={{
+            display: 'inline-block',
+            height: '40px',
+            width: '160px',
+            borderRadius: '20px',
+            background: shimmerBg,
+          }}
+        />
+      </div>
+    </section>
   );
 };
 
@@ -323,32 +562,18 @@ const ProductDetailPage: React.FC = () => {
 
   if (!product) return <NotFound bg={bg} textPrimary={textPrimary} />;
 
-  // ── Compute all derived values here, cleanly ──────────────────────────────
-
-  // Discount % — always a whole number
   const discount = product.discount_price
     ? Math.round(((product.price - product.discount_price) / product.price) * 100)
     : 0;
 
-  // ── Star rating visibility ─────────────────────────────────────────────────
-  // Rules:
-  //   1. product.show_rating must be explicitly true (admin toggled ON)
-  //   2. product.rating must be > 0 (a star value was actually set)
-  //   3. product.review_count must be > 0 (at least 1 review count entered)
-  //
-  // NO global settings gate — the per-product toggle IS the control.
-  // The old code had a `settings['show_ratings'] !== 'false'` check that
-  // could silently block the rating even when the admin enabled it per-product.
   const showRating =
     product.show_rating === true &&
     product.rating > 0 &&
     product.review_count > 0;
 
-  // ── Colour swatches ───────────────────────────────────────────────────────
   const activeColors = (product.colors || []).filter(c => c && c.trim() !== '');
   const hasColors    = product.show_colors !== false && activeColors.length > 0;
 
-  // ── Specifications ────────────────────────────────────────────────────────
   interface SpecRow { key: string; value: string; }
   const specRows: SpecRow[] = (product.specifications || []).filter(
     (s: SpecRow) => s.key?.trim() && s.value?.trim()
@@ -356,7 +581,6 @@ const ProductDetailPage: React.FC = () => {
   const hasSpecs = specRows.length > 0;
   const specDividerColor = isDark ? theme.specRowDivider?.dark : theme.specRowDivider?.light;
 
-  // ── Links ─────────────────────────────────────────────────────────────────
   const whatsappText  = `Hi! I'm interested in:\n*${product.name}* (ID: ${product.id})\nCategory: ${product.category.replace(/-/g,' ')}\nPrice: ₹${product.discount_price || product.price}\nFabric: ${product.fabric}\n\nCould you please help me with this product?`;
   const whatsappLink  = `https://wa.me/${whatsapp_number}?text=${encodeURIComponent(whatsappText)}`;
   const instagramLink = instagram_url || 'https://www.instagram.com/';
@@ -364,7 +588,6 @@ const ProductDetailPage: React.FC = () => {
     ? facebook_url
     : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
 
-  // ── Accordions ────────────────────────────────────────────────────────────
   const accordions = [
     {
       id: 'description',
@@ -480,8 +703,9 @@ const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* ── Discount badge: TOP RIGHT ── */}
               {discount > 0 && (
-                <div className="absolute bottom-14 left-4" style={{ zIndex: 2 }}>
+                <div className="absolute top-4 right-4" style={{ zIndex: 2 }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center',
                     background: 'linear-gradient(135deg, #e05c1a, #c94a10)',
@@ -502,7 +726,7 @@ const ProductDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Thumbnails — square with softly rounded corners */}
+            {/* Thumbnails */}
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img, i) => (
                 <button key={i} onClick={() => handleThumbClick(i)}
@@ -558,12 +782,6 @@ const ProductDetailPage: React.FC = () => {
               </span>
             </p>
 
-            {/* ── Star rating ───────────────────────────────────────────────────────
-                Rendered ONLY when:
-                  • admin set show_rating = true for this product
-                  • a star value > 0 was entered
-                  • review_count > 0 was entered
-                All three conditions must be true. No global settings gate.         */}
             {showRating && (
               <div className="flex items-center gap-3 mb-4">
                 <StarRating rating={product.rating} size={16} />
@@ -593,14 +811,12 @@ const ProductDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Savings callout — whole number % */}
             {product.discount_price && discount > 0 && (
               <p className="mb-4 font-body" style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', letterSpacing: '0.02em' }}>
                 You save ₹{(product.price - product.discount_price).toLocaleString()} ({discount}% off)
               </p>
             )}
 
-            {/* Stock status */}
             <p className="font-body mb-5" style={{
               fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.04em',
               color: product.stock === 0 ? '#ef4444' : product.stock <= 5 ? '#f97316' : '#16a34a',
@@ -608,7 +824,6 @@ const ProductDetailPage: React.FC = () => {
               {product.stock === 0 ? '✗  Out of Stock' : product.stock <= 5 ? `⚠  Only ${product.stock} left in stock!` : '✓  In Stock'}
             </p>
 
-            {/* Colour swatches — only when admin enabled */}
             {hasColors && (
               <div className="mb-6">
                 <p className={`font-body mb-2 ${textPrimary}`} style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -696,6 +911,9 @@ const ProductDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* ── Reviews Skeleton — full width below the 2-col grid ── */}
+        <ReviewsSkeleton isDark={isDark} />
       </div>
     </div>
   );

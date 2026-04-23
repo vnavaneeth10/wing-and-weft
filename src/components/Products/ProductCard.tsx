@@ -68,7 +68,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
     window.open(buildWhatsAppLink(), '_blank', 'noopener,noreferrer');
   };
 
-  // ── Explicit boolean check — avoids truthy-string pitfalls after normalise ──
   const shouldShowRating =
     product.show_rating === true &&
     product.rating > 0 &&
@@ -110,15 +109,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
           <p className="text-xs mb-0.5 font-body text-brand-gold" style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {product.category.replace(/-/g, ' ')}
           </p>
-          {/* Colors above name in compact too */}
-          {shouldShowColors && (
-            <div className="flex gap-1 mb-1">
-              {activeColors.map(c => (
-                <div key={c} className="w-3 h-3 rounded-full"
-                  style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)' }} />
-              ))}
-            </div>
-          )}
           <h3 className={`text-sm font-semibold mb-1 line-clamp-2 leading-tight ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
             style={{ fontFamily: '"Raleway", sans-serif' }}>
             {product.name}
@@ -141,11 +131,16 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
   // ── Full card ─────────────────────────────────────────────────────────────
   return (
     <div className={`product-card group rounded-xl overflow-hidden border ${isDark ? 'bg-dark-card border-dark-border' : 'bg-white border-stone-100'}`}>
+
+      {/* ── Image section ── */}
       <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}>
         <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
-          <img src={product.images[0]} alt={product.name}
+          <img
+            src={product.images[0]}
+            alt={product.name}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy" />
+            loading="lazy"
+          />
 
           {/* Top-left badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1" style={{ zIndex: 2 }}>
@@ -154,7 +149,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
                 fontSize: '0.62rem', letterSpacing: '0.08em',
                 padding: '3px 9px', borderRadius: '20px',
                 background: '#bc3d3e', color: '#faf6ef',
-              }}>NEW ARRIVAL</span>
+              }}>NEW</span>
             )}
             {product.is_best_seller && (
               <span className="font-body font-bold" style={{
@@ -165,15 +160,15 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             )}
           </div>
 
-          {/* Discount badge — bottom left */}
+          {/* Discount badge — TOP RIGHT */}
           {discount > 0 && (
-            <div className="absolute bottom-3 left-3" style={{ zIndex: 2 }}>
+            <div className="absolute top-3 right-3" style={{ zIndex: 2 }}>
               <span className="font-body" style={{
                 display: 'inline-flex', alignItems: 'center',
                 background: 'linear-gradient(135deg, #e05c1a 0%, #c94a10 100%)',
-                color: '#fff', fontSize: '0.8rem', fontWeight: 900,
-                letterSpacing: '0.03em', padding: '5px 10px',
-                borderRadius: '6px', boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+                color: '#fff', fontSize: '0.72rem', fontWeight: 900,
+                letterSpacing: '0.03em', padding: '4px 8px',
+                borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
                 lineHeight: 1,
               }}>
                 {discount}% OFF
@@ -187,62 +182,139 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </div>
           )}
 
-          {/* WhatsApp hover button */}
-          <button onClick={handleShare}
-            className="absolute bottom-3 right-3 w-9 h-9 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0"
-            style={{ background: '#25D366', color: '#fff', boxShadow: '0 2px 10px rgba(37,211,102,0.5)', zIndex: 2 }}
-            aria-label={`Share ${product.name} on WhatsApp`}>
-            <MessageCircle size={15} />
-          </button>
+          {/* ── Desktop: WhatsApp hover button (bottom-right of image) ── */}
+          {product.stock !== 0 && (
+            <a
+              href={buildWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="hidden md:flex absolute bottom-3 right-3 items-center gap-1.5 rounded-lg font-body
+                         opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0
+                         transition-all duration-200"
+              style={{
+                background: '#25D366', color: '#fff', fontSize: '0.68rem',
+                fontWeight: 900, letterSpacing: '0.07em', padding: '7px 12px',
+                boxShadow: '0 2px 12px rgba(37,211,102,0.5)', zIndex: 2,
+                textDecoration: 'none',
+              }}
+              aria-label={`Buy ${product.name} on WhatsApp`}
+            >
+              <MessageCircle size={13} />
+              BUY
+            </a>
+          )}
+
+          {/* ── Mobile: WhatsApp button always visible at bottom center ── */}
+          {product.stock !== 0 && (
+            <a
+              href={buildWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full font-body"
+              style={{
+                background: '#25D366', color: '#fff', fontSize: '0.65rem',
+                fontWeight: 900, letterSpacing: '0.06em', padding: '6px 14px',
+                boxShadow: '0 2px 10px rgba(37,211,102,0.5)', zIndex: 2,
+                textDecoration: 'none', whiteSpace: 'nowrap',
+              }}
+              aria-label={`Buy ${product.name} on WhatsApp`}
+            >
+              <MessageCircle size={12} />
+              BUY
+            </a>
+          )}
         </div>
       </Link>
 
       {/* ── Card info ── */}
-      <div className="p-4">
-        <p className="font-body mb-1.5" style={{
-          fontSize: '0.58rem', letterSpacing: '0.2em',
-          fontWeight: 700, textTransform: 'uppercase', color: '#b6893c',
-        }}>
-          {product.fabric}
-        </p>
+      <div className="p-3 md:p-4">
 
-        {/* ── Star rating — directly under fabric label, above colors & name ── */}
-        {shouldShowRating && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <StarRating rating={product.rating} />
-            <span className={`font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}
-              style={{ fontSize: '0.68rem' }}>
-              ({product.review_count})
-            </span>
+        {/* ── MOBILE: Minimal — just name + price ── */}
+        <div className="md:hidden">
+          <Link to={`/product/${product.id}`}>
+            <h3
+              className={`font-semibold mb-1.5 leading-tight ${isDark ? 'text-dark-text' : 'text-stone-800'}`}
+              style={{
+                fontFamily: '"Raleway", sans-serif',
+                fontSize: '0.82rem',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {product.name}
+            </h3>
+          </Link>
+          <div className="flex items-baseline gap-1.5">
+            {product.discount_price ? (
+              <>
+                <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#bc3d3e', fontFamily: '"Raleway", sans-serif' }}>
+                  ₹{product.discount_price.toLocaleString()}
+                </span>
+                <span className={`text-xs line-through font-body ${isDark ? 'text-dark-muted' : 'text-stone-400'}`}>
+                  ₹{product.price.toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#bc3d3e', fontFamily: '"Raleway", sans-serif' }}>
+                ₹{product.price.toLocaleString()}
+              </span>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* ── Color swatches — NOW above product name ── */}
-        {shouldShowColors && (
-          <div className="flex gap-1.5 mb-2">
-            {activeColors.map(c => (
-              <div key={c} className="w-4 h-4 rounded-full"
-                style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
-                aria-label={`Color: ${c}`} />
-            ))}
-          </div>
-        )}
+        {/* ── DESKTOP: Full details ── */}
+        <div className="hidden md:block">
+          <p className="font-body mb-1.5" style={{
+            fontSize: '0.58rem', letterSpacing: '0.2em',
+            fontWeight: 700, textTransform: 'uppercase', color: '#b6893c',
+          }}>
+            {product.fabric}
+          </p>
 
-        <Link to={`/product/${product.id}`}>
-          <h3 className="mb-2 line-clamp-2 transition-colors" style={{
-            fontFamily: '"Raleway", sans-serif', fontSize: '0.9rem',
-            fontWeight: 800, lineHeight: 1.35,
-            color: isDark ? '#f0e8d6' : '#1a1410',
-          }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#bc3d3e'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = isDark ? '#f0e8d6' : '#1a1410'}
-          >
-            {product.name}
-          </h3>
-        </Link>
+          {shouldShowRating && (
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <StarRating rating={product.rating} />
+              <span className={`font-body ${isDark ? 'text-dark-muted' : 'text-stone-500'}`}
+                style={{ fontSize: '0.68rem' }}>
+                ({product.review_count})
+              </span>
+            </div>
+          )}
 
-        {/* Price row */}
-        <div className="flex items-center justify-between mt-1">
+          {shouldShowColors && (
+            <div className="flex gap-1.5 mb-2">
+              {activeColors.map(c => (
+                <div key={c} className="w-4 h-4 rounded-full"
+                  style={{ background: c, border: '1.5px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
+                  aria-label={`Color: ${c}`} />
+              ))}
+            </div>
+          )}
+
+          <Link to={`/product/${product.id}`}>
+            <h3
+              className="mb-2 transition-colors"
+              style={{
+                fontFamily: '"Raleway", sans-serif', fontSize: '0.9rem',
+                fontWeight: 800, lineHeight: 1.35,
+                color: isDark ? '#f0e8d6' : '#1a1410',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#bc3d3e'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = isDark ? '#f0e8d6' : '#1a1410'}
+            >
+              {product.name}
+            </h3>
+          </Link>
+
+          {/* Price row — desktop shows price + stock only (BUY is on hover over image) */}
           <div>
             {product.discount_price ? (
               <div className="flex items-baseline gap-2">
@@ -265,18 +337,6 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
               {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
             </p>
           </div>
-
-          <a href={buildWhatsAppLink()} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-lg font-body transition-all hover:scale-105 active:scale-95"
-            style={{
-              background: '#25D366', color: '#fff', fontSize: '0.7rem',
-              fontWeight: 900, letterSpacing: '0.07em', padding: '8px 14px',
-              boxShadow: '0 2px 8px rgba(37,211,102,0.4)',
-            }}
-            aria-label={`Buy ${product.name} on WhatsApp`}>
-            <MessageCircle size={13} />
-            BUY
-          </a>
         </div>
       </div>
     </div>

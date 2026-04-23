@@ -8,9 +8,6 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
 import { theme } from '../../theme/heroThemes';
 import { useSettings } from '../../context/SettingsContext';
 
-// ✅ FIX: removed INSTAGRAM_URL, WHATSAPP_NUMBER imports — context is the source of truth now
-// ✅ FIX: removed fetchFooterSettings and local FooterSettings state — replaced by useSettings()
-
 const TRACK_ORDER_URL = 'https://trackcourier.io/';
 
 interface FooterCategory { id: string; name: string; }
@@ -73,7 +70,6 @@ function useFadeIn() {
 const Footer: React.FC = () => {
   const { isDark } = useTheme();
 
-  // ✅ FIX: all social/contact values now come from SettingsContext — single source of truth
   const {
     whatsapp_number,
     contact_email,
@@ -96,7 +92,6 @@ const Footer: React.FC = () => {
   useEffect(() => {
     fetchCategories().then(setCategories).catch(() => {});
     fetchPolicies().then(setFooterPolicies).catch(() => {});
-    // ✅ FIX: fetchFooterSettings removed — SettingsContext handles it app-wide
   }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -142,7 +137,6 @@ const Footer: React.FC = () => {
 
   return (
     <>
-      {/* ── Scoped style: bright placeholder text inside the newsletter input ── */}
       <style>{`
         .ww-newsletter-input::placeholder {
           color: rgba(255, 255, 255, 0.82);
@@ -161,7 +155,6 @@ const Footer: React.FC = () => {
           >
             <div className="absolute inset-0 pattern-overlay opacity-20" />
 
-            {/* Thread decoration */}
             <svg
               aria-hidden="true"
               viewBox="0 0 800 160" preserveAspectRatio="none"
@@ -179,8 +172,6 @@ const Footer: React.FC = () => {
             </svg>
 
             <div className="relative z-10 flex flex-col gap-5">
-
-              {/* Heading */}
               <div>
                 <h3
                   className="text-brand-cream mb-1"
@@ -193,10 +184,7 @@ const Footer: React.FC = () => {
                 </p>
               </div>
 
-              {/* ── Form ── */}
               <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3" noValidate>
-
-                {/* Input + button row */}
                 <div className="flex flex-col sm:flex-row gap-2 w-full">
                   <input
                     type="email"
@@ -265,7 +253,6 @@ const Footer: React.FC = () => {
                 </label>
               </form>
 
-              {/* Status feedback */}
               {emailStatus === 'success' && (
                 <p className="text-brand-cream/80 text-xs font-body">
                   ✓ Welcome aboard! Check your inbox for our latest updates.
@@ -285,20 +272,27 @@ const Footer: React.FC = () => {
               className={`grid mb-10 gap-10 ${SHOW_COLLECTIONS ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}
               style={fadeStyle(grid.visible, 100)}
             >
-              {/* Brand */}
+              {/* Brand — bigger logo */}
               <div className={SHOW_COLLECTIONS ? 'col-span-2 md:col-span-1' : ''}>
                 <div className="mb-4">
                   <picture>
                     <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
                     <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x" type="image/png" />
-                    <img src="/logo@1x.png" alt="Wing & Weft" width={160} height={90}
-                      className="w-auto object-contain" style={{ height: '48px' }}
-                      loading="lazy" decoding="async" />
+                    <img
+                      src="/logo@1x.png"
+                      alt="Wing & Weft"
+                      width={160}
+                      height={90}
+                      className="w-auto object-contain"
+                      style={{ height: '80px' }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </picture>
                 </div>
-                <p className={`text-sm font-body leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+                {/* <p className={`text-sm font-body leading-relaxed ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
                   Sarees crafted with uncompromising quality, elegance, and attention to every detail. Your heritage, our craft.
-                </p>
+                </p> */}
               </div>
 
               {/* Quick Links */}
@@ -310,7 +304,6 @@ const Footer: React.FC = () => {
                   {[
                     { to: '/',          label: 'Home'     },
                     { to: '/our-story', label: 'About Us' },
-                    // { to: '/faq',       label: 'FAQs'     },
                     { to: '/contact',   label: 'Contact'  },
                   ].map((l) => (
                     <li key={l.to}>
@@ -326,7 +319,6 @@ const Footer: React.FC = () => {
                     </li>
                   ))}
 
-                  {/* Track your Order */}
                   <li>
                     <a
                       href={TRACK_ORDER_URL}
@@ -411,7 +403,6 @@ const Footer: React.FC = () => {
 
           {/* ── Bottom bar ── */}
           <div ref={bottom.ref} className="flex flex-col items-center gap-3" style={fadeStyle(bottom.visible, 200)}>
-            {/* Social icons — ✅ FIX: all values from SettingsContext, not local state */}
             <div className="flex items-center gap-2.5">
               {[
                 {
@@ -456,7 +447,6 @@ const Footer: React.FC = () => {
               ))}
             </div>
 
-            {/* Copyright line — ✅ FIX: contact_email from context */}
             <p className={`${text} text-xs font-body text-center`}>
               © 2026 Wing &amp; Weft. All Rights Reserved.
               &nbsp;·&nbsp;
