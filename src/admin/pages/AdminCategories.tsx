@@ -1,12 +1,12 @@
 // src/admin/pages/AdminCategories.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Save, X, Eye, EyeOff, Download, FileDown } from 'lucide-react';
 import {
   AdminBtn, Field, inputCls, useAdminInputStyle,
   SingleImageUploader, Spinner, Toast, Badge, ConfirmDialog, useAdminTk,
 } from '../components/AdminUI';
 import { useAdminTheme } from '../lib/AdminThemeContext';
-import { useCategories, DBCategory } from '../hooks/useAdminData';
+import { useCategories, useProducts, DBCategory } from '../hooks/useAdminData';
 import { exportToExcel, exportToPDF } from '../lib/adminExport';
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
@@ -112,9 +112,18 @@ const FormModal: React.FC<FormModalProps> = ({ initial, isEdit, saving, onSave, 
           </Field>
 
           <div className="grid grid-cols-3 gap-4">
-            <Field label="Saree Count" hint="Shown on the category card">
-              <input type="number" min={0} className={inputCls} style={is} placeholder="0"
-                value={form.count} onChange={e => set('count', Number(e.target.value))} />
+            {/* ✅ Count is now read-only — auto-computed from live products via enrichWithProductCount */}
+            <Field label="Saree Count" hint="Auto-computed from live products">
+              <div className="flex items-center px-3 py-2.5 rounded-xl text-sm"
+                style={{
+                  background: isDarkAdmin ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                  border: `1px solid ${tk.border}`,
+                  color: tk.textMuted,
+                  fontFamily: '"Raleway", sans-serif',
+                }}>
+                {form.count}
+                <span className="ml-2 text-xs" style={{ color: tk.textMuted, opacity: 0.6 }}>auto</span>
+              </div>
             </Field>
             <Field label="Sort Order" hint="Lower = shown first">
               <input type="number" min={1} className={inputCls} style={is} placeholder="1"
@@ -155,8 +164,7 @@ const CategoryImageCell: React.FC<{ catId: string; catImage: string; catName: st
   const hoverRef                  = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   React.useEffect(() => {
-    if (catImage) return; // has own image — no need
-    // Fetch first 4 product images for this category
+    if (catImage) return;
     import('../../admin/lib/supabase').then(({ SUPABASE_URL, SUPABASE_ANON_KEY }) => {
       fetch(`${SUPABASE_URL}/rest/v1/products?category=eq.${encodeURIComponent(catId)}&select=images&limit=4`, {
         headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
@@ -198,7 +206,17 @@ const CategoryImageCell: React.FC<{ catId: string; catImage: string; catName: st
 
 const AdminCategories: React.FC = () => {
   const tk = useAdminTk();
-  const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { categories, loading, addCategory, updateCategory, deleteCategory, enrichWithProductCount } = useCategories();
+  // ✅ NEW: Pull live products so we can auto-compute each category's product count.
+  const { products } = useProducts();
+
+  // ✅ NEW: Enrich categories with accurate live product counts.
+  // Falls back to DB-stored count if products haven't loaded yet.
+  const enrichedCategories = useMemo(
+    () => enrichWithProductCount(categories, products),
+    [categories, products, enrichWithProductCount]
+  );
+
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState<DBCategory | null>(null);
   const [saving, setSaving] = useState(false);
@@ -237,14 +255,14 @@ const AdminCategories: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <AdminBtn variant="secondary" icon={<Download size={14} />}
-            onClick={() => exportToExcel(categories.map(cat => ({
+            onClick={() => exportToExcel(enrichedCategories.map(cat => ({
               ID: cat.id, Name: cat.name, Description: cat.description,
-              Count: cat.count, 'Sort Order': cat.sort_order, Active: cat.is_active ? 'Yes':'No',
+              Count: cat.count, 'Sort Order': cat.sort_order, Active: cat.is_active ? 'Yes' : 'No',
             })), 'categories')}
             className="text-xs py-2 px-3">Excel</AdminBtn>
           <AdminBtn variant="secondary" icon={<FileDown size={14} />}
-            onClick={() => exportToPDF('Categories',['ID','Name','Count','Order','Status'],
-              categories.map(cat => [cat.id, cat.name, cat.count, cat.sort_order, cat.is_active ? 'Visible':'Hidden']),
+            onClick={() => exportToPDF('Categories', ['ID', 'Name', 'Count', 'Order', 'Status'],
+              enrichedCategories.map(cat => [cat.id, cat.name, cat.count, cat.sort_order, cat.is_active ? 'Visible' : 'Hidden']),
               'categories')}
             className="text-xs py-2 px-3">PDF</AdminBtn>
           <AdminBtn icon={<Plus size={16} />} onClick={() => { setEditTarget(null); setShowForm(true); }}>Add Category</AdminBtn>
@@ -253,7 +271,7 @@ const AdminCategories: React.FC = () => {
 
       <div className="flex items-start gap-3 px-5 py-4 rounded-xl" style={{ background: 'rgba(182,137,60,0.08)', border: '1px solid rgba(182,137,60,0.2)' }}>
         <p className="text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>
-          <span className="text-brand-gold font-semibold">Tip:</span> The Category ID becomes the URL slug (e.g. <code className="text-brand-orange">silk-sarees</code> → <code className="text-brand-orange">/category/silk-sarees</code>). Keep it lowercase with hyphens. Once created, the ID cannot be changed.
+          <span className="text-brand-gold font-semibold">Tip:</span> The Category ID becomes the URL slug (e.g. <code className="text-brand-orange">silk-sarees</code> → <code className="text-brand-orange">/category/silk-sarees</code>). Keep it lowercase with hyphens. Once created, the ID cannot be changed. Product counts are auto-computed from live visible products.
         </p>
       </div>
 
@@ -266,7 +284,7 @@ const AdminCategories: React.FC = () => {
             <span>Count</span><span>Order</span><span>Status</span><span>Actions</span>
           </div>
 
-          {categories.length === 0 ? (
+          {enrichedCategories.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>
                 No categories yet. Click "Add Category" to create your first one.
@@ -274,7 +292,7 @@ const AdminCategories: React.FC = () => {
             </div>
           ) : (
             <div>
-              {categories.map(cat => (
+              {enrichedCategories.map(cat => (
                 <div key={cat.id}
                   className="grid gap-4 px-5 py-4 items-center border-b transition-colors"
                   style={{ gridTemplateColumns: '56px 1fr 1fr 80px 80px 80px 100px', borderColor: tk.border }}
@@ -286,7 +304,11 @@ const AdminCategories: React.FC = () => {
                     <p className="text-xs mt-0.5" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>{cat.id}</p>
                   </div>
                   <p className="text-xs line-clamp-2" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>{cat.description || '—'}</p>
-                  <span className="text-sm font-semibold text-center" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>{cat.count}</span>
+                  {/* Count shown with "auto" label to make clear it's computed */}
+                  <div className="text-center">
+                    <span className="text-sm font-semibold" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>{cat.count}</span>
+                    <p className="text-xs" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif', opacity: 0.6 }}>auto</p>
+                  </div>
                   <span className="text-sm text-center" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>{cat.sort_order}</span>
                   <div><Badge label={cat.is_active ? 'Visible' : 'Hidden'} color={cat.is_active ? 'green' : 'gray'} /></div>
                   <div className="flex items-center gap-2">
@@ -321,8 +343,13 @@ const AdminCategories: React.FC = () => {
       )}
 
       {showForm && (
-        <FormModal initial={editTarget ? { ...editTarget } : emptyForm()} isEdit={!!editTarget}
-          saving={saving} onSave={handleSave} onClose={() => { setShowForm(false); setEditTarget(null); }} />
+        <FormModal
+          initial={editTarget ? { ...editTarget } : emptyForm()}
+          isEdit={!!editTarget}
+          saving={saving}
+          onSave={handleSave}
+          onClose={() => { setShowForm(false); setEditTarget(null); }}
+        />
       )}
       {confirmDelete && (
         <ConfirmDialog title={`Delete "${confirmDelete.name}"?`}

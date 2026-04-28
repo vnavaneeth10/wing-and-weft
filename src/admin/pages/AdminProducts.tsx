@@ -1,11 +1,11 @@
 // src/admin/pages/AdminProducts.tsx
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, Package, Download, FileDown, Eye, EyeOff, Star } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, ChevronDown, ChevronUp, Package, Download, FileDown, Eye, EyeOff, Star, Clock } from 'lucide-react';
 import {
   AdminBtn, Badge, Modal, Field, inputCls, useAdminInputStyle,
   ConfirmDialog, MultiImageUploader, Spinner, EmptyState, Toast, useAdminTk,
 } from '../components/AdminUI';
-import { useProducts, useCategories, DBProduct, ProductSpec } from '../hooks/useAdminData';
+import { useProducts, useCategories, DBProduct, ProductSpec, formatAddedDate } from '../hooks/useAdminData';
 import { exportToExcel, exportToPDF, downloadImage } from '../lib/adminExport';
 
 const DEFAULT_POLICY_POINTS = [
@@ -39,9 +39,41 @@ const EMPTY_PRODUCT: Omit<DBProduct, 'id' | 'created_at'> = {
 
 type ToastState = { msg: string; type: 'success' | 'error' } | null;
 
+// ─── Tag badge styles ─────────────────────────────────────────────────────────
+const TAG_STYLES = {
+  new:      { bg: 'rgba(99,102,241,0.15)',  border: 'rgba(99,102,241,0.4)',  color: '#a5b4fc', dot: '#a5b4fc' },
+  best:     { bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.4)',  color: '#fcd34d', dot: '#fcd34d' },
+  featured: { bg: 'rgba(14,165,233,0.15)',  border: 'rgba(14,165,233,0.4)',  color: '#7dd3fc', dot: '#7dd3fc' },
+} as const;
+
+// ─── Stock badge with coloured dot indicator ──────────────────────────────────
+const StockBadge: React.FC<{ stock: number }> = ({ stock }) => {
+  const cfg =
+    stock === 0  ? { dot: '#fca5a5', color: '#fca5a5', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.3)',   label: 'Out of Stock'       } :
+    stock <= 3   ? { dot: '#fdba74', color: '#fdba74', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.3)',  label: `${stock} in stock`  } :
+                   { dot: '#86efac', color: '#86efac', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.3)',   label: `${stock} in stock`  };
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold"
+      style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color, fontFamily: '"Raleway",sans-serif' }}>
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+      {cfg.label}
+    </span>
+  );
+};
+
+// ─── Tag badge with dot ───────────────────────────────────────────────────────
+const TagBadge: React.FC<{ type: keyof typeof TAG_STYLES; label: string }> = ({ type, label }) => {
+  const s = TAG_STYLES[type];
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color, fontFamily: '"Raleway",sans-serif' }}>
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+      {label}
+    </span>
+  );
+};
+
 // ─── Download helper ──────────────────────────────────────────────────────────
-// Fetch the image as a blob and trigger a browser download.
-// Falls back to opening in a new tab if CORS blocks the fetch.
 const downloadImageFromUrl = async (url: string, filename: string): Promise<void> => {
   try {
     const response = await fetch(url, { mode: 'cors' });
@@ -56,8 +88,6 @@ const downloadImageFromUrl = async (url: string, filename: string): Promise<void
     document.body.removeChild(link);
     URL.revokeObjectURL(objectUrl);
   } catch {
-    // If CORS blocks the blob download, open in a new tab so the client
-    // can right-click → Save As
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 };
@@ -123,7 +153,6 @@ const StarPicker: React.FC<{ value: number; onChange: (v: number) => void }> = (
 };
 
 // ─── Single image card with download button ───────────────────────────────────
-// IMPORTANT: defined OUTSIDE AdminProducts so React never remounts it on re-render.
 const ExistingImageItem: React.FC<{
   url: string;
   index: number;
@@ -145,7 +174,6 @@ const ExistingImageItem: React.FC<{
       style={{ border: `1px solid ${tk.border}`, minWidth: 0 }}>
       <img src={url} alt={`Product image ${index + 1}`}
         className="w-full object-cover block" style={{ height: '88px' }} />
-      {/* Hover overlay with download button */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5
                       opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         style={{ background: 'rgba(0,0,0,0.55)' }}>
@@ -170,7 +198,6 @@ const ExistingImageItem: React.FC<{
 };
 
 // ─── Panel showing all saved images with download buttons ─────────────────────
-// Also defined OUTSIDE AdminProducts to avoid React reconciliation issues.
 const ExistingImagesPanel: React.FC<{
   images: string[];
   productId: string;
@@ -183,15 +210,12 @@ const ExistingImagesPanel: React.FC<{
     for (let i = 0; i < existingUrls.length; i++) {
       const ext = existingUrls[i].split('?')[0].split('.').pop() ?? 'jpg';
       await downloadImageFromUrl(existingUrls[i], `${productId}-img${i + 1}.${ext}`);
-      if (i < existingUrls.length - 1) {
-        await new Promise(r => setTimeout(r, 450));
-      }
+      if (i < existingUrls.length - 1) await new Promise(r => setTimeout(r, 450));
     }
   };
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${tk.borderMed}` }}>
-      {/* Header */}
       <div className="px-4 py-2.5 flex items-center justify-between"
         style={{ background: 'rgba(182,137,60,0.08)', borderBottom: `1px solid ${tk.border}` }}>
         <div>
@@ -216,7 +240,6 @@ const ExistingImagesPanel: React.FC<{
           Download All
         </button>
       </div>
-      {/* Image grid — flex so it works for 1–4 images */}
       <div className="p-3 flex gap-2">
         {existingUrls.map((url, i) => (
           <div key={`${productId}-img-${i}`} style={{ flex: '1 1 0', minWidth: 0 }}>
@@ -235,12 +258,17 @@ const AdminProducts: React.FC = () => {
   const { products, loading, addProduct, updateProduct, deleteProduct, updateStock } = useProducts();
   const { categories: dbCategories } = useCategories();
 
+  // ✅ FIX: Synchronous save guard in the UI layer — first defence against double-clicks
+  // before the call even reaches useProducts' isSavingRef guard.
+  const isSavingRef = useRef(false);
+
   const [search, setSearch]           = useState('');
   const [catFilter, setCatFilter]     = useState('all');
   const [tagFilter, setTagFilter]     = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  const [sortCol, setSortCol]         = useState<keyof DBProduct>('name');
-  const [sortAsc, setSortAsc]         = useState(true);
+  // ✅ Default sort: newest first
+  const [sortCol, setSortCol]         = useState<keyof DBProduct>('created_at');
+  const [sortAsc, setSortAsc]         = useState(false);
   const [modalOpen, setModalOpen]     = useState(false);
   const [editProduct, setEditProduct] = useState<DBProduct | null>(null);
   const [form, setForm]               = useState<Omit<DBProduct, 'id' | 'created_at'>>(EMPTY_PRODUCT);
@@ -324,6 +352,11 @@ const AdminProducts: React.FC = () => {
     if (!form.name.trim())     { showToast('Product name is required', 'error'); return; }
     if (form.price <= 0)       { showToast('Price must be greater than 0', 'error'); return; }
     if (!form.category.trim()) { showToast('Please select a category', 'error'); return; }
+
+    // ✅ FIX: Synchronous UI-layer guard — reject double-clicks before any async work.
+    if (isSavingRef.current) { showToast('Already saving — please wait.', 'error'); return; }
+    isSavingRef.current = true;
+
     const cleanedSpecs = form.specifications.filter(s => s.key.trim() || s.value.trim());
     const toSave = { ...form, specifications: cleanedSpecs };
     setSaving(true);
@@ -337,7 +370,10 @@ const AdminProducts: React.FC = () => {
       }
       setModalOpen(false);
     } catch (e) { showToast(e instanceof Error ? e.message : 'Save failed', 'error'); }
-    finally { setSaving(false); }
+    finally {
+      setSaving(false);
+      isSavingRef.current = false;
+    }
   };
 
   const handleDelete = async () => {
@@ -351,10 +387,13 @@ const AdminProducts: React.FC = () => {
     finally { setDeleting(false); }
   };
 
+  // ✅ FIX: Only send the single field that changed — no full product spread,
+  // no dummy file array. The image upload path in updateProduct is skipped
+  // entirely when pendingFiles is undefined.
   const handleToggleVisibility = async (p: DBProduct) => {
     setTogglingId(p.id);
     try {
-      await updateProduct(p.id, { ...p, is_visible: !p.is_visible }, [null, null, null, null]);
+      await updateProduct(p.id, { is_visible: !p.is_visible });
       showToast(`Product ${!p.is_visible ? 'visible' : 'hidden'} on website`, 'success');
     } catch { showToast('Failed to update visibility', 'error'); }
     finally { setTogglingId(null); }
@@ -400,12 +439,6 @@ const AdminProducts: React.FC = () => {
   const removeWashInstruction = (idx: number) =>
     setForm(f => ({ ...f, washing_instructions: (f.washing_instructions || []).filter((_, i) => i !== idx) }));
 
-  const tagBadgeStyle = (type: 'new' | 'best' | 'featured') => ({
-    new:      { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.4)',  color: '#a5b4fc' },
-    best:     { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)',  color: '#fcd34d' },
-    featured: { bg: 'rgba(14,165,233,0.15)', border: 'rgba(14,165,233,0.4)',  color: '#7dd3fc' },
-  }[type]);
-
   return (
     <div className="space-y-6">
 
@@ -419,29 +452,37 @@ const AdminProducts: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <AdminBtn variant="secondary" icon={<Download size={14} />}
-            onClick={() => exportToExcel(products.map(p => ({
-              ID: p.id, Name: p.name, Category: p.category, Fabric: p.fabric,
-              Price: p.price, 'Discount Price': p.discount_price ?? '',
-              'Discount %': p.discount_price ? Math.round(((p.price - p.discount_price) / p.price) * 100) + '%' : '',
-              Stock: p.stock, Visible: (p.is_visible ?? true) ? 'Yes' : 'No',
-              Rating: p.show_rating ? p.rating : 'Hidden',
-              'New Arrival': p.is_new_arrival ? 'Yes' : 'No',
-              'Best Seller': p.is_best_seller ? 'Yes' : 'No',
-              Featured: p.is_featured ? 'Yes' : 'No',
-            })), 'products')}
+            onClick={() => exportToExcel(products.map(p => {
+              const added = formatAddedDate(p.created_at);
+              return {
+                ID: p.id, Name: p.name, Category: p.category, Fabric: p.fabric,
+                Price: p.price, 'Discount Price': p.discount_price ?? '',
+                'Discount %': p.discount_price ? Math.round(((p.price - p.discount_price) / p.price) * 100) + '%' : '',
+                Stock: p.stock, Visible: (p.is_visible ?? true) ? 'Yes' : 'No',
+                Rating: p.show_rating ? p.rating : 'Hidden',
+                'New Arrival': p.is_new_arrival ? 'Yes' : 'No',
+                'Best Seller': p.is_best_seller ? 'Yes' : 'No',
+                Featured: p.is_featured ? 'Yes' : 'No',
+                'Added On': added ? `${added.date} ${added.time}` : '',
+              };
+            }), 'products')}
             className="text-xs py-2 px-3">Excel</AdminBtn>
           <AdminBtn variant="secondary" icon={<FileDown size={14} />}
             onClick={() => exportToPDF('Products',
-              ['ID', 'Name', 'Category', 'Price', 'Discount', 'Stock', 'Visible'],
-              products.map(p => [
-                p.id, p.name, p.category,
-                `₹${p.price}`,
-                p.discount_price ? `₹${p.discount_price} (-${Math.round(((p.price - p.discount_price) / p.price) * 100)}%)` : '-',
-                p.stock, (p.is_visible ?? true) ? 'Yes' : 'No',
-              ]),
+              ['ID', 'Name', 'Category', 'Price', 'Discount', 'Stock', 'Visible', 'Added On'],
+              products.map(p => {
+                const added = formatAddedDate(p.created_at);
+                return [
+                  p.id, p.name, p.category,
+                  `₹${p.price}`,
+                  p.discount_price ? `₹${p.discount_price} (-${Math.round(((p.price - p.discount_price) / p.price) * 100)}%)` : '-',
+                  p.stock, (p.is_visible ?? true) ? 'Yes' : 'No',
+                  added ? added.date : '-',
+                ];
+              }),
               'products')}
             className="text-xs py-2 px-3">PDF</AdminBtn>
-          <AdminBtn icon={<Plus size={16} />} onClick={openAdd}>Add Product</AdminBtn>
+          <AdminBtn icon={<Plus size={16} />} onClick={openAdd} disabled={saving}>Add Product</AdminBtn>
         </div>
       </div>
 
@@ -485,13 +526,14 @@ const AdminProducts: React.FC = () => {
               <thead>
                 <tr className="border-b" style={{ borderColor: tk.border }}>
                   {[
-                    { label: 'Product',  col: 'name'     as keyof DBProduct },
-                    { label: 'Category', col: 'category' as keyof DBProduct },
-                    { label: 'Price',    col: 'price'    as keyof DBProduct },
-                    { label: 'Stock',    col: 'stock'    as keyof DBProduct },
-                    { label: 'Tags',     col: null },
-                    { label: 'Visible',  col: null },
-                    { label: 'Actions',  col: null },
+                    { label: 'Product',   col: 'name'       as keyof DBProduct },
+                    { label: 'Category',  col: 'category'   as keyof DBProduct },
+                    { label: 'Price',     col: 'price'      as keyof DBProduct },
+                    { label: 'Stock',     col: 'stock'      as keyof DBProduct },
+                    { label: 'Tags',      col: null },
+                    { label: 'Visible',   col: null },
+                    { label: 'Added On',  col: 'created_at' as keyof DBProduct },
+                    { label: 'Actions',   col: null },
                   ].map(({ label, col }) => (
                     <th key={label}
                       className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${col ? 'cursor-pointer' : ''}`}
@@ -505,10 +547,10 @@ const AdminProducts: React.FC = () => {
               <tbody>
                 {displayed.map(p => {
                   const isVisible = p.is_visible ?? true;
-                  // Whole-number discount % for table display
                   const rowDiscount = p.discount_price
                     ? Math.round(((p.price - p.discount_price) / p.price) * 100)
                     : 0;
+                  const addedDate = formatAddedDate(p.created_at);
                   return (
                     <tr key={p.id} className="border-b transition-colors"
                       style={{ borderColor: tk.border, opacity: isVisible ? 1 : 0.55 }}
@@ -544,7 +586,7 @@ const AdminProducts: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Price + whole-number discount % */}
+                      {/* Price */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-bold text-brand-red" style={{ fontFamily: '"Raleway",sans-serif' }}>
                           ₹{(p.discount_price || p.price).toLocaleString()}
@@ -561,7 +603,7 @@ const AdminProducts: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Stock */}
+                      {/* Stock — improved badge with coloured dot */}
                       <td className="px-4 py-3">
                         {inlineStockId === p.id ? (
                           <div className="flex items-center gap-2">
@@ -580,29 +622,18 @@ const AdminProducts: React.FC = () => {
                         ) : (
                           <button onClick={() => { setInlineStockId(p.id); setInlineStockVal(p.stock); }}
                             className="flex items-center gap-1.5 group" title="Click to edit stock">
-                            <Badge
-                              label={p.stock === 0 ? 'Out of Stock' : `${p.stock} in stock`}
-                              color={p.stock === 0 ? 'red' : p.stock <= 3 ? 'orange' : 'green'} />
-                            <Edit2 size={10} style={{ color: tk.textMuted }} />
+                            <StockBadge stock={p.stock} />
+                            <Edit2 size={10} style={{ color: tk.textMuted }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                           </button>
                         )}
                       </td>
 
-                      {/* Tags */}
+                      {/* Tags — improved badges with coloured dots */}
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
-                          {p.is_new_arrival && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ background: tagBadgeStyle('new').bg, border: `1px solid ${tagBadgeStyle('new').border}`, color: tagBadgeStyle('new').color, fontFamily: '"Raleway",sans-serif' }}>New</span>
-                          )}
-                          {p.is_best_seller && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ background: tagBadgeStyle('best').bg, border: `1px solid ${tagBadgeStyle('best').border}`, color: tagBadgeStyle('best').color, fontFamily: '"Raleway",sans-serif' }}>Best</span>
-                          )}
-                          {p.is_featured && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
-                              style={{ background: tagBadgeStyle('featured').bg, border: `1px solid ${tagBadgeStyle('featured').border}`, color: tagBadgeStyle('featured').color, fontFamily: '"Raleway",sans-serif' }}>Featured</span>
-                          )}
+                          {p.is_new_arrival  && <TagBadge type="new"      label="New"      />}
+                          {p.is_best_seller  && <TagBadge type="best"     label="Best"     />}
+                          {p.is_featured     && <TagBadge type="featured" label="Featured" />}
                         </div>
                       </td>
 
@@ -622,6 +653,23 @@ const AdminProducts: React.FC = () => {
                           {isVisible ? <Eye size={12} /> : <EyeOff size={12} />}
                           {isVisible ? 'Live' : 'Hidden'}
                         </button>
+                      </td>
+
+                      {/* Added On */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {addedDate ? (
+                          <div>
+                            <p className="text-xs font-medium" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>
+                              {addedDate.date}
+                            </p>
+                            <p className="flex items-center gap-1 text-xs mt-0.5" style={{ color: tk.textMuted, fontFamily: '"Raleway",sans-serif' }}>
+                              <Clock size={9} />
+                              {addedDate.time}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs" style={{ color: tk.textMuted }}>—</span>
+                        )}
                       </td>
 
                       {/* Actions */}
@@ -673,7 +721,7 @@ const AdminProducts: React.FC = () => {
           footer={
             <>
               <AdminBtn variant="secondary" onClick={() => setModalOpen(false)}>Cancel</AdminBtn>
-              <AdminBtn loading={saving} onClick={handleSave}>
+              <AdminBtn loading={saving} onClick={handleSave} disabled={saving}>
                 {editProduct ? 'Save Changes' : 'Add Product'}
               </AdminBtn>
             </>
@@ -699,9 +747,19 @@ const AdminProducts: React.FC = () => {
               ) : (
                 <div className="px-3 py-2 rounded-lg"
                   style={{ background: 'rgba(182,137,60,0.06)', border: '1px solid rgba(182,137,60,0.15)' }}>
-                  <span style={{ fontSize: '0.7rem', fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
-                    🔑 ID: <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>{editProduct.id}</span>
-                  </span>
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span style={{ fontSize: '0.7rem', fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+                      🔑 ID: <span style={{ fontFamily: 'monospace', color: tk.textSecondary }}>{editProduct.id}</span>
+                    </span>
+                    {formatAddedDate(editProduct.created_at) && (() => {
+                      const d = formatAddedDate(editProduct.created_at)!;
+                      return (
+                        <span style={{ fontSize: '0.7rem', fontFamily: '"Raleway",sans-serif', color: tk.textMuted }}>
+                          🕐 Added {d.date} at {d.time}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
               )}
 
@@ -732,7 +790,6 @@ const AdminProducts: React.FC = () => {
                 </Field>
               </div>
 
-              {/* Live discount preview — always whole-number % */}
               {form.discount_price && form.price > 0 && form.discount_price < form.price && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
                   style={{ background: 'rgba(224,92,26,0.08)', border: '1px solid rgba(224,92,26,0.25)' }}>
@@ -820,24 +877,27 @@ const AdminProducts: React.FC = () => {
               <Field label="Tags">
                 <div className="flex gap-3 flex-wrap">
                   {([
-                    { key: 'is_new_arrival' as const, label: 'New Arrival', style: tagBadgeStyle('new') },
-                    { key: 'is_best_seller' as const, label: 'Best Seller', style: tagBadgeStyle('best') },
-                    { key: 'is_featured'    as const, label: 'Featured',    style: tagBadgeStyle('featured') },
-                  ] as const).map(({ key, label, style }) => (
-                    <label key={key} className="flex items-center gap-2 cursor-pointer">
-                      <div
-                        className="w-4 h-4 rounded border flex items-center justify-center transition-all"
-                        style={{
-                          background: form[key] ? style.bg : 'transparent',
-                          border: `1px solid ${form[key] ? style.border : tk.borderMed}`,
-                        }}
-                        onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
-                        role="checkbox" aria-checked={form[key]} aria-label={label}>
-                        {form[key] && <span style={{ color: style.color, fontSize: '10px' }}>✓</span>}
-                      </div>
-                      <span className="text-sm" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>{label}</span>
-                    </label>
-                  ))}
+                    { key: 'is_new_arrival' as const, label: 'New Arrival', type: 'new'      as const },
+                    { key: 'is_best_seller' as const, label: 'Best Seller', type: 'best'     as const },
+                    { key: 'is_featured'    as const, label: 'Featured',    type: 'featured' as const },
+                  ]).map(({ key, label, type }) => {
+                    const s = TAG_STYLES[type];
+                    return (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          className="w-4 h-4 rounded border flex items-center justify-center transition-all"
+                          style={{
+                            background: form[key] ? s.bg : 'transparent',
+                            border: `1px solid ${form[key] ? s.border : tk.borderMed}`,
+                          }}
+                          onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
+                          role="checkbox" aria-checked={form[key]} aria-label={label}>
+                          {form[key] && <span style={{ color: s.color, fontSize: '10px' }}>✓</span>}
+                        </div>
+                        <span className="text-sm" style={{ fontFamily: '"Raleway",sans-serif', color: tk.textSecondary }}>{label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </Field>
             </div>
@@ -845,7 +905,6 @@ const AdminProducts: React.FC = () => {
             {/* ── Right column ── */}
             <div className="space-y-4">
 
-              {/* ── Current images download panel — only shows in edit mode ── */}
               {editProduct && (
                 <ExistingImagesPanel
                   images={form.images}

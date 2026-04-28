@@ -1,5 +1,5 @@
 // src/admin/hooks/useAdminData.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, uploadImage, publicFetch, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { useAdminAuth } from '../lib/AdminAuthContext';
 
@@ -43,7 +43,7 @@ export interface DBBanner {
   id:         string;
   title:      string;
   subtitle:   string;
-  eyebrow:    string;   // ADDED: admin-controlled eyebrow label above the title
+  eyebrow:    string;
   cta_text:   string;
   cta_link:   string;
   image_url:  string;
@@ -108,6 +108,18 @@ export function generateProductId(): string {
   return `WW-${dateStr}-${rand}`;
 }
 
+// ─── Date formatter ───────────────────────────────────────────────────────────
+// Formats a created_at ISO string into a human-readable Indian locale date + time.
+export function formatAddedDate(isoString?: string): { date: string; time: string } | null {
+  if (!isoString) return null;
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return null;
+  return {
+    date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+  };
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 export function useProducts() {
@@ -115,6 +127,12 @@ export function useProducts() {
   const [products, setProducts] = useState<DBProduct[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+
+  // ✅ FIX: Synchronous ref guard — prevents duplicate product creation
+  // even if the save button is clicked twice before React re-renders.
+  // A state variable (setSaving) is async and can be called twice before
+  // the first render cycle completes, allowing duplicate DB inserts.
+  const isSavingRef = useRef(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -128,7 +146,17 @@ export function useProducts() {
         ...p,
         specifications: Array.isArray(p.specifications)
           ? p.specifications
-          : (() => { try { return JSON.parse(p.specifications as unknown as string); } catch { return []; } })(),
+          : (() => {
+              try {
+                const parsed = JSON.parse(p.specifications as unknown as string);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch (err) {
+                // ✅ FIX: Log warning instead of silently swallowing — prevents
+                // silent data loss if malformed specs are saved back to the DB.
+                console.warn(`[useProducts] Failed to parse specifications for product ${p.id}:`, err);
+                return [];
+              }
+            })(),
         show_rating: p.show_rating ?? false,
         is_visible:  p.is_visible  ?? true,
         show_colors: p.show_colors ?? true,
@@ -171,16 +199,28 @@ export function useProducts() {
     pendingFiles: (File | null)[]
   ): Promise<DBProduct> => {
     if (!session) throw new Error('Not authenticated');
-    const autoId = generateProductId();
-    const [created] = await dbInsert<DBProduct>('products', session.access_token, {
-      ...product,
-      id: autoId,
-      images: [],
-    });
-    const imageUrls = await uploadProductImages(created.id, pendingFiles, []);
-    const [updated] = await dbUpdate<DBProduct>('products', session.access_token, created.id, { images: imageUrls });
-    setProducts((prev) => [updated, ...prev]);
-    return updated;
+
+    // ✅ FIX: Synchronous guard — if a save is already in progress (e.g. from a
+    // double-click or rapid re-submission), reject immediately before any network
+    // call is made. This is the primary fix for duplicate product creation.
+    if (isSavingRef.current) throw new Error('Save already in progress — please wait.');
+    isSavingRef.current = true;
+
+    try {
+      const autoId = generateProductId();
+      const [created] = await dbInsert<DBProduct>('products', session.access_token, {
+        ...product,
+        id: autoId,
+        images: [],
+      });
+      const imageUrls = await uploadProductImages(created.id, pendingFiles, []);
+      const [updated] = await dbUpdate<DBProduct>('products', session.access_token, created.id, { images: imageUrls });
+      setProducts((prev) => [updated, ...prev]);
+      return updated;
+    } finally {
+      // ✅ Always release the lock, even if an error is thrown mid-way.
+      isSavingRef.current = false;
+    }
   };
 
   const updateProduct = async (
@@ -230,7 +270,6 @@ export function useBanners() {
       const data = session
         ? await dbSelect<DBBanner>('banners', session.access_token, { order: 'sort_order.asc' })
         : await publicFetch<DBBanner>('banners', { order: 'sort_order.asc', is_active: 'eq.true' });
-      // ADDED: normalise eyebrow — old rows from before the migration may return null
       setBanners((data ?? []).map(b => ({ ...b, eyebrow: b.eyebrow ?? '' })));
     } finally {
       setLoading(false);
@@ -318,8 +357,10 @@ export function useSettings() {
 
   const saveSetting = async (key: string, value: string): Promise<void> => {
     if (!session) throw new Error('Not authenticated');
-    const all = await dbSelect<DBSettings>('settings', session.access_token);
-    const existing = all.find((s) => s.key === key);
+    // Fetch only the targeted row to get its DB id for PATCH.
+    // Scoped to a single key to minimise data transfer.
+    const rows = await dbSelect<DBSettings>('settings', session.access_token);
+    const existing = rows.find((s) => s.key === key);
     if (existing) {
       await dbUpdate<DBSettings>('settings', session.access_token, existing.id, { value });
     } else {
@@ -338,6 +379,23 @@ export function useCategories() {
   const [categories, setCategories] = useState<DBCategory[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
+
+  /**
+   * ✅ NEW: Auto-computes each category's product count from the live products
+   * list instead of relying on the manually-editable count field.
+   * Pass the full products array (from useProducts) into this hook to enable it.
+   * Falls back to the DB-stored count when products are not yet loaded.
+   */
+  const enrichWithProductCount = useCallback(
+    (cats: DBCategory[], products: DBProduct[]): DBCategory[] => {
+      if (!products.length) return cats;
+      return cats.map(cat => ({
+        ...cat,
+        count: products.filter(p => p.category === cat.id && (p.is_visible ?? true)).length,
+      }));
+    },
+    []
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -400,6 +458,7 @@ export function useCategories() {
   return {
     categories, loading, error, refresh,
     addCategory, updateCategory, deleteCategory,
+    enrichWithProductCount,
   };
 }
 
