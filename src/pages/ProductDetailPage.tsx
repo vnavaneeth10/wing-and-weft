@@ -26,7 +26,7 @@ const STYLES = `
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
   @keyframes pdp-lightbox-in {
-    from { opacity: 0; transform: scale(0.95); }
+    from { opacity: 0; transform: scale(0.96); }
     to   { opacity: 1; transform: scale(1); }
   }
   @keyframes shimmer-wave {
@@ -61,37 +61,83 @@ const STYLES = `
   }
   .pdp-share-icon:hover { transform: scale(1.12) rotate(4deg); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
 
+  /* ── Main image wrap: zoom lens cursor, no overflow clip so lens shows ── */
   .pdp-main-image-wrap {
-    overflow: hidden; cursor: zoom-in; position: relative;
+    cursor: zoom-in;
+    position: relative;
+    overflow: hidden;
   }
   .pdp-main-img {
-    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-    transform-origin: center center; will-change: transform;
     animation: pdp-fade-in 0.35s ease both;
-    display: block; width: 100%; height: 100%; object-fit: cover;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* NO transform here — zoom is handled by the lens overlay */
   }
-  .pdp-main-image-wrap.zoomed .pdp-main-img { transform: scale(1.08); }
+
+  /* ── Zoom lens (magnifier overlay) ── */
+  .pdp-zoom-lens {
+    position: absolute;
+    border: 2px solid rgba(255,255,255,0.7);
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    pointer-events: none;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+    /* background-image + background-size set via JS */
+  }
+  .pdp-main-image-wrap:hover .pdp-zoom-lens { opacity: 1; }
+
+  /* Hint badge */
   .pdp-zoom-hint {
-    position: absolute; bottom: 48px; right: 12px;
+    position: absolute; bottom: 52px; right: 12px;
     display: flex; align-items: center; gap: 5px;
     background: rgba(0,0,0,0.55); color: #fff;
     font-size: 0.67rem; font-weight: 700; letter-spacing: 0.08em;
     text-transform: uppercase; padding: 5px 10px; border-radius: 20px;
     backdrop-filter: blur(6px); pointer-events: none;
-    opacity: 0; transition: opacity 0.3s ease;
+    opacity: 1; transition: opacity 0.3s ease;
+    z-index: 5;
   }
-  .pdp-main-image-wrap.zoomed .pdp-zoom-hint { opacity: 1; }
+  .pdp-main-image-wrap:hover .pdp-zoom-hint { opacity: 0; }
 
+  /* ── LIGHTBOX — full natural size, no compression ── */
   .pdp-lightbox-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.92);
+    background: rgba(0,0,0,0.94);
     display: flex; align-items: center; justify-content: center;
-    padding: 20px; animation: pdp-fade-in 0.25s ease; cursor: zoom-out;
+    padding: 16px;
+    animation: pdp-fade-in 0.22s ease;
+    cursor: zoom-out;
+    /* allow scrolling if image is taller than viewport */
+    overflow: auto;
+  }
+  .pdp-lightbox-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 3:4 aspect ratio, fills up to 90vh */
+    max-height: 90vh;
+    /* let width be determined by the image's natural aspect */
   }
   .pdp-lightbox-img {
-    max-width: 92vw; max-height: 90vh; object-fit: contain;
-    border-radius: 6px; box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-    animation: pdp-lightbox-in 0.3s cubic-bezier(0.22,1,0.36,1); cursor: default;
+    /* Show at natural size — never upscale past container */
+    max-height: 90vh;
+    /* maintain 3:4 aspect ratio column: width = 90vh * (3/4) = 67.5vh */
+    width: auto;
+    max-width: min(calc(90vh * 0.75), 92vw);
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+    animation: pdp-lightbox-in 0.28s cubic-bezier(0.22,1,0.36,1);
+    cursor: default;
+    display: block;
   }
   .pdp-lightbox-close {
     position: fixed; top: 18px; right: 20px;
@@ -107,6 +153,7 @@ const STYLES = `
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     color: rgba(255,255,255,0.55); font-size: 0.72rem;
     letter-spacing: 0.14em; font-weight: 600; font-family: "Raleway", sans-serif;
+    pointer-events: none;
   }
   .pdp-lightbox-nav {
     position: fixed; top: 50%; transform: translateY(-50%);
@@ -171,7 +218,7 @@ const ThreadDivider: React.FC = () => (
   </svg>
 );
 
-// ─── Lightbox ────────────────────────────────────────────────────────────────
+// ─── Lightbox — shows image at full natural size with 3:4 aspect ──────────────
 const Lightbox: React.FC<{
   images: string[]; initialIndex: number; productName: string; onClose: () => void;
 }> = ({ images, initialIndex, productName, onClose }) => {
@@ -196,14 +243,27 @@ const Lightbox: React.FC<{
   }, []);
 
   return (
-    <div className="pdp-lightbox-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <button className="pdp-lightbox-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
-      <img key={current} src={images[current]} alt={`${productName} — image ${current + 1}`}
-        className="pdp-lightbox-img" onClick={e => e.stopPropagation()} loading="eager" />
+    <div className="pdp-lightbox-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Full size product image">
+      <button className="pdp-lightbox-close" onClick={onClose} aria-label="Close lightbox"><X size={20} /></button>
+
+      <div className="pdp-lightbox-inner" onClick={e => e.stopPropagation()}>
+        <img
+          key={current}
+          src={images[current]}
+          alt={`${productName} — image ${current + 1}`}
+          className="pdp-lightbox-img"
+          loading="eager"
+        />
+      </div>
+
       {images.length > 1 && (
         <>
-          <button className="pdp-lightbox-nav prev" onClick={prev} aria-label="Previous"><ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} /></button>
-          <button className="pdp-lightbox-nav next" onClick={next} aria-label="Next"><ChevronRight size={20} /></button>
+          <button className="pdp-lightbox-nav prev" onClick={prev} aria-label="Previous image">
+            <ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} />
+          </button>
+          <button className="pdp-lightbox-nav next" onClick={next} aria-label="Next image">
+            <ChevronRight size={20} />
+          </button>
           <p className="pdp-lightbox-counter">{current + 1} / {images.length}</p>
         </>
       )}
@@ -259,49 +319,25 @@ const ReviewSkeletonCard: React.FC<{
   const borderColor = isDark ? 'rgba(255,255,255,0.07)' : '#EDE8DF';
 
   return (
-    <div
-      style={{
-        background: cardBg,
-        border: `1px solid ${borderColor}`,
-        borderRadius: '14px',
-        padding: '18px 20px',
-        animation: `pdp-slide-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 0.08}s both`,
-      }}
-    >
-      {/* Header row */}
+    <div style={{
+      background: cardBg, border: `1px solid ${borderColor}`,
+      borderRadius: '14px', padding: '18px 20px',
+      animation: `pdp-slide-up 0.5s cubic-bezier(0.22,1,0.36,1) ${index * 0.08}s both`,
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-        {/* Avatar */}
         <div style={{
           width: '38px', height: '38px', borderRadius: '50%',
           background: AVATAR_COLORS[index % AVATAR_COLORS.length],
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '0.72rem', fontWeight: 800, color: '#fff',
           fontFamily: '"Raleway", sans-serif', flexShrink: 0,
-        }}>
-          {review.initials}
-        </div>
-
+        }}>{review.initials}</div>
         <div style={{ flex: 1 }}>
-          {/* Name shimmer */}
-          <div
-            className={shimmerClass}
-            style={{ height: '10px', width: `${review.name.length * 7}px`, maxWidth: '120px', borderRadius: '6px', background: shimmerBg, marginBottom: '5px' }}
-          />
-          {/* Location shimmer */}
-          <div
-            className={shimmerClass}
-            style={{ height: '8px', width: '70px', borderRadius: '6px', background: shimmerBg }}
-          />
+          <div className={shimmerClass} style={{ height: '10px', width: `${review.name.length * 7}px`, maxWidth: '120px', borderRadius: '6px', background: shimmerBg, marginBottom: '5px' }} />
+          <div className={shimmerClass} style={{ height: '8px', width: '70px', borderRadius: '6px', background: shimmerBg }} />
         </div>
-
-        {/* Time ago shimmer — right side */}
-        <div
-          className={shimmerClass}
-          style={{ height: '8px', width: '60px', borderRadius: '6px', background: shimmerBg, flexShrink: 0 }}
-        />
+        <div className={shimmerClass} style={{ height: '8px', width: '60px', borderRadius: '6px', background: shimmerBg, flexShrink: 0 }} />
       </div>
-
-      {/* Star rating — real stars, always visible */}
       <div style={{ display: 'flex', gap: '3px', marginBottom: '10px' }}>
         {[1, 2, 3, 4, 5].map(s => (
           <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= review.rating ? '#b6893c' : 'none'} style={{ color: s <= review.rating ? '#b6893c' : '#d1c5a5' }}>
@@ -309,24 +345,13 @@ const ReviewSkeletonCard: React.FC<{
           </svg>
         ))}
       </div>
-
-      {/* Review text lines shimmer */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
         {review.lines.map((w, i) => (
-          <div
-            key={i}
-            className={shimmerClass}
-            style={{ height: '9px', width: `${w}%`, borderRadius: '6px', background: shimmerBg }}
-          />
+          <div key={i} className={shimmerClass} style={{ height: '9px', width: `${w}%`, borderRadius: '6px', background: shimmerBg }} />
         ))}
       </div>
-
-      {/* Verified badge shimmer */}
       <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-        <div
-          className={shimmerClass}
-          style={{ height: '8px', width: '90px', borderRadius: '6px', background: shimmerBg }}
-        />
+        <div className={shimmerClass} style={{ height: '8px', width: '90px', borderRadius: '6px', background: shimmerBg }} />
       </div>
     </div>
   );
@@ -340,47 +365,20 @@ const ReviewsSkeleton: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const shimmerClass = isDark ? 'review-shimmer' : 'review-shimmer-light';
 
   return (
-    <section
-      aria-label="Customer reviews"
-      style={{
-        borderTop: `1px solid ${borderColor}`,
-        paddingTop: '40px',
-        marginTop: '40px',
-      }}
-    >
-      {/* Section header */}
+    <section aria-label="Customer reviews" style={{ borderTop: `1px solid ${borderColor}`, paddingTop: '40px', marginTop: '40px' }}>
       <div style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '6px', flexWrap: 'wrap' }}>
-          <h2 style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-            fontWeight: 600,
-            color: headingColor,
-            margin: 0,
-          }}>
+          <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 600, color: headingColor, margin: 0 }}>
             Customer Reviews
           </h2>
-          {/* Review count badge */}
-          <span style={{
-            background: isDark ? 'rgba(182,137,60,0.15)' : 'rgba(182,137,60,0.12)',
-            color: '#b6893c',
-            fontSize: '0.72rem',
-            fontWeight: 800,
-            fontFamily: '"Raleway", sans-serif',
-            letterSpacing: '0.06em',
-            padding: '3px 10px',
-            borderRadius: '20px',
-            border: '1px solid rgba(182,137,60,0.25)',
-          }}>
+          <span style={{ background: isDark ? 'rgba(182,137,60,0.15)' : 'rgba(182,137,60,0.12)', color: '#b6893c', fontSize: '0.72rem', fontWeight: 800, fontFamily: '"Raleway", sans-serif', letterSpacing: '0.06em', padding: '3px 10px', borderRadius: '20px', border: '1px solid rgba(182,137,60,0.25)' }}>
             {FAKE_REVIEWS.length} reviews
           </span>
         </div>
-
-        {/* Overall rating row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ display: 'flex', gap: '3px' }}>
             {[1, 2, 3, 4, 5].map(s => (
-              <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill={s <= 5 ? '#b6893c' : 'none'} style={{ color: '#b6893c' }}>
+              <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill="#b6893c" style={{ color: '#b6893c' }}>
                 <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             ))}
@@ -388,74 +386,29 @@ const ReviewsSkeleton: React.FC<{ isDark: boolean }> = ({ isDark }) => {
           <span style={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: '"Raleway", sans-serif', color: headingColor }}>4.9</span>
           <span style={{ fontSize: '0.78rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor }}>out of 5</span>
         </div>
-
         <p style={{ fontSize: '0.75rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor, marginTop: '6px' }}>
           Reviews are loading — check back soon for verified customer feedback.
         </p>
       </div>
-
-      {/* Rating breakdown bars */}
-      <div style={{
-        background: isDark ? 'rgba(255,255,255,0.03)' : '#FAFAF8',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '14px',
-        padding: '16px 20px',
-        marginBottom: '24px',
-      }}>
-        {[
-          { stars: 5, pct: 78 },
-          { stars: 4, pct: 15 },
-          { stars: 3, pct: 5 },
-          { stars: 2, pct: 2 },
-          { stars: 1, pct: 0 },
-        ].map(({ stars, pct }) => (
+      <div style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#FAFAF8', border: `1px solid ${borderColor}`, borderRadius: '14px', padding: '16px 20px', marginBottom: '24px' }}>
+        {[{ stars: 5, pct: 78 }, { stars: 4, pct: 15 }, { stars: 3, pct: 5 }, { stars: 2, pct: 2 }, { stars: 1, pct: 0 }].map(({ stars, pct }) => (
           <div key={stars} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, fontFamily: '"Raleway", sans-serif', color: subTextColor, width: '10px', textAlign: 'right', flexShrink: 0 }}>{stars}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="#b6893c" style={{ flexShrink: 0 }}>
               <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="#b6893c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <div style={{ flex: 1, height: '7px', borderRadius: '4px', background: shimmerBg, overflow: 'hidden' }}>
-              <div
-                className={shimmerClass}
-                style={{
-                  height: '100%',
-                  width: `${pct}%`,
-                  borderRadius: '4px',
-                  background: pct > 50
-                    ? isDark ? 'rgba(182,137,60,0.5)' : 'rgba(182,137,60,0.45)'
-                    : shimmerBg,
-                  animation: pct > 0 ? undefined : 'none',
-                }}
-              />
+              <div className={shimmerClass} style={{ height: '100%', width: `${pct}%`, borderRadius: '4px', background: pct > 50 ? (isDark ? 'rgba(182,137,60,0.5)' : 'rgba(182,137,60,0.45)') : shimmerBg, animation: pct > 0 ? undefined : 'none' }} />
             </div>
             <span style={{ fontSize: '0.68rem', fontFamily: '"DM Sans", sans-serif', color: subTextColor, width: '28px', textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
           </div>
         ))}
       </div>
-
-      {/* Review cards grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '14px',
-      }}>
-        {FAKE_REVIEWS.map((review, i) => (
-          <ReviewSkeletonCard key={i} review={review} index={i} isDark={isDark} />
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+        {FAKE_REVIEWS.map((review, i) => <ReviewSkeletonCard key={i} review={review} index={i} isDark={isDark} />)}
       </div>
-
-      {/* "Load more" ghost button */}
       <div style={{ textAlign: 'center', marginTop: '28px' }}>
-        <div
-          className={shimmerClass}
-          style={{
-            display: 'inline-block',
-            height: '40px',
-            width: '160px',
-            borderRadius: '20px',
-            background: shimmerBg,
-          }}
-        />
+        <div className={shimmerClass} style={{ display: 'inline-block', height: '40px', width: '160px', borderRadius: '20px', background: shimmerBg }} />
       </div>
     </section>
   );
@@ -487,9 +440,13 @@ const ProductDetailPage: React.FC = () => {
   const [selectedColor, setSelectedColor]   = useState(0);
   const [openAccordion, setOpenAccordion]   = useState<string | null>('description');
   const [lightboxOpen, setLightboxOpen]     = useState(false);
-  const [isImageHovered, setIsImageHovered] = useState(false);
   const [animKey, setAnimKey]               = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Zoom lens refs ──
+  const imageWrapRef = useRef<HTMLDivElement>(null);
+  const lensRef      = useRef<HTMLDivElement>(null);
+  const imgRef       = useRef<HTMLImageElement>(null);
 
   const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
@@ -526,8 +483,46 @@ const ProductDetailPage: React.FC = () => {
   }, [product, startAutoSlide, stopAutoSlide]);
 
   const handleThumbClick = (i: number) => {
-    stopAutoSlide(); setIsImageHovered(false); setAnimKey(k => k + 1); setSelectedImage(i);
+    stopAutoSlide(); setAnimKey(k => k + 1); setSelectedImage(i);
   };
+
+  // ── Zoom lens mouse logic ──────────────────────────────────────────────────
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const wrap = imageWrapRef.current;
+    const lens = lensRef.current;
+    const img  = imgRef.current;
+    if (!wrap || !lens || !img) return;
+
+    const rect      = wrap.getBoundingClientRect();
+    const lensW     = lens.offsetWidth;
+    const lensH     = lens.offsetHeight;
+
+    // cursor position relative to wrap
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
+
+    // clamp so lens never leaves the wrap edges
+    x = Math.max(lensW / 2, Math.min(rect.width  - lensW / 2, x));
+    y = Math.max(lensH / 2, Math.min(rect.height - lensH / 2, y));
+
+    // position lens centred on cursor
+    lens.style.left = `${x - lensW / 2}px`;
+    lens.style.top  = `${y - lensH / 2}px`;
+
+    // magnification factor (3× feels natural for product photography)
+    const ZOOM = 3;
+    const bgW  = rect.width  * ZOOM;
+    const bgH  = rect.height * ZOOM;
+
+    // offset so the zoomed region aligns with cursor
+    const bgX = x * ZOOM - lensW / 2;
+    const bgY = y * ZOOM - lensH / 2;
+
+    lens.style.backgroundImage    = `url('${img.src}')`;
+    lens.style.backgroundSize     = `${bgW}px ${bgH}px`;
+    lens.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+    lens.style.backgroundRepeat   = 'no-repeat';
+  }, []);
 
   usePageMeta({
     title: product ? `${product.name} — ${product.category.replace(/-/g,' ')}` : 'Product',
@@ -544,7 +539,7 @@ const ProductDetailPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
             <div className="space-y-3">
-              <div className="shimmer rounded-2xl w-full" style={{ height: '500px' }} />
+              <div className="shimmer rounded-2xl w-full" style={{ aspectRatio: '3/4' }} />
               <div className="grid grid-cols-4 gap-2">
                 {[...Array(4)].map((_,i) => <div key={i} className="shimmer rounded-xl" style={{ height: '80px' }} />)}
               </div>
@@ -673,22 +668,37 @@ const ProductDetailPage: React.FC = () => {
 
           {/* ── Left: Images ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
+
+            {/* ── Main image: 3:4 aspect ratio, zoom-lens on hover ── */}
             <div
-              className={`pdp-main-image-wrap rounded-2xl mb-3 ${card} border relative${isImageHovered ? ' zoomed' : ''}`}
-              style={{ height: '500px' }}
-              onMouseEnter={() => setIsImageHovered(true)}
-              onMouseLeave={() => setIsImageHovered(false)}
+              ref={imageWrapRef}
+              className={`pdp-main-image-wrap rounded-2xl mb-3 ${card} border relative`}
+              style={{ aspectRatio: '3 / 4', width: '100%' }}
+              onMouseMove={handleMouseMove}
               onPointerUp={e => { if (e.button === 0) { stopAutoSlide(); setLightboxOpen(true); } }}
-              role="button" tabIndex={0} aria-label="Click to view full size"
+              role="button"
+              tabIndex={0}
+              aria-label="Click to view full size"
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { stopAutoSlide(); setLightboxOpen(true); } }}
             >
-              <img key={`img-${selectedImage}-${animKey}`} src={product.images[selectedImage]}
+              <img
+                ref={imgRef}
+                key={`img-${selectedImage}-${animKey}`}
+                src={product.images[selectedImage]}
                 alt={`${product.name} — image ${selectedImage + 1}`}
-                className="w-full h-full object-cover pdp-main-img" loading="eager" />
-              <div className="pdp-zoom-hint"><ZoomIn size={11} /> Click to zoom</div>
+                className="pdp-main-img"
+                loading="eager"
+              />
 
+              {/* Zoom lens div — positioned by JS */}
+              <div ref={lensRef} className="pdp-zoom-lens" aria-hidden="true" />
+
+              {/* Hint shown when NOT hovering */}
+              <div className="pdp-zoom-hint"><ZoomIn size={11} /> Hover to zoom · Click to enlarge</div>
+
+              {/* Dot indicators */}
               {product.images.length > 1 && (
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5" style={{ zIndex: 4 }}>
                   {product.images.map((_, i) => (
                     <button key={i}
                       onClick={e => e.stopPropagation()}
@@ -703,9 +713,9 @@ const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Discount badge: TOP RIGHT ── */}
+              {/* Discount badge */}
               {discount > 0 && (
-                <div className="absolute top-4 right-4" style={{ zIndex: 2 }}>
+                <div className="absolute top-4 right-4" style={{ zIndex: 3 }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center',
                     background: 'linear-gradient(135deg, #e05c1a, #c94a10)',
@@ -720,7 +730,7 @@ const ProductDetailPage: React.FC = () => {
               )}
 
               {product.stock === 0 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl" style={{ zIndex: 5 }}>
                   <span className="text-white font-semibold font-body text-lg">Out of Stock</span>
                 </div>
               )}
@@ -732,7 +742,7 @@ const ProductDetailPage: React.FC = () => {
                 <button key={i} onClick={() => handleThumbClick(i)}
                   className="pdp-thumb overflow-hidden border-2"
                   style={{
-                    aspectRatio: '1 / 1',
+                    aspectRatio: '3 / 4',
                     borderRadius: '10px',
                     borderColor: i === selectedImage ? theme.accentPrimary : 'transparent',
                     display: 'block',
@@ -748,7 +758,7 @@ const ProductDetailPage: React.FC = () => {
 
             {product.images.length > 1 && (
               <p className={`text-xs text-center mt-2 font-body ${textMuted}`} style={{ opacity: 0.6 }}>
-                Auto-cycling · click thumbnail to pause · click main image to zoom
+                Auto-cycling · click thumbnail to pause · hover to zoom · click to enlarge
               </p>
             )}
           </div>
@@ -772,7 +782,6 @@ const ProductDetailPage: React.FC = () => {
 
             <div style={{ marginBottom: '16px' }}><ThreadDivider /></div>
 
-            {/* Product ID */}
             <p className="font-body mb-4" style={{ fontSize: '0.82rem', opacity: 0.95 }}>
               <span style={{ fontWeight: 800, color: productIdColor, letterSpacing: '0.04em', fontSize: '0.78rem' }}>
                 Product ID:
@@ -791,23 +800,20 @@ const ProductDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* Price block */}
             <div className="flex items-end gap-4 mb-2">
               {product.discount_price ? (
                 <>
-                  <span style={{
-                    fontFamily: '"Raleway",sans-serif', fontSize: '2.2rem',
-                    fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1,
-                  }}>₹{product.discount_price.toLocaleString()}</span>
+                  <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '2.2rem', fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    ₹{product.discount_price.toLocaleString()}
+                  </span>
                   <span className="font-body line-through" style={{ fontSize: '1.1rem', fontWeight: 500, color: isDark ? '#64748b' : '#a8a29e', marginBottom: '3px' }}>
                     ₹{product.price.toLocaleString()}
                   </span>
                 </>
               ) : (
-                <span style={{
-                  fontFamily: '"Raleway",sans-serif', fontSize: '2.2rem',
-                  fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1,
-                }}>₹{product.price.toLocaleString()}</span>
+                <span style={{ fontFamily: '"Raleway",sans-serif', fontSize: '2.2rem', fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  ₹{product.price.toLocaleString()}
+                </span>
               )}
             </div>
 
@@ -845,7 +851,6 @@ const ProductDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* WhatsApp CTA */}
             <div className="mb-4">
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
                 className={`pdp-wa-btn w-full flex items-center justify-center gap-3 py-4 rounded-full font-body ${product.stock === 0 ? 'disabled' : ''}`}
@@ -862,7 +867,6 @@ const ProductDetailPage: React.FC = () => {
 
             <TrustBadges isDark={isDark} />
 
-            {/* Accordions */}
             <div className="space-y-2 mb-6">
               {accordions.map(acc => (
                 <div key={acc.id} className={`rounded-xl border overflow-hidden ${card}`}>
@@ -889,7 +893,6 @@ const ProductDetailPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Share */}
             <div>
               <p className={`mb-3 font-body ${textPrimary}`} style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                 Share this product
@@ -912,7 +915,6 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Reviews Skeleton — full width below the 2-col grid ── */}
         <ReviewsSkeleton isDark={isDark} />
       </div>
     </div>

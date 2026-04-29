@@ -56,23 +56,15 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Arrow-key + Escape keyboard navigation for the desktop dropdown
   const handleDropdownKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!desktopCatOpen) return;
     const items = catRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
     if (!items || items.length === 0) return;
     const focused = document.activeElement as HTMLElement;
     const idx     = Array.from(items).indexOf(focused);
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      items[idx < items.length - 1 ? idx + 1 : 0].focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      items[idx > 0 ? idx - 1 : items.length - 1].focus();
-    } else if (e.key === 'Escape') {
-      setDesktopCatOpen(false);
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[idx < items.length - 1 ? idx + 1 : 0].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[idx > 0 ? idx - 1 : items.length - 1].focus(); }
+    else if (e.key === 'Escape') { setDesktopCatOpen(false); }
   }, [desktopCatOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -84,7 +76,6 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // /categories and /category/* both highlight the Categories button
   const isCatActive = location.pathname.startsWith('/categor');
 
   const navBg = scrolled
@@ -102,48 +93,80 @@ const Navbar: React.FC = () => {
       aria-label="Main navigation"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        {/*
+          ── LAYOUT FIX ──────────────────────────────────────────────────────
+          The tagline was overflowing into the nav links on small-desktop /
+          Chrome-mobile-desktop-mode viewports because the logo block had no
+          max-width constraint and the centred nav was absolutely positioned.
 
-          {/* ── Logo ── */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0" aria-label="Wing & Weft Home">
-            <picture>
-              <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
-              <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"   type="image/png" />
-              <img
-                src="/logo@1x.png"
-                alt="Wing & Weft"
-                width={160}
-                height={90}
-                className="w-auto object-contain transition-opacity duration-300"
-                style={{ height: 'clamp(36px, 4.5vw, 48px)' }}
-                loading="eager"
-                decoding="async"
-              />
-            </picture>
-            <div className="hidden sm:block">
-              <span
-                style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1 }}
-                className={isDark ? 'text-brand-cream' : 'text-stone-800'}
-              >
-                Wing &amp; Weft
-              </span>
-              <p
-                style={{ fontSize: '0.7rem', letterSpacing: '0.2em', fontFamily: '"Raleway", sans-serif' }}
-                className={isDark ? 'text-brand-cream/70' : 'text-stone-500'}
-              >
-                CHEERS TO THE NEW BEGINNINGS
-              </p>
-            </div>
-          </Link>
+          Fix strategy:
+          • Give the logo a hard max-width so it never grows into the centre.
+          • Switch the desktop row to a THREE-column flex grid (logo | nav | icons)
+            so every section has its own lane and nothing overlaps.
+          • Hide the tagline below ~900 px (lg breakpoint) and show only the
+            logo image + brand name, preventing any overflow at intermediate widths.
+          ──────────────────────────────────────────────────────────────────── */}
+        <div className="flex items-center h-16 md:h-20 gap-2">
 
-          {/* ── Centre Nav — Desktop ── */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          {/* ── Column 1: Logo (flex-shrink-0, max-width so it never crowds centre) ── */}
+          <div className="flex-shrink-0" style={{ minWidth: 0 }}>
+            <Link to="/" className="flex items-center gap-2" aria-label="Wing & Weft Home">
+              <picture>
+                <source srcSet="/logo@2x.webp 2x, /logo@1x.webp 1x" type="image/webp" />
+                <source srcSet="/logo@2x.png 2x, /logo@1x.png 1x"   type="image/png" />
+                <img
+                  src="/logo@1x.png"
+                  alt="Wing & Weft"
+                  width={160}
+                  height={90}
+                  className="w-auto object-contain flex-shrink-0"
+                  style={{ height: 'clamp(34px, 4vw, 46px)' }}
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
+
+              {/* Brand name + tagline — hidden on mobile, shown on sm+.
+                  Tagline additionally hidden below lg to prevent overlap. */}
+              <div className="hidden sm:flex flex-col justify-center" style={{ minWidth: 0 }}>
+                <span
+                  className={`block whitespace-nowrap ${isDark ? 'text-brand-cream' : 'text-stone-800'}`}
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 'clamp(1.1rem, 1.8vw, 1.5rem)',
+                    fontWeight: 600,
+                    letterSpacing: '0.05em',
+                    lineHeight: 1,
+                  }}
+                >
+                  Wing &amp; Weft
+                </span>
+                {/* Tagline: only show when there is definitely enough room (lg = 1024px+).
+                    On md (768–1023px) Chrome-desktop-mode it was cramping — hide it. */}
+                <p
+                  className={`hidden lg:block whitespace-nowrap ${isDark ? 'text-brand-cream/70' : 'text-stone-500'}`}
+                  style={{
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.18em',
+                    fontFamily: '"Raleway", sans-serif',
+                    lineHeight: 1.2,
+                    marginTop: '2px',
+                  }}
+                >
+                  CHEERS TO THE NEW BEGINNINGS
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          {/* ── Column 2: Centre nav — Desktop only, takes remaining space, centred ── */}
+          <div className="hidden md:flex flex-1 items-center justify-center gap-1 min-w-0">
             <NavLink to="/"          label="Home"     isDark={isDark} />
 
-            {/* ── Categories dropdown ── */}
+            {/* Categories dropdown */}
             <div ref={catRef} className="relative" onKeyDown={handleDropdownKeyDown}>
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
+                className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
                   isCatActive
                     ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
                     : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -213,8 +236,8 @@ const Navbar: React.FC = () => {
             <NavLink to="/contact"   label="Contact"  isDark={isDark} />
           </div>
 
-          {/* ── Right side icon cluster ── */}
-          <div className="flex items-center gap-2">
+          {/* ── Column 3: Right-side icon cluster (flex-shrink-0) ── */}
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto md:ml-0">
 
             {/* Search */}
             <div ref={searchRef} className="relative">
@@ -240,7 +263,7 @@ const Navbar: React.FC = () => {
                       <input
                         autoFocus
                         type="search"
-                        placeholder="Search sarees, fabrics…"
+                        placeholder="Search sarees, fabrics..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         className={`flex-1 px-3 py-2 rounded-lg text-sm outline-none border transition-colors font-body ${
@@ -261,7 +284,6 @@ const Navbar: React.FC = () => {
                     </div>
                   </form>
 
-                  {/* Live suggestions */}
                   {suggestions.length > 0 && (
                     <div className={`border-t ${isDark ? 'border-dark-border' : 'border-brand-cream'}`}>
                       {suggestions.map((product) => (
@@ -316,8 +338,6 @@ const Navbar: React.FC = () => {
               aria-label="Track your courier order (opens in new tab)"
             >
               <PackageSearch size={18} aria-hidden="true" />
-
-              {/* Tooltip */}
               <span
                 className={`
                   pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2
@@ -393,7 +413,6 @@ const Navbar: React.FC = () => {
         >
           <MobileLink to="/" label="Home" isDark={isDark} />
 
-          {/* Mobile — Categories accordion */}
           <div>
             <button
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold font-body transition-colors ${
@@ -443,7 +462,6 @@ const Navbar: React.FC = () => {
           <MobileLink to="/our-story" label="About Us" isDark={isDark} />
           <MobileLink to="/contact"   label="Contact"  isDark={isDark} />
 
-          {/* Track Order — full text link on mobile */}
           <a
             href={TRACK_ORDER_URL}
             target="_blank"
@@ -465,14 +483,13 @@ const Navbar: React.FC = () => {
 };
 
 // ─── NavLink ──────────────────────────────────────────────────────────────────
-
 const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => {
   const { pathname } = useLocation();
   const isActive = pathname === to;
   return (
     <Link
       to={to}
-      className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 ${
+      className={`px-3 py-2 rounded-md text-sm font-semibold transition-colors font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1 whitespace-nowrap ${
         isActive
           ? isDark ? 'text-brand-orange bg-brand-red/10' : 'text-brand-red bg-brand-red/10'
           : isDark ? 'text-dark-text hover:text-brand-orange hover:bg-dark-card/50' : 'text-stone-700 hover:text-brand-red hover:bg-brand-red/5'
@@ -484,7 +501,6 @@ const NavLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to,
 };
 
 // ─── MobileLink ───────────────────────────────────────────────────────────────
-
 const MobileLink: React.FC<{ to: string; label: string; isDark: boolean }> = ({ to, label, isDark }) => (
   <Link
     to={to}
