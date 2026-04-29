@@ -1,7 +1,7 @@
 // src/pages/ProductDetailPage.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle, X, ZoomIn, Truck, ShieldCheck, Gem } from 'lucide-react';
+import { ChevronDown, ChevronRight, Instagram, Facebook, MessageCircle, X, Truck, ShieldCheck, Gem } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import SEO from '../components/SEO/SEO';
 import { StarRating } from '../components/Products/ProductCard';
@@ -61,9 +61,9 @@ const STYLES = `
   }
   .pdp-share-icon:hover { transform: scale(1.12) rotate(4deg); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
 
-  /* ── Main image wrap: zoom lens cursor, no overflow clip so lens shows ── */
+  /* ── Main image wrap: click-to-enlarge only, clean cursor ── */
   .pdp-main-image-wrap {
-    cursor: zoom-in;
+    cursor: pointer;
     position: relative;
     overflow: hidden;
   }
@@ -73,38 +73,21 @@ const STYLES = `
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* NO transform here — zoom is handled by the lens overlay */
-  }
-
-  /* ── Zoom lens (magnifier overlay) ── */
-  .pdp-zoom-lens {
-    position: absolute;
-    border: 2px solid rgba(255,255,255,0.7);
-    border-radius: 50%;
-    width: 100px;
-    height: 100px;
-    pointer-events: none;
-    overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    opacity: 0;
     transition: opacity 0.2s ease;
-    z-index: 10;
-    /* background-image + background-size set via JS */
   }
-  .pdp-main-image-wrap:hover .pdp-zoom-lens { opacity: 1; }
 
-  /* Hint badge */
-  .pdp-zoom-hint {
+  /* Subtle hint — visible at rest, dims on hover */
+  .pdp-click-hint {
     position: absolute; bottom: 52px; right: 12px;
     display: flex; align-items: center; gap: 5px;
-    background: rgba(0,0,0,0.55); color: #fff;
-    font-size: 0.67rem; font-weight: 700; letter-spacing: 0.08em;
+    background: rgba(0,0,0,0.45); color: #fff;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
     text-transform: uppercase; padding: 5px 10px; border-radius: 20px;
     backdrop-filter: blur(6px); pointer-events: none;
-    opacity: 1; transition: opacity 0.3s ease;
+    opacity: 0.85; transition: opacity 0.3s ease;
     z-index: 5;
   }
-  .pdp-main-image-wrap:hover .pdp-zoom-hint { opacity: 0; }
+  .pdp-main-image-wrap:hover .pdp-click-hint { opacity: 0.4; }
 
   /* ── LIGHTBOX — full natural size, no compression ── */
   .pdp-lightbox-overlay {
@@ -443,11 +426,7 @@ const ProductDetailPage: React.FC = () => {
   const [animKey, setAnimKey]               = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Zoom lens refs ──
-  const imageWrapRef = useRef<HTMLDivElement>(null);
-  const lensRef      = useRef<HTMLDivElement>(null);
-  const imgRef       = useRef<HTMLImageElement>(null);
-
+  // ── Image auto-slide refs ──
   const { whatsapp_number, instagram_url, facebook_url } = useSettings();
 
   const bgStyle     = isDark ? undefined : { backgroundColor: '#FDFAF6' };
@@ -486,43 +465,6 @@ const ProductDetailPage: React.FC = () => {
     stopAutoSlide(); setAnimKey(k => k + 1); setSelectedImage(i);
   };
 
-  // ── Zoom lens mouse logic ──────────────────────────────────────────────────
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const wrap = imageWrapRef.current;
-    const lens = lensRef.current;
-    const img  = imgRef.current;
-    if (!wrap || !lens || !img) return;
-
-    const rect      = wrap.getBoundingClientRect();
-    const lensW     = lens.offsetWidth;
-    const lensH     = lens.offsetHeight;
-
-    // cursor position relative to wrap
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-
-    // clamp so lens never leaves the wrap edges
-    x = Math.max(lensW / 2, Math.min(rect.width  - lensW / 2, x));
-    y = Math.max(lensH / 2, Math.min(rect.height - lensH / 2, y));
-
-    // position lens centred on cursor
-    lens.style.left = `${x - lensW / 2}px`;
-    lens.style.top  = `${y - lensH / 2}px`;
-
-    // magnification factor (3× feels natural for product photography)
-    const ZOOM = 3;
-    const bgW  = rect.width  * ZOOM;
-    const bgH  = rect.height * ZOOM;
-
-    // offset so the zoomed region aligns with cursor
-    const bgX = x * ZOOM - lensW / 2;
-    const bgY = y * ZOOM - lensH / 2;
-
-    lens.style.backgroundImage    = `url('${img.src}')`;
-    lens.style.backgroundSize     = `${bgW}px ${bgH}px`;
-    lens.style.backgroundPosition = `-${bgX}px -${bgY}px`;
-    lens.style.backgroundRepeat   = 'no-repeat';
-  }, []);
 
   usePageMeta({
     title: product ? `${product.name} — ${product.category.replace(/-/g,' ')}` : 'Product',
@@ -669,12 +611,10 @@ const ProductDetailPage: React.FC = () => {
           {/* ── Left: Images ── */}
           <div style={{ animation: 'pdp-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both' }}>
 
-            {/* ── Main image: 3:4 aspect ratio, zoom-lens on hover ── */}
+            {/* ── Main image: 3:4 aspect ratio, click to open lightbox ── */}
             <div
-              ref={imageWrapRef}
               className={`pdp-main-image-wrap rounded-2xl mb-3 ${card} border relative`}
               style={{ aspectRatio: '3 / 4', width: '100%' }}
-              onMouseMove={handleMouseMove}
               onPointerUp={e => { if (e.button === 0) { stopAutoSlide(); setLightboxOpen(true); } }}
               role="button"
               tabIndex={0}
@@ -682,7 +622,6 @@ const ProductDetailPage: React.FC = () => {
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { stopAutoSlide(); setLightboxOpen(true); } }}
             >
               <img
-                ref={imgRef}
                 key={`img-${selectedImage}-${animKey}`}
                 src={product.images[selectedImage]}
                 alt={`${product.name} — image ${selectedImage + 1}`}
@@ -690,11 +629,8 @@ const ProductDetailPage: React.FC = () => {
                 loading="eager"
               />
 
-              {/* Zoom lens div — positioned by JS */}
-              <div ref={lensRef} className="pdp-zoom-lens" aria-hidden="true" />
-
-              {/* Hint shown when NOT hovering */}
-              <div className="pdp-zoom-hint"><ZoomIn size={11} /> Hover to zoom · Click to enlarge</div>
+              {/* Click-to-enlarge hint */}
+              <div className="pdp-click-hint">Click to enlarge</div>
 
               {/* Dot indicators */}
               {product.images.length > 1 && (
@@ -758,7 +694,7 @@ const ProductDetailPage: React.FC = () => {
 
             {product.images.length > 1 && (
               <p className={`text-xs text-center mt-2 font-body ${textMuted}`} style={{ opacity: 0.6 }}>
-                Auto-cycling · click thumbnail to pause · hover to zoom · click to enlarge
+                Auto-cycling · click thumbnail to pause · click image to enlarge
               </p>
             )}
           </div>
