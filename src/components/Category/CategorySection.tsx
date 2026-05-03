@@ -64,7 +64,7 @@ const CategorySection: React.FC = () => {
       aria-label="Browse saree categories"
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&display=swap');
 
         /* ── Card entrance stagger ── */
         @keyframes catRise {
@@ -79,25 +79,25 @@ const CategorySection: React.FC = () => {
 
         /*
           ── Overlay ──
-          AT REST  → subtle bottom-only gradient so name is always legible.
-          ON HOVER → spreads upward to back the centred content block.
+          AT REST  → subtle bottom gradient so name is always legible.
+          ON HOVER → richer centre-spread so centred content pops.
         */
         .cat-overlay {
           background: linear-gradient(
             to top,
-            rgba(8,5,3,0.70) 0%,
-            rgba(8,5,3,0.28) 28%,
-            transparent 48%
+            rgba(8,5,3,0.65) 0%,
+            rgba(8,5,3,0.22) 30%,
+            transparent 50%
           );
           transition: background 0.55s ease;
         }
         .group:hover .cat-overlay {
           background: linear-gradient(
             to top,
-            rgba(8,5,3,0.80) 0%,
-            rgba(8,5,3,0.60) 50%,
-            rgba(8,5,3,0.15) 75%,
-            transparent 92%
+            rgba(8,5,3,0.75) 0%,
+            rgba(8,5,3,0.55) 45%,
+            rgba(8,5,3,0.20) 72%,
+            transparent 90%
           );
         }
 
@@ -112,61 +112,89 @@ const CategorySection: React.FC = () => {
         }
 
         /*
-          ── Bottom content block ──
-          AT REST  → pinned to the bottom (name visible at bottom edge).
-          ON HOVER → entire block slides up via translateY so the name
-                     lands at the visual centre of the card.
-                     Ornament + explore pill then reveal naturally below the name.
+          ── Layout strategy: two absolutely positioned layers ──
 
-          Note: translateY(-42%) shifts the block upward by 42% of its own
-          rendered height. Adjust if card text or pill size changes significantly.
+          1. .cat-rest  — bottom-left name, always visible, fades OUT on hover
+          2. .cat-hover — name + ornament + pill centred in card, fades IN on hover
+
+          This avoids translateY magic-numbers entirely, so it works
+          identically across scroll / 2-col / 3-col regardless of card height.
         */
-        .cat-bottom {
+
+        /* ── REST layer: bottom-left name ── */
+        .cat-rest {
           position: absolute;
           left: 0; right: 0;
           bottom: 0;
-          padding: 0 12px 18px;
-          text-align: center;
+          padding: 14px 14px 16px;
+          text-align: left;
           z-index: 3;
-          transition: transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+          transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .group:hover .cat-bottom {
-          transform: translateY(-42%);
+        .group:hover .cat-rest {
+          opacity: 0;
+          transform: translateY(6px);
+          pointer-events: none;
         }
 
-        /* ── Name — always visible, Playfair Display Black ── */
-        .cat-name-text {
+        /* Name at rest — smaller, lighter */
+        .cat-name-rest {
           font-family: "Playfair Display", serif;
-          font-weight: 900;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          line-height: 1.15;
+          color: #F5F0E8;
+          text-shadow: 0 1px 10px rgba(0,0,0,0.6), 0 0 3px rgba(0,0,0,0.35);
+          display: block;
+          font-size: clamp(0.82rem, 2.2vw, 1.05rem);
+        }
+
+        /* ── HOVER layer: centred content ── */
+        .cat-hover {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          text-align: center;
+          z-index: 4;
+          opacity: 0;
+          transform: translateY(12px);
+          transition: opacity 0.42s ease 0.05s, transform 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+          pointer-events: none;
+        }
+        .group:hover .cat-hover {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        /* Name on hover — golden, slightly larger */
+        .cat-name-hover {
+          font-family: "Playfair Display", serif;
+          font-weight: 700;
           letter-spacing: 0.01em;
           line-height: 1.1;
-          color: #FFFFFF;
-          text-shadow: 0 2px 14px rgba(0,0,0,0.65), 0 0 4px rgba(0,0,0,0.4);
-          display: block;
-          transition: color 0.4s ease, text-shadow 0.4s ease;
-        }
-        .group:hover .cat-name-text {
           color: #FFD700;
           text-shadow: 0 0 24px rgba(255,215,0,0.4), 0 2px 10px rgba(0,0,0,0.5);
+          display: block;
+          font-size: clamp(1.0rem, 2.8vw, 1.4rem);
         }
 
-        /* ── Ornamental divider ◇ — hidden at rest, expands on hover ── */
+        /* ── Ornamental divider ◇ ── */
         .cat-ornament {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
-          margin-top: 9px;
-          margin-bottom: 10px;
-          opacity: 0;
-          transform: scaleX(0.3);
-          transition:
-            opacity 0.4s ease 0.12s,
-            transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+          margin-top: 10px;
+          margin-bottom: 11px;
+          width: 100%;
         }
-        .group:hover .cat-ornament { opacity: 1; transform: scaleX(1); }
 
-        .orn-line { flex: 1; max-width: 32px; height: 1px; }
+        .orn-line { flex: 1; max-width: 36px; height: 1px; }
         .orn-line-l { background: linear-gradient(to right, transparent, rgba(212,175,55,0.85)); }
         .orn-line-r { background: linear-gradient(to left,  transparent, rgba(212,175,55,0.85)); }
         .orn-diamond {
@@ -181,18 +209,6 @@ const CategorySection: React.FC = () => {
           background: rgba(212,175,55,0.65);
           flex-shrink: 0;
         }
-
-        /* ── Explore pill — hidden at rest, fades in on hover ── */
-        .cat-explore-wrap {
-          display: flex;
-          justify-content: center;
-          opacity: 0;
-          transform: translateY(6px);
-          transition:
-            opacity 0.38s ease 0.20s,
-            transform 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.20s;
-        }
-        .group:hover .cat-explore-wrap { opacity: 1; transform: translateY(0); }
 
         /* ── Animated gradient pill ── */
         @keyframes gradShift {
@@ -214,7 +230,7 @@ const CategorySection: React.FC = () => {
           align-items: center;
           gap: 7px;
           font-family: "DM Sans", sans-serif;
-          font-size: 0.68rem;
+          font-size: 0.67rem;
           font-weight: 700;
           letter-spacing: 0.2em;
           text-transform: uppercase;
@@ -346,22 +362,24 @@ const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({
     <div className="cat-border absolute inset-0" />
 
     {/*
-      ── Bottom content block ──
-      AT REST  → name sits at the bottom of the card.
-      ON HOVER → entire block slides up so name reaches visual centre.
-                 Ornament + explore pill reveal naturally below the name.
+      ── REST layer ──
+      Bottom-left name, always visible at rest.
+      Fades + slides down on hover.
     */}
-    <div className="cat-bottom">
+    <div className="cat-rest">
+      <span className="cat-name-rest">{category.name}</span>
+    </div>
 
-      {/* Name — always visible at bottom, slides to centre on hover */}
-      <span
-        className="cat-name-text"
-        style={{ fontSize: 'clamp(1.05rem, 2.8vw, 1.55rem)' }}
-      >
-        {category.name}
-      </span>
+    {/*
+      ── HOVER layer ──
+      Name + ornament + explore pill, centred in the card.
+      Fades + slides up into place on hover.
+      Uses inset-0 + flex centering — works at ANY card height.
+    */}
+    <div className="cat-hover">
+      <span className="cat-name-hover">{category.name}</span>
 
-      {/* ◇ ornamental divider — reveals on hover */}
+      {/* ◇ ornamental divider */}
       <div className="cat-ornament" aria-hidden="true">
         <span className="orn-line orn-line-l" />
         <span className="orn-dot" />
@@ -370,17 +388,15 @@ const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({
         <span className="orn-line orn-line-r" />
       </div>
 
-      {/* Explore pill — reveals on hover */}
-      <div className="cat-explore-wrap">
-        <span className="cat-explore-pill">
-          Explore
-          <span className="cat-pill-arrow">
-            <ArrowRight size={11} strokeWidth={2.5} />
-          </span>
+      {/* Explore pill */}
+      <span className="cat-explore-pill">
+        Explore
+        <span className="cat-pill-arrow">
+          <ArrowRight size={11} strokeWidth={2.5} />
         </span>
-      </div>
-
+      </span>
     </div>
+
   </Link>
 );
 
