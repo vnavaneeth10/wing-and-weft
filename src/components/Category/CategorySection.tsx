@@ -8,69 +8,44 @@ import { getCategories, CachedCategory } from '../../lib/categoriesCache';
 
 type ViewMode = 'scroll' | 'two' | 'three';
 
-// Fallback shown instantly while the real fetch resolves.
-// Uses CachedCategory type so it's compatible with the shared cache.
-
 const FALLBACK: CachedCategory[] = [
-  { id: 'silk-sarees', name: 'Silk Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 1, is_active: true },
-  { id: 'cotton-sarees', name: 'Cotton Sarees', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 2, is_active: true },
-  { id: 'georgette-sarees', name: 'Georgette Sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 3, is_active: true },
-  { id: 'linen-sarees', name: 'Linen Sarees', image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 4, is_active: true },
-  { id: 'chiffon-sarees', name: 'Chiffon Sarees', image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop', description: '', count: 0, sort_order: 5, is_active: true },
-  { id: 'banarasi-sarees', name: 'Banarasi Sarees', image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
+  { id: 'silk-sarees',      name: 'Silk Sarees',      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop',     description: '', count: 0, sort_order: 1, is_active: true },
+  { id: 'cotton-sarees',    name: 'Cotton Sarees',    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&h=600&fit=crop',     description: '', count: 0, sort_order: 2, is_active: true },
+  { id: 'georgette-sarees', name: 'Georgette Sarees', image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400&h=600&fit=crop',     description: '', count: 0, sort_order: 3, is_active: true },
+  { id: 'linen-sarees',     name: 'Linen Sarees',     image: 'https://images.unsplash.com/photo-1631947430066-48c30d57b943?w=400&h=600&fit=crop',     description: '', count: 0, sort_order: 4, is_active: true },
+  { id: 'chiffon-sarees',   name: 'Chiffon Sarees',   image: 'https://images.unsplash.com/photo-1617627143233-a6699d9f3d2a?w=400&h=600&fit=crop',     description: '', count: 0, sort_order: 5, is_active: true },
+  { id: 'banarasi-sarees',  name: 'Banarasi Sarees',  image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=600&fit=crop&q=70', description: '', count: 0, sort_order: 6, is_active: true },
 ];
 
-
-// ─── View toggle button ───────────────────────────────────────────────────────
-
-
 const ToggleBtn: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  isDark: boolean;
+  active: boolean; onClick: () => void;
+  icon: React.ReactNode; label: string; isDark: boolean;
 }> = ({ active, onClick, icon, label, isDark }) => (
   <button
-    onClick={onClick}
-    aria-label={label}
-    title={label}
-    aria-pressed={active}
-    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-1"
+    onClick={onClick} aria-label={label} title={label} aria-pressed={active}
+    className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
     style={{
-      background: active
-        ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)'
-        : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+      background: active ? 'linear-gradient(135deg, #9C6F2E, #C49A4A)' : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
       color: active ? '#FAF6EF' : isDark ? '#94a3b8' : '#78716c',
       border: active ? '1px solid transparent' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
       transform: active ? 'scale(1.05)' : 'scale(1)',
     }}
-  >
-    {icon}
-  </button>
+  >{icon}</button>
 );
-
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 const CategorySection: React.FC = () => {
   const { isDark } = useTheme();
   const { ref, inView } = useInView();
   const [categories, setCategories] = useState<CachedCategory[]>(FALLBACK);
-  const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState<ViewMode>('three');
-  const [animKey, setAnimKey] = useState(0);
-
-
-  // Uses shared cache — if Navbar already fetched categories, this costs zero
-  // network requests. If this mounts first, it fires the single shared request.
+  const [loaded, setLoaded]         = useState(false);
+  const [view, setView]             = useState<ViewMode>('three');
+  const [animKey, setAnimKey]       = useState(0);
 
   useEffect(() => {
     getCategories()
       .then(data => { if (data.length > 0) setCategories(data); setLoaded(true); })
       .catch(() => setLoaded(true));
   }, []);
-
 
   const switchView = (v: ViewMode) => {
     if (v === view) return;
@@ -85,38 +60,195 @@ const CategorySection: React.FC = () => {
       aria-label="Browse saree categories"
     >
       <style>{`
-        @keyframes catFadeUp {
-          from { opacity: 0; transform: translateY(14px); }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+
+        /* ── Card entrance stagger ── */
+        @keyframes catRise {
+          from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .cat-card-anim { animation: catFadeUp 0.35s ease both; }
+        .cat-card-anim { animation: catRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-        .cat-scroll-track {
+        /* ── Image zoom ── */
+        .cat-img { transition: transform 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .group:hover .cat-img { transform: scale(1.07); }
+
+        /*
+          ── Overlay ──
+          AT REST  → subtle bottom gradient so name always has contrast.
+          ON HOVER → deepens into bottom 55% only. Top of card stays clean.
+        */
+        .cat-overlay {
+          background: linear-gradient(
+            to top,
+            rgba(8,5,3,0.62) 0%,
+            rgba(8,5,3,0.25) 35%,
+            transparent 55%
+          );
+          transition: background 0.5s ease;
+        }
+        .group:hover .cat-overlay {
+          background: linear-gradient(
+            to top,
+            rgba(8,5,3,0.85) 0%,
+            rgba(8,5,3,0.58) 40%,
+            rgba(8,5,3,0.12) 68%,
+            transparent 88%
+          );
+        }
+
+        /* ── Gold inset border ── */
+        .cat-border {
+          box-shadow: inset 0 0 0 0 rgba(212,175,55,0);
+          border-radius: inherit;
+          transition: box-shadow 0.45s ease;
+        }
+        .group:hover .cat-border {
+          box-shadow: inset 0 0 0 1.5px rgba(212,175,55,0.65);
+        }
+
+        /*
+          ── Name block ──
+          Sits at 60% (below center, above bottom) at rest — always visible.
+          Slides up to 46% (near center) on hover so explore button has room.
+        */
+        .cat-name-block {
+          position: absolute;
+          left: 0; right: 0;
+          top: 60%;
+          transform: translateY(-50%);
+          text-align: center;
+          padding: 0 10px;
+          transition: top 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+          z-index: 3;
+        }
+        .group:hover .cat-name-block { top: 44%; }
+
+        /* ── Name text — Playfair Display Black ── */
+        .cat-name-text {
+          font-family: "Playfair Display", serif;
+          font-weight: 900;
+          letter-spacing: 0.01em;
+          line-height: 1.1;
+          color: #FFFFFF;
+          text-shadow: 0 2px 14px rgba(0,0,0,0.65), 0 0 4px rgba(0,0,0,0.4);
+          display: block;
+          transition: color 0.4s ease, text-shadow 0.4s ease;
+        }
+        .group:hover .cat-name-text {
+          color: #FFD700;
+          text-shadow: 0 0 24px rgba(255,215,0,0.4), 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* ── Ornamental divider ◇ ── */
+        .cat-ornament {
           display: flex;
-          gap: 16px;
-          overflow-x: auto;
-          padding-bottom: 12px;
-          scroll-snap-type: x mandatory;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          margin: 9px 0 0;
+          opacity: 0;
+          transform: scaleX(0.3);
+          transition:
+            opacity 0.45s ease 0.07s,
+            transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.07s;
+        }
+        .group:hover .cat-ornament { opacity: 1; transform: scaleX(1); }
+        .orn-line {
+          flex: 1; max-width: 32px; height: 1px;
+        }
+        .orn-line-l { background: linear-gradient(to right, transparent, rgba(212,175,55,0.85)); }
+        .orn-line-r { background: linear-gradient(to left,  transparent, rgba(212,175,55,0.85)); }
+        .orn-diamond {
+          width: 6px; height: 6px;
+          background: rgba(212,175,55,0.95);
+          transform: rotate(45deg);
+          flex-shrink: 0;
+        }
+        .orn-dot {
+          width: 3px; height: 3px;
+          border-radius: 50%;
+          background: rgba(212,175,55,0.65);
+          flex-shrink: 0;
+        }
+
+        /*
+          ── Explore button ──
+          Centered in the card. Hidden at rest, fades + slides up on hover.
+        */
+        .cat-explore-wrap {
+          position: absolute;
+          left: 0; right: 0;
+          top: 58%;
+          display: flex;
+          justify-content: center;
+          opacity: 0;
+          transform: translateY(12px);
+          transition:
+            opacity 0.4s ease 0.18s,
+            transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
+          z-index: 4;
+        }
+        .group:hover .cat-explore-wrap { opacity: 1; transform: translateY(0); }
+
+        @keyframes gradShift {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes pillGlow {
+          0%,100% { box-shadow: 0 0 0 0 rgba(255,200,60,0); }
+          50%     { box-shadow: 0 0 14px 4px rgba(255,180,40,0.38); }
+        }
+        @keyframes arrowBounce {
+          0%,100% { transform: translateX(0); }
+          50%     { transform: translateX(4px); }
+        }
+
+        .cat-explore-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-family: "DM Sans", sans-serif;
+          font-size: 0.68rem;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          padding: 8px 20px;
+          border-radius: 999px;
+          color: #fff;
+          background: linear-gradient(270deg, #D4A017, #C0392B, #E67E22, #D4A017);
+          background-size: 300% 300%;
+          animation: gradShift 3.5s ease infinite, pillGlow 2s ease-in-out infinite;
+          border: 1px solid rgba(255,220,100,0.35);
+          text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+          transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        .cat-explore-pill:hover { transform: scale(1.06); filter: brightness(1.12); }
+
+        .cat-pill-arrow {
+          display: flex; align-items: center;
+          animation: arrowBounce 1.2s ease-in-out infinite;
+        }
+
+        /* ── Scroll track ── */
+        .cat-scroll-track {
+          display: flex; gap: 16px; overflow-x: auto;
+          padding-bottom: 12px; scroll-snap-type: x mandatory;
           -webkit-overflow-scrolling: touch;
-          scrollbar-width: thin;
-          scrollbar-color: #b6893c40 transparent;
+          scrollbar-width: thin; scrollbar-color: #b6893c40 transparent;
         }
         .cat-scroll-track::-webkit-scrollbar { height: 4px; }
         .cat-scroll-track::-webkit-scrollbar-track { background: transparent; }
         .cat-scroll-track::-webkit-scrollbar-thumb { background: #b6893c60; border-radius: 4px; }
-
-        .cat-scroll-item {
-          flex-shrink: 0;
-          width: clamp(160px, 38vw, 210px);
-          scroll-snap-align: start;
-        }
+        .cat-scroll-item { flex-shrink: 0; width: clamp(160px, 38vw, 210px); scroll-snap-align: start; }
       `}</style>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
         {/* ── Heading ── */}
         <div className={`text-center mb-8 transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <p className="text-brand-gold text-xs uppercase tracking-widest mb-2 font-body" style={{ letterSpacing: '0.3em' }}>
+          <p className="text-brand-gold text-xs uppercase mb-2 font-body" style={{ letterSpacing: '0.3em' }}>
             Explore by Category
           </p>
           <h2
@@ -131,8 +263,8 @@ const CategorySection: React.FC = () => {
         {/* ── View Toggle ── */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <ToggleBtn active={view === 'scroll'} onClick={() => switchView('scroll')} icon={<AlignJustify size={16} />} label="Single row scroll" isDark={isDark} />
-          <ToggleBtn active={view === 'two'} onClick={() => switchView('two')} icon={<LayoutGrid size={16} />} label="2 columns grid" isDark={isDark} />
-          <ToggleBtn active={view === 'three'} onClick={() => switchView('three')} icon={<Grid size={16} />} label="3 columns grid" isDark={isDark} />
+          <ToggleBtn active={view === 'two'}    onClick={() => switchView('two')}    icon={<LayoutGrid size={16} />}   label="2 columns grid"    isDark={isDark} />
+          <ToggleBtn active={view === 'three'}  onClick={() => switchView('three')}  icon={<Grid size={16} />}         label="3 columns grid"    isDark={isDark} />
         </div>
 
         {/* ── Skeleton ── */}
@@ -147,7 +279,7 @@ const CategorySection: React.FC = () => {
         ) : view === 'scroll' ? (
           <div className="cat-scroll-track" key={`scroll-${animKey}`}>
             {categories.map((cat, i) => (
-              <div key={cat.id} className="cat-scroll-item cat-card-anim" style={{ animationDelay: `${i * 40}ms` }}>
+              <div key={cat.id} className="cat-scroll-item cat-card-anim" style={{ animationDelay: `${i * 55}ms` }}>
                 <CategoryCard category={cat} isDark={isDark} />
               </div>
             ))}
@@ -158,19 +290,19 @@ const CategorySection: React.FC = () => {
             className={`grid gap-4 md:gap-6 ${view === 'two' ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}
           >
             {categories.map((cat, i) => (
-              <div key={cat.id} className="cat-card-anim" style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={cat.id} className="cat-card-anim" style={{ animationDelay: `${i * 65}ms` }}>
                 <CategoryCard category={cat} isDark={isDark} />
               </div>
             ))}
           </div>
         )}
 
-        {/* View All link */}
+        {/* ── View All ── */}
         <div className="text-center mt-10">
           <Link
             to="/categories"
             className="inline-flex items-center gap-2 text-sm font-semibold font-body uppercase tracking-widest transition-all hover:gap-4"
-            style={{ color: '#bc3d3e', letterSpacing: '0.15em' }}
+            style={{ color: '#9C6F2E', letterSpacing: '0.15em' }}
           >
             View All Collections
             <ArrowRight size={16} />
@@ -183,65 +315,58 @@ const CategorySection: React.FC = () => {
 
 // ─── Category Card ────────────────────────────────────────────────────────────
 
-const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({ category, isDark }) => (
+const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({ category }) => (
   <Link
     to={`/category/${category.id}`}
-    className="group relative overflow-hidden rounded-2xl cursor-pointer block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
-    style={{ aspectRatio: '3/4', display: 'block' }}
+    className="group relative overflow-hidden rounded-2xl block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
+    style={{ aspectRatio: '3/4' }}
     aria-label={`Browse ${category.name}`}
   >
+    {/* Image */}
     {category.image ? (
       <img
         src={category.image}
         alt={category.name}
-        width={400}
-        height={533}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        loading="lazy"
-        decoding="async"
+        width={400} height={533}
+        className="cat-img absolute inset-0 w-full h-full object-cover"
+        loading="lazy" decoding="async"
       />
     ) : (
-      <div
-        className="absolute inset-0 w-full h-full"
-        style={{
-          background: isDark
-            ? 'linear-gradient(135deg, rgba(188,61,62,0.12), rgba(182,137,60,0.08))'
-            : 'linear-gradient(135deg, #f5ead8, #ede5d4)',
-        }}
-      />
+      <div className="absolute inset-0" style={{ background: '#EDE5D4' }} />
     )}
 
-    {/* Gradient overlay — CHANGE: reduced from 0.88/30% to 0.55/25% so image
-        colours stay vivid; fades to near-transparent at 55% so the top 45%
-        of the card shows the photo with full clarity. */}
-    <div
-      className="absolute inset-0 transition-all duration-300"
-      style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.55) 25%, rgba(26,20,16,0.06) 55%, transparent 100%)' }}
-    />
+    {/* Overlay */}
+    <div className="cat-overlay absolute inset-0" />
 
-    {/* Gold border on hover */}
-    <div
-      className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-      style={{ boxShadow: 'inset 0 0 0 1.5px rgba(182,137,60,0.65)' }}
-    />
+    {/* Inset border */}
+    <div className="cat-border absolute inset-0" />
 
-    {/* Text */}
-    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
-      {/* CHANGE: switched to DM Sans (font-body), bumped size from ~1.35rem max
-          to 1.6rem max, weight stays 600 for legibility against the image. */}
-      <h3
-        style={{
-          fontFamily: '"DM Sans", sans-serif',
-          fontSize: 'clamp(1.05rem, 2.8vw, 1.6rem)',
-          fontWeight: 600,
-          lineHeight: 1.2,
-          color: '#f0e8d6',
-          margin: 0,
-          textShadow: '0 1px 6px rgba(0,0,0,0.35)',
-        }}
+    {/* Name — always visible, below center */}
+    <div className="cat-name-block">
+      <span
+        className="cat-name-text"
+        style={{ fontSize: 'clamp(1.05rem, 2.8vw, 1.55rem)' }}
       >
         {category.name}
-      </h3>
+      </span>
+      {/* ◇ ornament divider */}
+      <div className="cat-ornament" aria-hidden="true">
+        <span className="orn-line orn-line-l" />
+        <span className="orn-dot" />
+        <span className="orn-diamond" />
+        <span className="orn-dot" />
+        <span className="orn-line orn-line-r" />
+      </div>
+    </div>
+
+    {/* Explore pill — centered on hover */}
+    <div className="cat-explore-wrap">
+      <span className="cat-explore-pill">
+        Explore
+        <span className="cat-pill-arrow">
+          <ArrowRight size={11} strokeWidth={2.5} />
+        </span>
+      </span>
     </div>
   </Link>
 );
