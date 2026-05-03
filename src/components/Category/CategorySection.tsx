@@ -211,10 +211,12 @@ const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({
       />
     )}
 
-    {/* Gradient overlay */}
+    {/* Gradient overlay — CHANGE: reduced from 0.88/30% to 0.55/25% so image
+        colours stay vivid; fades to near-transparent at 55% so the top 45%
+        of the card shows the photo with full clarity. */}
     <div
       className="absolute inset-0 transition-all duration-300"
-      style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.88) 30%, rgba(26,20,16,0.15) 70%, transparent 100%)' }}
+      style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.55) 25%, rgba(26,20,16,0.06) 55%, transparent 100%)' }}
     />
 
     {/* Gold border on hover */}
@@ -225,14 +227,17 @@ const CategoryCard: React.FC<{ category: CachedCategory; isDark: boolean }> = ({
 
     {/* Text */}
     <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+      {/* CHANGE: switched to DM Sans (font-body), bumped size from ~1.35rem max
+          to 1.6rem max, weight stays 600 for legibility against the image. */}
       <h3
         style={{
-          fontFamily: '"Cormorant Garamond", serif',
-          fontSize: 'clamp(0.95rem, 2.2vw, 1.35rem)',
+          fontFamily: '"DM Sans", sans-serif',
+          fontSize: 'clamp(1.05rem, 2.8vw, 1.6rem)',
           fontWeight: 600,
           lineHeight: 1.2,
           color: '#f0e8d6',
           margin: 0,
+          textShadow: '0 1px 6px rgba(0,0,0,0.35)',
         }}
       >
         {category.name}
