@@ -1,26 +1,48 @@
-// vitest.config.ts  (project root)
+// vitest.config.ts
+
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  test: {
-    // Use happy-dom for a fast, lightweight DOM environment.
-    // Switch to 'jsdom' if you need fuller browser API coverage.
-    environment: 'happy-dom',
 
-    // Injects expect matchers from @testing-library/jest-dom globally
-    // so every test file can use .toBeInTheDocument(), .toBeDisabled(), etc.
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+
+  test: {
+    // Better browser API support than happy-dom
+    environment: 'jsdom',
+
     globals: true,
 
-    // Runs before every test file
     setupFiles: ['./src/test/setup.ts'],
 
-    // Optional: collect coverage with `vitest run --coverage`
+    css: true,
+
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
-      include: ['src/pages/**', 'src/components/**'],
+
+      reporter: ['text', 'html', 'lcov'],
+
+      include: [
+        'src/components/**',
+        'src/pages/**',
+        'src/hooks/**',
+        'src/context/**',
+        'src/lib/**',
+        'src/admin/**',
+      ],
+
+      exclude: [
+        'src/test/**',
+        '**/*.d.ts',
+        '**/types/**',
+        '**/vite-env.d.ts',
+      ],
     },
   },
 });

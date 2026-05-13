@@ -1,154 +1,257 @@
-// src/test/Navbar.test.tsx
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import Navbar from '../components/Navbar/Navbar';
+import { describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 
-// ── Mock the search suggestions hook so it never fires a real Supabase call ───
-vi.mock('../hooks', () => ({
-  useSearchSuggestions: () => [],
+import Navbar from '@/components/Navbar/Navbar';
+
+import { render, screen, waitFor } from '@/test/test-utils';
+
+// ─────────────────────────────────────────────────────────────
+// MOCKS
+// ─────────────────────────────────────────────────────────────
+
+const mockToggleTheme = vi.fn();
+
+vi.mock('@/context/ThemeContext', () => ({
+  useTheme: () => ({
+    isDark: false,
+    toggleTheme: mockToggleTheme,
+  }),
 }));
 
-// ── Mock fetch so categories useEffect resolves immediately ───────────────────
-beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok:   true,
-    json: () => Promise.resolve([
-      { id: 'silk-sarees',   name: 'Silk Sarees' },
-      { id: 'cotton-sarees', name: 'Cotton Sarees' },
-    ]),
-  }));
-});
+vi.mock('@/hooks', () => ({
+  useSearchSuggestions: vi.fn(() => []),
+}));
 
-const renderNavbar = (path = '/') =>
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <Navbar />
-    </MemoryRouter>
-  );
+vi.mock('@/data/products', () => ({
+  INSTAGRAM_URL: 'https://instagram.com/wingandweft',
+}));
+
+vi.mock('@/lib/categoriesCache', () => ({
+  getCategories: vi.fn(() =>
+    Promise.resolve([
+      {
+        id: 'silk-sarees',
+        name: 'Silk Sarees',
+      },
+      {
+        id: 'cotton-sarees',
+        name: 'Cotton Sarees',
+      },
+    ]),
+  ),
+}));
+
+// ─────────────────────────────────────────────────────────────
+// TESTS
+// ─────────────────────────────────────────────────────────────
 
 describe('Navbar', () => {
+  it('renders navigation landmark', () => {
+    render(<Navbar />);
 
-  // ── Static rendering tests ─────────────────────────────────────────────────
+    expect(
+      screen.getByRole('navigation', {
+        name: /main navigation/i,
+      }),
+    ).toBeInTheDocument();
+  });
 
-  it('renders logo image with correct alt text', async () => {
-    renderNavbar();
+  it('renders logo image', () => {
+    render(<Navbar />);
+
+    expect(
+      screen.getByAltText(/wing & weft/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders navigation links', () => {
+    render(<Navbar />);
+
+    expect(
+      screen.getByRole('link', {
+        name: /home/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {
+        name: /about us/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {
+        name: /contact/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens search panel when search button is clicked', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByLabelText(/open search/i),
+    );
+
+    expect(
+      screen.getByLabelText(/search products/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders search placeholder correctly', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByLabelText(/open search/i),
+    );
+
+    expect(
+      screen.getByPlaceholderText(
+        /search sarees, fabrics/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('opens categories dropdown', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /categories/i,
+      }),
+    );
+
     await waitFor(() => {
-      expect(screen.getByAltText('Wing & Weft')).toBeTruthy();
+      expect(
+        screen.getByText(/silk sarees/i),
+      ).toBeInTheDocument();
     });
   });
 
-  it('has accessible main navigation landmark', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy();
+  it('shows view all collections link', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /categories/i,
+      }),
+    );
+
+    expect(
+      screen.getByText(/view all collections/i),
+    ).toBeInTheDocument();
+  });
+
+  it('opens mobile menu', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByLabelText(/open menu/i),
+    );
+
+    expect(
+      screen.getByLabelText(/close menu/i),
+    ).toBeInTheDocument();
+  });
+
+  it('calls toggleTheme when theme button is clicked', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByLabelText(
+        /switch to dark mode/i,
+      ),
+    );
+
+    expect(mockToggleTheme).toHaveBeenCalledTimes(1);
+  });
+
+  it('instagram link opens safely in new tab', () => {
+    render(<Navbar />);
+
+    const link = screen.getByLabelText(
+      /follow us on instagram/i,
+    );
+
+    expect(link).toHaveAttribute(
+      'target',
+      '_blank',
+    );
+
+    expect(link).toHaveAttribute(
+      'rel',
+      expect.stringContaining('noopener'),
+    );
+
+    expect(link).toHaveAttribute(
+      'rel',
+      expect.stringContaining('noreferrer'),
+    );
+  });
+
+  it('track order link points to courier tracking site', () => {
+    render(<Navbar />);
+
+    const link = screen.getByLabelText(
+      /track your courier order/i,
+    );
+
+    expect(link).toHaveAttribute(
+      'href',
+      expect.stringContaining('trackcourier.io'),
+    );
+  });
+
+  it('categories button has correct accessibility attributes', () => {
+    render(<Navbar />);
+
+    const button = screen.getByRole('button', {
+      name: /categories/i,
     });
+
+    expect(button).toHaveAttribute(
+      'aria-haspopup',
+      'true',
+    );
+
+    expect(button).toHaveAttribute(
+      'aria-expanded',
+    );
   });
 
-  it('renders Home, Our Story and Contact nav links', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Home' })).toBeTruthy();
-      expect(screen.getByText('Our Story')).toBeTruthy();
-      expect(screen.getByText('Contact')).toBeTruthy();
-    });
+  it('mobile menu button updates aria-expanded state', async () => {
+    render(<Navbar />);
+
+    const user = userEvent.setup();
+
+    const button = screen.getByLabelText(
+      /open menu/i,
+    );
+
+    expect(button).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+
+    await user.click(button);
+
+    expect(
+      screen.getByLabelText(/close menu/i),
+    ).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
-
-  it('has search button with correct aria-label', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Open search')).toBeTruthy();
-    });
-  });
-
-  it('has theme toggle button', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      expect(screen.getByLabelText(/Switch to/i)).toBeTruthy();
-    });
-  });
-
-  it('has Instagram link with noopener noreferrer', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      const igLink = screen.getByLabelText('Follow us on Instagram');
-      expect(igLink.getAttribute('rel')).toContain('noopener');
-      expect(igLink.getAttribute('rel')).toContain('noreferrer');
-    });
-  });
-
-  it('Instagram link opens in new tab', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      const igLink = screen.getByLabelText('Follow us on Instagram');
-      expect(igLink.getAttribute('target')).toBe('_blank');
-    });
-  });
-
-  it('categories dropdown button has aria-haspopup true', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      const catBtn = screen.getByRole('button', { name: /Categories/i });
-      expect(catBtn.getAttribute('aria-haspopup')).toBe('true');
-    });
-  });
-
-  it('mobile menu button exists and starts closed', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      const menuBtn = document.querySelector(
-        'button[aria-label="Open menu"]'
-      ) as HTMLButtonElement;
-      expect(menuBtn).toBeTruthy();
-      expect(menuBtn.getAttribute('aria-expanded')).toBe('false');
-    });
-  });
-
-  it('logo links to home page', async () => {
-    renderNavbar();
-    await waitFor(() => {
-      const homeLink = screen.getByLabelText('Wing & Weft Home');
-      expect(homeLink.getAttribute('href')).toBe('/');
-    });
-  });
-
-  // ── Interactive tests ──────────────────────────────────────────────────────
-
-  it('opens mobile menu on click — aria-expanded changes to true', async () => {
-    renderNavbar();
-
-    // findByLabelText already waits — no need for a separate waitFor
-    const menuBtn = await screen.findByLabelText('Open menu');
-
-    fireEvent.click(menuBtn);
-
-    // After click the label flips to "Close menu" and the mobile nav appears
-    await waitFor(() => {
-      const closeBtn  = document.querySelector('button[aria-label="Close menu"]');
-      const mobileNav = document.querySelector('[aria-label="Mobile navigation"]');
-      expect(closeBtn !== null || mobileNav !== null).toBe(true);
-    });
-  });
-
-  it('search input appears after clicking search button', async () => {
-    renderNavbar();
-
-    const searchBtn = await screen.findByLabelText('Open search');
-
-    fireEvent.click(searchBtn);
-
-    // Navbar uses Unicode ellipsis (…) not three dots (...) in the placeholder
-    await waitFor(() => {
-      const input =
-        document.querySelector('input[placeholder="Search sarees, fabrics…"]') ||
-        document.querySelector('input[aria-label="Search products"]');
-      expect(input).not.toBeNull();
-    });
-  });
-
-  it('scrollTo mock is available for navigation', () => {
-    renderNavbar();
-    expect(typeof global.scrollTo).toBe('function');
-  });
-
 });

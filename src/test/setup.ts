@@ -1,30 +1,109 @@
 // src/test/setup.ts
-//
-// Global test bootstrap for Wing & Weft Vitest suite.
-// Referenced by vitest.config.ts → test.setupFiles.
 
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
 
-// ── IntersectionObserver ──────────────────────────────────────────────────────
-// happy-dom does not implement IntersectionObserver, so ContactPage's
-// useVisible() hook would throw without this stub.
-// We make every element immediately "visible" so animated sections render.
+// ─────────────────────────────────────────────────────────────
+// Auto cleanup + restore mocks
+// Prevents DOM leakage and mock pollution across tests
+// ─────────────────────────────────────────────────────────────
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
-const IntersectionObserverMock = vi.fn().mockImplementation((callback: IntersectionObserverCallback) => ({
-  observe: vi.fn((el: Element) => {
-    // Fire the callback immediately so useVisible() sets vis=true synchronously
-    callback(
-      [{ isIntersecting: true, target: el } as IntersectionObserverEntry],
-      {} as IntersectionObserver,
-    );
-  }),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+// ─────────────────────────────────────────────────────────────
+// IntersectionObserver mock
+// Required for lazy loading / animations / visibility hooks
+// ─────────────────────────────────────────────────────────────
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = '';
+  readonly thresholds: ReadonlyArray<number> = [];
 
-vi.stubGlobal('IntersectionObserver', IntersectionObserverMock);
+  disconnect = vi.fn();
+  observe = vi.fn();
+  takeRecords = vi.fn(() => []);
+  unobserve = vi.fn();
+}
 
-// ── window.open ───────────────────────────────────────────────────────────────
-// Prevent JSDOM warnings about missing opener implementation.
+vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+
+// ─────────────────────────────────────────────────────────────
+// ResizeObserver mock
+// Used by Radix UI / responsive libraries
+// ─────────────────────────────────────────────────────────────
+class MockResizeObserver implements ResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
+vi.stubGlobal('ResizeObserver', MockResizeObserver);
+
+// ─────────────────────────────────────────────────────────────
+// matchMedia mock
+// Required for responsive hooks and theme handling
+// ─────────────────────────────────────────────────────────────
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+// ─────────────────────────────────────────────────────────────
+// window.open mock
+// Prevents jsdom navigation warnings
+// ─────────────────────────────────────────────────────────────
 vi.stubGlobal('open', vi.fn());
+
+// ─────────────────────────────────────────────────────────────
+// scrollTo mock
+// Needed for navigation / scroll restoration tests
+// ─────────────────────────────────────────────────────────────
+window.scrollTo = vi.fn();
+
+// ─────────────────────────────────────────────────────────────
+// localStorage mock
+// Stable storage behavior across tests
+// ─────────────────────────────────────────────────────────────
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+
+    clear: vi.fn(() => {
+      store = {};
+    }),
+  };
+})();
+
+vi.stubGlobal('localStorage', localStorageMock);
+
+// ─────────────────────────────────────────────────────────────
+// URL mocks
+// Prevent blob/file API crashes in tests
+// ─────────────────────────────────────────────────────────────
+global.URL.createObjectURL = vi
+  .fn()
+  .mockReturnValue('blob:mock-url');
+
+global.URL.revokeObjectURL = vi.fn();

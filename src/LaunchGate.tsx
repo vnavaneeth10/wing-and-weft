@@ -1,30 +1,33 @@
 // src/LaunchGate.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Drop this wrapper around your <App /> in main.tsx.
-// Before April 15 2026 12:00 AM IST → shows ComingSoon page
-// On/after April 15 2026 12:00 AM IST → shows normal website
-//
-// TO DISABLE (when you're ready to go live early):
-//   Change LAUNCH_DATE to a past date, OR
-//   Set BYPASS to true
+// Wraps <App /> in main.tsx.
+// ✅ To change launch time or bypass → edit src/launchConfig.ts ONLY.
 // ─────────────────────────────────────────────────────────────────────────────
-
-
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ComingSoon from './components/ComingSoon/ComingSoon';
-
-
-// ✅ Change this date to go live early, or set BYPASS = true
-const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
-const BYPASS = true; // set true to skip the countdown and always show the site
-
+import { LAUNCH_DATE, BYPASS } from './launchConfig';
 
 const LaunchGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (BYPASS) return <>{children}</>;
-  const isLaunched = Date.now() >= LAUNCH_DATE.getTime();
-  return isLaunched ? <>{children}</> : <ComingSoon />;
-};
+  // ✅ Re-check every second so the site auto-shows the moment time is up
+  const [isLaunched, setIsLaunched] = useState(
+    () => Date.now() >= LAUNCH_DATE.getTime()
+  );
 
+  useEffect(() => {
+    if (BYPASS || isLaunched) return; // already live, no need to poll
+
+    const id = setInterval(() => {
+      if (Date.now() >= LAUNCH_DATE.getTime()) {
+        setIsLaunched(true);
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  if (BYPASS || isLaunched) return <>{children}</>;
+  return <ComingSoon />;
+};
 
 export default LaunchGate;

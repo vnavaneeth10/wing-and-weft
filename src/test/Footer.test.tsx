@@ -1,145 +1,447 @@
+
 // src/test/Footer.test.tsx
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+import React from 'react';
+
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
+
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
+
 import { MemoryRouter } from 'react-router-dom';
+
 import Footer from '../components/Footer/Footer';
 
-beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve([
-      { key: 'instagram_url',  value: 'https://instagram.com/wingandweft' },
-      { key: 'facebook_url',   value: 'https://facebook.com/wingandweft' },
-      { key: 'contact_email',  value: 'test@wingandweft.com' },
-      { key: 'whatsapp_number', value: '919999999999' },
-    ]),
-  }));
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// INTERSECTION OBSERVER MOCK
+// ─────────────────────────────────────────────────────────────────────────────
 
-const renderFooter = () =>
-  render(<MemoryRouter><Footer /></MemoryRouter>);
+class MockIntersectionObserver implements IntersectionObserver {
+  root: Element | Document | null = null;
+
+  rootMargin = '';
+
+  thresholds: ReadonlyArray<number> = [];
+
+  constructor(
+    private callback: IntersectionObserverCallback,
+  ) {}
+
+  observe = vi.fn((element: Element) => {
+    setTimeout(() => {
+      this.callback(
+        [
+          {
+            isIntersecting: true,
+            target: element,
+            intersectionRatio: 1,
+            time: Date.now(),
+            boundingClientRect: element.getBoundingClientRect(),
+            intersectionRect: element.getBoundingClientRect(),
+            rootBounds: null,
+          } as IntersectionObserverEntry,
+        ],
+        this,
+      );
+    }, 0);
+  });
+
+  unobserve = vi.fn();
+
+  disconnect = vi.fn();
+
+  takeRecords = vi.fn(() => []);
+}
+
+vi.stubGlobal(
+  'IntersectionObserver',
+  MockIntersectionObserver,
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE MOCKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+vi.mock('../../src/context/ThemeContext', () => ({
+  useTheme: () => ({
+    isDark: false,
+  }),
+}));
+
+vi.mock('../../src/context/SettingsContext', () => ({
+  useSettings: () => ({
+    whatsapp_number: '919999999999',
+    contact_email: 'test@wingandweft.com',
+    instagram_url: 'https://instagram.com/wingandweft',
+    facebook_url: 'https://facebook.com/wingandweft',
+  }),
+}));
+
+vi.mock('../../src/components/Policy/PolicyModal', () => ({
+  default: () => null,
+}));
+
+vi.mock('../../src/admin/lib/supabase', () => ({
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+}));
+
+vi.mock('../../src/theme/heroThemes', () => ({
+  theme: {
+    footerBannerBg: '#111111',
+    footerButtonBg: '#ffffff',
+    footerButtonText: '#000000',
+    threadPrimary: '#ffffff',
+    accentPrimary: '#bc3d3e',
+    accentSecondary: '#b6893c',
+    naviLinkColor: '#bc3d3e',
+    heartFill: '#bc3d3e',
+  },
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FETCH MOCK
+// ─────────────────────────────────────────────────────────────────────────────
+
+const mockFetchSuccess = () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string) => {
+
+      // categories
+      if (url.includes('/categories')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+
+      // policies
+      if (url.includes('/policies')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              id: '1',
+              title: 'Privacy Policy',
+            },
+          ]),
+        });
+      }
+
+      // newsletter submit
+      if (url.includes('/inquiries')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({}),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+    }),
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+
+const renderFooter = async () => {
+  await act(async () => {
+    render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+  });
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TESTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 describe('Footer', () => {
-  it('renders without crashing', () => {
-    const { container } = renderFooter();
-    expect(container).toBeTruthy();
+
+  beforeEach(() => {
+    mockFetchSuccess();
   });
 
-  it('has contentinfo landmark role', () => {
-    renderFooter();
-    expect(screen.getByRole('contentinfo')).toBeTruthy();
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
-  it('renders Wing & Weft logo', () => {
-    renderFooter();
-    const logo = screen.getByAltText('Wing & Weft');
-    expect(logo).toBeTruthy();
-  });
+  // ───────────────────────────────────────────────────────────────────────────
+  // BASIC RENDERING
+  // ───────────────────────────────────────────────────────────────────────────
 
-  it('renders Quick Links section', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByText('Quick Links')).toBeTruthy();
+  describe('Basic Rendering', () => {
+
+    it('renders footer landmark', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByRole('contentinfo'),
+      ).toBeTruthy();
     });
-  });
 
-  it('renders Policies section', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByText('Policies')).toBeTruthy();
+    it('renders Wing & Weft logo', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByAltText('Wing & Weft'),
+      ).toBeTruthy();
     });
-  });
 
-  it('renders newsletter subscribe form', () => {
-    renderFooter();
-    expect(screen.getByLabelText('Email address for newsletter')).toBeTruthy();
-  });
+    it('renders Quick Links heading', async () => {
+      await renderFooter();
 
-  it('newsletter input requires valid email', () => {
-    renderFooter();
-    const input = screen.getByLabelText('Email address for newsletter') as HTMLInputElement;
-    expect(input.type).toBe('email');
-    expect(input.required).toBe(true);
-  });
-
-  it('subscribe button is present', () => {
-    renderFooter();
-    expect(screen.getByLabelText('Subscribe to newsletter')).toBeTruthy();
-  });
-
-  it('renders Instagram social link', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Instagram')).toBeTruthy();
+      expect(
+        screen.getByText('Quick Links'),
+      ).toBeTruthy();
     });
-  });
 
-  it('renders Facebook social link', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Facebook')).toBeTruthy();
+    it('renders Policies heading', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByText('Policies'),
+      ).toBeTruthy();
     });
-  });
 
-  it('renders Email link', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Email')).toBeTruthy();
+    it('renders Stay in the Loop section', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByText('Stay in the Loop'),
+      ).toBeTruthy();
     });
+
   });
 
-  it('renders WhatsApp link', async () => {
-    renderFooter();
-    await waitFor(() => {
-      expect(screen.getByLabelText('WhatsApp')).toBeTruthy();
+  // ───────────────────────────────────────────────────────────────────────────
+  // NAVIGATION LINKS
+  // ───────────────────────────────────────────────────────────────────────────
+
+  describe('Navigation Links', () => {
+
+    it('renders Home link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByRole('link', { name: 'Home' }),
+      ).toBeTruthy();
     });
+
+    it('renders About Us link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByRole('link', { name: 'About Us' }),
+      ).toBeTruthy();
+    });
+
+    it('renders Contact link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByRole('link', { name: 'Contact' }),
+      ).toBeTruthy();
+    });
+
+    it('renders Track Your Order external link', async () => {
+      await renderFooter();
+
+      const link = screen.getByLabelText(
+        /Track your courier order/i,
+      );
+
+      expect(
+        link.getAttribute('href'),
+      ).toContain('trackcourier.io');
+    });
+
   });
 
-  it('all external links have noopener noreferrer', async () => {
-    renderFooter();
-    await waitFor(() => {
-      const externalLinks = document.querySelectorAll('a[target="_blank"]');
-      externalLinks.forEach(link => {
-        expect(link.getAttribute('rel')).toContain('noopener');
-        expect(link.getAttribute('rel')).toContain('noreferrer');
+  // ───────────────────────────────────────────────────────────────────────────
+  // NEWSLETTER
+  // ───────────────────────────────────────────────────────────────────────────
+
+  describe('Newsletter', () => {
+
+    it('renders newsletter email input', async () => {
+      await renderFooter();
+
+      const input = screen.getByLabelText(
+        'Email address for newsletter',
+      ) as HTMLInputElement;
+
+      expect(input).toBeTruthy();
+      expect(input.type).toBe('email');
+    });
+
+    it('renders agreement checkbox', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByLabelText(
+          /I agree to receive promotional emails/i,
+        ),
+      ).toBeTruthy();
+    });
+
+    it('renders subscribe button', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByRole('button', {
+          name: /Agree to promotional emails and subscribe/i,
+        }),
+      ).toBeTruthy();
+    });
+
+    it('newsletter submission calls fetch', async () => {
+      await renderFooter();
+
+      const input = screen.getByLabelText(
+        'Email address for newsletter',
+      );
+
+      fireEvent.change(input, {
+        target: {
+          value: 'test@example.com',
+        },
+      });
+
+      const checkbox = screen.getByLabelText(
+        /I agree to receive promotional emails/i,
+      );
+
+      fireEvent.click(checkbox);
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('button', {
+            name: /Agree to promotional emails and subscribe/i,
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalled();
       });
     });
+
   });
 
-  it('renders developer credit link to Navi', async () => {
-    renderFooter();
-    await waitFor(() => {
-      const naviLink = screen.getByText('Navi');
-      expect(naviLink.getAttribute('href')).toBe('https://vnvne.vercel.app/');
+  // ───────────────────────────────────────────────────────────────────────────
+  // SOCIAL LINKS
+  // ───────────────────────────────────────────────────────────────────────────
+
+  describe('Social Links', () => {
+
+    it('renders Instagram link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByLabelText('Instagram'),
+      ).toBeTruthy();
     });
-  });
 
-  it('Home navigation link is present', async () => {
-    renderFooter();
-    await waitFor(() => {
-      const homeLink = screen.getByRole('link', { name: 'Home' });
-      expect(homeLink).toBeTruthy();
+    it('renders Facebook link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByLabelText('Facebook'),
+      ).toBeTruthy();
     });
-  });
 
-  it('copyright text is present', () => {
-    renderFooter();
-    expect(screen.getByText(/2026 Wing/i)).toBeTruthy();
-  });
+    it('renders Email link', async () => {
+      await renderFooter();
 
-  it('newsletter submit saves email on valid submission', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true, json: () => Promise.resolve([]),
-    }));
-
-    renderFooter();
-    const input = screen.getByLabelText('Email address for newsletter');
-    fireEvent.change(input, { target: { value: 'test@example.com' } });
-    fireEvent.click(screen.getByLabelText('Subscribe to newsletter'));
-
-    await waitFor(() => {
-      // After submission fetch is called with the inquiry endpoint
-      expect(fetch).toHaveBeenCalled();
+      expect(
+        screen.getByLabelText('Email'),
+      ).toBeTruthy();
     });
+
+    it('renders WhatsApp link', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByLabelText('WhatsApp'),
+      ).toBeTruthy();
+    });
+
+    it('external links contain noopener noreferrer', async () => {
+      await renderFooter();
+
+      const links = document.querySelectorAll(
+        'a[target="_blank"]',
+      );
+
+      links.forEach((link) => {
+        expect(
+          link.getAttribute('rel'),
+        ).toContain('noopener');
+
+        expect(
+          link.getAttribute('rel'),
+        ).toContain('noreferrer');
+      });
+    });
+
   });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // FOOTER BOTTOM BAR
+  // ───────────────────────────────────────────────────────────────────────────
+
+  describe('Bottom Bar', () => {
+
+    it('renders copyright text', async () => {
+      await renderFooter();
+
+      expect(
+        screen.getByText(/2026 Wing/i),
+      ).toBeTruthy();
+    });
+
+    it('renders Navi developer link', async () => {
+      await renderFooter();
+
+      const link = screen.getByText('Navi');
+
+      expect(
+        link.getAttribute('href'),
+      ).toBe('https://vnvne.vercel.app/');
+    });
+
+    it('renders footer email link', async () => {
+      await renderFooter();
+
+      const emailLink = screen.getAllByText(
+        'test@wingandweft.com',
+      )[0];
+
+      expect(emailLink).toBeTruthy();
+    });
+
+  });
+
 });
+

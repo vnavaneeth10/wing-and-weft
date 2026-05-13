@@ -1,8 +1,17 @@
 // src/components/ComingSoon/ComingSoon.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
+import { LAUNCH_DATE } from '../../launchConfig';
 
-const LAUNCH_DATE = new Date('2026-04-15T00:00:00+05:30');
+// ✅ Launch date is set in src/launchConfig.ts — edit there, not here.
+
+// ✅ Social / contact links — update here whenever they change
+const SOCIAL = {
+  instagram: 'https://www.instagram.com/wingandweft',
+  facebook:  'https://www.facebook.com/people/Wingand-Weft/61580707892115/',
+  email:     'wingandweft0224@gmail.com',
+  whatsapp:  'https://wa.me/918137877446',
+};
 
 const getTimeLeft = () => {
   const diff = LAUNCH_DATE.getTime() - Date.now();
@@ -36,7 +45,10 @@ const saveNotifyEmail = async (email: string) => {
 };
 
 // ─── Floating silk thread particle ───────────────────────────────────────────
-interface Thread { id: number; x: number; y: number; len: number; angle: number; color: string; speed: number; opacity: number; delay: number; }
+interface Thread {
+  id: number; x: number; y: number; len: number; angle: number;
+  color: string; speed: number; opacity: number; delay: number;
+}
 
 const THREAD_COLORS = ['#bc3d3e','#b6893c','#e69358','#d4956a','#f0c070','#c8955a','#e9e3cb'];
 
@@ -305,12 +317,12 @@ const CSS = `
   font-size: clamp(2rem, 5vw, 3.4rem);
   font-weight: 400; color: #1a1410;
   letter-spacing: -0.02em; line-height: 1;
-  text-shadow: none;
 }
 .cs-unit-label {
-  color: rgba(182,137,60,0.85);
+  color: rgba(182,137,0.85);
   font-size: 0.6rem; letter-spacing: 0.28em;
   text-transform: uppercase; font-weight: 600;
+  color: rgba(182,137,60,0.85);
 }
 
 /* ── Tagline ── */
@@ -408,7 +420,7 @@ const CSS = `
 }
 `;
 
-// ─── Animated thread particle ─────────────────────────────────────────────────
+// ─── Animated thread canvas ───────────────────────────────────────────────────
 const ThreadCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const threadsRef = useRef<Thread[]>([]);
@@ -426,7 +438,6 @@ const ThreadCanvas: React.FC = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    // Spawn threads
     threadsRef.current = Array.from({ length: 22 }, (_, i) => ({
       id: i,
       x: Math.random() * window.innerWidth,
@@ -450,11 +461,9 @@ const ThreadCanvas: React.FC = () => {
         const x2    = thread.x + Math.cos(angle) * thread.len;
         const y2    = thread.y + Math.sin(angle) * thread.len;
 
-        // Drift slowly
         thread.x += Math.cos(thread.angle) * 0.12;
         thread.y += Math.sin(thread.angle) * 0.12;
 
-        // Wrap around
         if (thread.x < -150) thread.x = canvas.width + 50;
         if (thread.x > canvas.width + 150) thread.x = -50;
         if (thread.y < -150) thread.y = canvas.height + 50;
@@ -468,12 +477,9 @@ const ThreadCanvas: React.FC = () => {
 
         ctx.beginPath();
         ctx.moveTo(thread.x, thread.y);
-
-        // Bezier curve for silk-like flow
         const cpX = (thread.x + x2) / 2 + Math.sin(t + thread.delay) * 20;
         const cpY = (thread.y + y2) / 2 + Math.cos(t + thread.delay) * 20;
         ctx.quadraticCurveTo(cpX, cpY, x2, y2);
-
         ctx.strokeStyle = grad;
         ctx.lineWidth   = 0.8 + Math.sin(t * 2 + thread.delay) * 0.4;
         ctx.stroke();
@@ -483,7 +489,10 @@ const ThreadCanvas: React.FC = () => {
     };
 
     rafRef.current = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', resize);
+    };
   }, []);
 
   return <canvas ref={canvasRef} className="cs-threads" />;
@@ -503,12 +512,17 @@ const Cursor: React.FC = () => {
     const tick = () => {
       ring.current.x += (pos.current.x - ring.current.x) * 0.1;
       ring.current.y += (pos.current.y - ring.current.y) * 0.1;
-      if (dotRef.current)  dotRef.current.style.transform  = `translate(${pos.current.x}px,${pos.current.y}px) translate(-50%,-50%)`;
-      if (ringRef.current) ringRef.current.style.transform = `translate(${ring.current.x}px,${ring.current.y}px) translate(-50%,-50%)`;
+      if (dotRef.current)
+        dotRef.current.style.transform  = `translate(${pos.current.x}px,${pos.current.y}px) translate(-50%,-50%)`;
+      if (ringRef.current)
+        ringRef.current.style.transform = `translate(${ring.current.x}px,${ring.current.y}px) translate(-50%,-50%)`;
       raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
-    return () => { window.removeEventListener('mousemove', move); cancelAnimationFrame(raf.current); };
+    return () => {
+      window.removeEventListener('mousemove', move);
+      cancelAnimationFrame(raf.current);
+    };
   }, []);
 
   return (
@@ -519,18 +533,29 @@ const Cursor: React.FC = () => {
   );
 };
 
-// ─── Countdown unit with flip animation ──────────────────────────────────────
+// ─── Countdown unit — FIXED flip animation ────────────────────────────────────
 const Unit: React.FC<{ value: number; label: string }> = ({ value, label }) => {
   const [displayed, setDisplayed] = useState(value);
   const [flipping, setFlipping]   = useState(false);
+  // ✅ Use a ref to track the previous value — avoids stale closure bug
+  const prevValue = useRef(value);
 
   useEffect(() => {
-    if (value !== displayed) {
+    if (value !== prevValue.current) {
+      prevValue.current = value;
       setFlipping(true);
-      const t = setTimeout(() => { setDisplayed(value); setFlipping(false); }, 300);
+      const t = setTimeout(() => {
+        setDisplayed(value);
+        setFlipping(false);
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [value]);
+
+  // ✅ Also keep displayed in sync on first render / large jumps
+  useEffect(() => {
+    setDisplayed(value);
+  }, []);
 
   return (
     <div className="cs-unit">
@@ -569,14 +594,17 @@ const NotifyForm: React.FC = () => {
     }
   };
 
-  if (status === 'success') return <p className="cs-notify-success">✦ You're on the list! We'll notify you on launch day.</p>;
+  if (status === 'success')
+    return <p className="cs-notify-success">✦ You're on the list! We'll notify you on launch day.</p>;
 
   return (
     <div>
       <div className="cs-notify">
         <input
-          type="email" placeholder="Your email address"
-          value={email} onChange={e => setEmail(e.target.value)}
+          type="email"
+          placeholder="Your email address"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && submit()}
           disabled={status === 'saving'}
         />
@@ -591,15 +619,17 @@ const NotifyForm: React.FC = () => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const ComingSoon: React.FC = () => {
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft());
-  const [phase, setPhase]       = useState(0); // controls staggered entrance
+  // ✅ initialise with a fresh call so the very first render has correct values
+  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft());
+  const [phase, setPhase]       = useState(0);
 
+  // ✅ Tick every second — always fires, getTimeLeft handles the ≤0 guard
   useEffect(() => {
     const id = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Stagger content reveal
+  // Staggered entrance
   useEffect(() => {
     const timers = [0,100,250,420,580,720,880,1020,1160].map(
       (delay, i) => setTimeout(() => setPhase(i + 1), delay + 100)
@@ -607,7 +637,7 @@ const ComingSoon: React.FC = () => {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const inStyle = (n: number): React.CSSProperties => ({
+  const inStyle = (): React.CSSProperties => ({
     animationDelay: '0ms',
     animationDuration: '0.8s',
   });
@@ -665,7 +695,7 @@ const ComingSoon: React.FC = () => {
         <div className="cs-content">
 
           {/* Logo */}
-          <div className={`cs-logo-wrap ${show(1)}`} style={inStyle(1)}>
+          <div className={`cs-logo-wrap ${show(1)}`} style={inStyle()}>
             <div className="cs-logo-eyebrow">
               <div className="cs-logo-line" />
               <span className="cs-logo-text">Wing &amp; Weft</span>
@@ -679,7 +709,7 @@ const ComingSoon: React.FC = () => {
           </div>
 
           {/* Headline */}
-          <div className={show(2)} style={inStyle(2)}>
+          <div className={show(2)} style={inStyle()}>
             <h1 className="cs-headline">
               Something <span className="cs-headline-accent">beautiful</span>
               <br />is on its way
@@ -687,12 +717,12 @@ const ComingSoon: React.FC = () => {
           </div>
 
           {/* Subhead */}
-          <div className={show(3)} style={inStyle(3)}>
+          <div className={show(3)} style={inStyle()}>
             <p className="cs-subhead">Timeless sarees. Uncompromising craft.</p>
           </div>
 
           {/* Ornament rule */}
-          <div className={show(4)} style={inStyle(4)}>
+          <div className={show(4)} style={inStyle()}>
             <div className="cs-rule">
               <div className="cs-rule-line" />
               <div className="cs-rule-diamond" />
@@ -701,15 +731,15 @@ const ComingSoon: React.FC = () => {
           </div>
 
           {/* Launch badge */}
-          <div className={show(5)} style={{ ...inStyle(5), display:'flex', justifyContent:'center', marginBottom:'1.2rem' }}>
+          <div className={show(5)} style={{ ...inStyle(), display:'flex', justifyContent:'center', marginBottom:'1.2rem' }}>
             <div className="cs-badge">
               <div className="cs-badge-dot" />
-              <span className="cs-badge-text">Launching April 15, 2026</span>
+              <span className="cs-badge-text">Launching May 13, 2026</span>
             </div>
           </div>
 
           {/* Countdown */}
-          <div className={show(6)} style={inStyle(6)}>
+          <div className={show(6)} style={inStyle()}>
             <div className="cs-countdown">
               <Unit value={timeLeft.days}    label="Days"    />
               <span className="cs-sep">:</span>
@@ -722,7 +752,7 @@ const ComingSoon: React.FC = () => {
           </div>
 
           {/* Tagline */}
-          <div className={show(7)} style={inStyle(7)}>
+          <div className={show(7)} style={inStyle()}>
             <p className="cs-tagline">
               We're weaving something extraordinary for you —<br />
               <strong>pure fabrics, authentic weaves, heritage craftsmanship.</strong>
@@ -730,30 +760,30 @@ const ComingSoon: React.FC = () => {
           </div>
 
           {/* Notify form */}
-          <div className={show(8)} style={inStyle(8)}>
+          <div className={show(8)} style={inStyle()}>
             <NotifyForm />
           </div>
 
           {/* Social + footer */}
-          <div className={show(9)} style={inStyle(9)}>
+          <div className={show(9)} style={inStyle()}>
             <div className="cs-social">
-              <a href="https://www.instagram.com/wingandweft/" target="_blank" rel="noopener noreferrer" className="cs-social-icon" aria-label="Instagram">
+              <a href={SOCIAL.instagram} target="_blank" rel="noopener noreferrer" className="cs-social-icon" aria-label="Instagram">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/>
                   <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
                 </svg>
               </a>
-              <a href="#" className="cs-social-icon" aria-label="Facebook">
+              <a href={SOCIAL.facebook} target="_blank" rel="noopener noreferrer" className="cs-social-icon" aria-label="Facebook">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
                 </svg>
               </a>
-              <a href="mailto:support@wingandweft.com" className="cs-social-icon" aria-label="Email">
+              <a href={`mailto:${SOCIAL.email}`} className="cs-social-icon" aria-label="Email">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                 </svg>
               </a>
-              <a href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer" className="cs-social-icon" aria-label="WhatsApp">
+              <a href={SOCIAL.whatsapp} target="_blank" rel="noopener noreferrer" className="cs-social-icon" aria-label="WhatsApp">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
                 </svg>
