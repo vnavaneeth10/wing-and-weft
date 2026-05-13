@@ -7,5 +7,5 @@
 //    To change time:    edit LAUNCH_DATE below (format: YYYY-MM-DDTHH:MM:SS+05:30)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const LAUNCH_DATE = new Date('2026-05-13T11:53:00+05:30');
+export const LAUNCH_DATE = new Date('2026-05-13T11:57:00+05:30');
 export const BYPASS      = false;
