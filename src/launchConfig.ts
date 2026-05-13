@@ -8,4 +8,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const LAUNCH_DATE = new Date('2026-05-13T14:00:00+05:30');
-export const BYPASS      = false;
+export const BYPASS      = true;
