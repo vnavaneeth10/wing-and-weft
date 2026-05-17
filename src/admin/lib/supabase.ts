@@ -4,14 +4,14 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const SESSION_KEY = 'ww_admin_session';
-const FAILED_KEY  = 'ww_login_attempts';
-const LOCKOUT_KEY = 'ww_lockout_until';
-const ACTIVITY_KEY= 'ww_last_activity';
+const SESSION_KEY  = 'ww_admin_session';
+const FAILED_KEY   = 'ww_login_attempts';
+const LOCKOUT_KEY  = 'ww_lockout_until';
+const ACTIVITY_KEY = 'ww_last_activity';
 
 const MAX_ATTEMPTS          = 5;
-const LOCKOUT_MS            = 15 * 60 * 1000;   // 15 minutes
-const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;   // 60 minutes → auto logout
+const LOCKOUT_MS            = 15 * 60 * 1000;  // 15 minutes
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;  // 60 minutes → auto logout
 
 export interface AdminSession {
   access_token:  string;
@@ -57,7 +57,6 @@ const touchActivity = () =>
 
 export const getSession = (): AdminSession | null => {
   try {
-    // Inactivity timeout
     const last = sessionStorage.getItem(ACTIVITY_KEY);
     if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
       authSignOut();
@@ -66,7 +65,6 @@ export const getSession = (): AdminSession | null => {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const s: AdminSession = JSON.parse(raw);
-    // JWT expiry check (refresh handled in AuthContext)
     if (Math.floor(Date.now() / 1000) > s.expires_at - 60) return null;
     touchActivity();
     return s;
@@ -76,7 +74,6 @@ export const getSession = (): AdminSession | null => {
 };
 
 const saveSession = (s: AdminSession) => {
-  // ✅ sessionStorage — NOT localStorage — clears when the browser tab is closed
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
   touchActivity();
 };
@@ -95,7 +92,7 @@ export const authSignIn = async (
   });
 
   if (!res.ok) {
-    const n = recordFail();
+    const n   = recordFail();
     const rem = MAX_ATTEMPTS - n;
     if (rem <= 0)
       throw new Error(`Locked for ${getLockoutRemaining()} min after too many failed attempts.`);
@@ -154,7 +151,7 @@ export const publicFetch = async <T>(
   table: string,
   params: Record<string, string> = {}
 ): Promise<T[]> => {
-  const qs = new URLSearchParams(params).toString();
+  const qs  = new URLSearchParams(params).toString();
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/${table}${qs ? `?${qs}` : ''}`,
     { headers: h() }
@@ -169,7 +166,7 @@ export const dbSelect = async <T>(
   token: string,
   params: Record<string, string> = {}
 ): Promise<T[]> => {
-  const qs = new URLSearchParams(params).toString();
+  const qs  = new URLSearchParams(params).toString();
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/${table}${qs ? `?${qs}` : ''}`,
     { headers: h(token) }
@@ -224,7 +221,12 @@ export const getPublicUrl = (bucket: string, path: string): string =>
 
 /**
  * Uploads a file and returns its FULL public URL.
- * This URL is what gets saved in the database and rendered on the website.
+ *
+ * FIX: Supabase Storage RLS policies block POST (INSERT) when a file already
+ * exists at that path. We now try POST first and automatically retry with PUT
+ * (UPDATE) if we get a 403 or 409. This resolves the
+ * "new row violates row-level security policy" error on category, banner and
+ * product image uploads.
  */
 export const uploadImage = async (
   bucket: string,
@@ -233,19 +235,31 @@ export const uploadImage = async (
   token: string
 ): Promise<string> => {
   const cleanPath = path.replace(/^\//, '');
-  const res = await fetch(
-    `${SUPABASE_URL}/storage/v1/object/${bucket}/${cleanPath}`,
-    {
-      method: 'POST',
+
+  const attempt = (method: 'POST' | 'PUT') =>
+    fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${cleanPath}`, {
+      method,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': file.type,
-        'x-upsert': 'true',          // overwrite if same path already exists
+        'x-upsert': 'true',
       },
       body: file,
-    }
-  );
-  if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
-  // Return the full public URL — NOT a blob: URL, NOT a partial path
+    });
+
+  // First try POST (create)
+  let res = await attempt('POST');
+
+  // If Supabase RLS blocks the INSERT (403) or file already exists (409),
+  // retry with PUT (update/upsert) which hits the UPDATE policy instead.
+  if (res.status === 403 || res.status === 409) {
+    res = await attempt('PUT');
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Upload failed: ${errText}`);
+  }
+
   return getPublicUrl(bucket, cleanPath);
 };

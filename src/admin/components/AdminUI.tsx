@@ -1,6 +1,6 @@
 // src/admin/components/AdminUI.tsx
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, Image as ImageIcon, Loader2, Check, AlertTriangle, Trash2 } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Loader2, Check, AlertTriangle, Trash2, Download } from 'lucide-react';
 import { useAdminTheme } from '../lib/AdminThemeContext';
 import { adminTokens } from '../lib/adminTokens';
 
@@ -8,6 +8,73 @@ import { adminTokens } from '../lib/adminTokens';
 export const useAdminTk = () => {
   const { isDarkAdmin } = useAdminTheme();
   return isDarkAdmin ? adminTokens.dark : adminTokens.light;
+};
+
+// ─── File metadata helpers ────────────────────────────────────────────────────
+
+/** Format bytes into a human-readable size string (B / KB / MB) */
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+/** Extract the uppercase format label from a File object */
+const getFileFormat = (file: File): string =>
+  file.type.split('/')[1]?.toUpperCase() ??
+  file.name.split('.').pop()?.toUpperCase() ??
+  'IMG';
+
+// ─── Image Metadata Pill ──────────────────────────────────────────────────────
+// Shown below a SingleImageUploader or MultiImageUploader slot after a file is
+// selected, displaying the format (e.g. JPEG) and size (e.g. 214.5 KB).
+
+interface ImageMetaPillProps { file: File }
+
+const ImageMetaPill: React.FC<ImageMetaPillProps> = ({ file }) => {
+  const tk = useAdminTk();
+  return (
+    <div className="flex items-center gap-2 mt-2 flex-wrap">
+      {/* Format badge */}
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+        style={{
+          background: 'rgba(182,137,60,0.12)',
+          border: '1px solid rgba(182,137,60,0.3)',
+          color: '#b6893c',
+          fontFamily: '"Raleway", sans-serif',
+        }}
+      >
+        {getFileFormat(file)}
+      </span>
+
+      {/* Size badge */}
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+        style={{
+          background: 'rgba(34,197,94,0.1)',
+          border: '1px solid rgba(34,197,94,0.25)',
+          color: '#86efac',
+          fontFamily: '"Raleway", sans-serif',
+        }}
+      >
+        {formatFileSize(file.size)}
+      </span>
+
+      {/* Filename (truncated) */}
+      <span
+        className="text-xs truncate"
+        style={{
+          color: tk.textMuted,
+          fontFamily: '"Raleway", sans-serif',
+          maxWidth: '180px',
+        }}
+        title={file.name}
+      >
+        {file.name}
+      </span>
+    </div>
+  );
 };
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -118,13 +185,11 @@ export const Field: React.FC<FieldProps> = ({ label, required, children, hint })
   );
 };
 
-// ─── Input styles — now theme-aware via hook ──────────────────────────────────
+// ─── Input styles ─────────────────────────────────────────────────────────────
 export const inputCls = "w-full px-4 py-2.5 rounded-xl text-sm placeholder-slate-500 outline-none transition-all focus:ring-2 focus:ring-brand-red/40 focus:border-brand-red/60 font-body";
 
-// Static fallback — use useAdminInputStyle() hook for theme-aware version
 export const inputStyle = { background: '#0f1117', border: '1px solid rgba(255,255,255,0.1)', fontFamily: '"Raleway", sans-serif' };
 
-// ✅ Theme-aware input style hook — use this in all pages
 export const useAdminInputStyle = (): React.CSSProperties => {
   const tk = useAdminTk();
   return { background: tk.inputBg, border: `1px solid ${tk.borderInput}`, fontFamily: '"Raleway", sans-serif', color: tk.textPrimary };
@@ -201,24 +266,43 @@ export const ConfirmDialog: React.FC<ConfirmProps> = ({ title, message, onConfir
 };
 
 // ─── Image Uploader ───────────────────────────────────────────────────────────
-interface ImageUploaderProps { value: string; onChange: (url: string, file?: File) => void; label?: string; aspectRatio?: string; }
+interface ImageUploaderProps {
+  value: string;
+  onChange: (url: string, file?: File) => void;
+  label?: string;
+  aspectRatio?: string;
+}
 
-export const SingleImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, label = 'Image', aspectRatio = '4/3' }) => {
+export const SingleImageUploader: React.FC<ImageUploaderProps> = ({
+  value,
+  onChange,
+  label = 'Image',
+  aspectRatio = '4/3',
+}) => {
   const tk = useAdminTk();
   const { isDarkAdmin } = useAdminTheme();
   const [dragging, setDragging] = useState(false);
+  // Track the most recently selected File so we can show its metadata
+  const [lastFile, setLastFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const handleFile = (file: File) => onChange(URL.createObjectURL(file), file);
+
+  const handleFile = (file: File) => {
+    setLastFile(file);
+    onChange(URL.createObjectURL(file), file);
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setDragging(false);
+    e.preventDefault();
+    setDragging(false);
     const file = e.dataTransfer.files[0];
     if (file?.type.startsWith('image/')) handleFile(file);
   }, []);
 
   return (
     <div>
+      {/* Drop zone */}
       <div
-        className={`relative rounded-xl overflow-hidden border-2 border-dashed transition-all cursor-pointer`}
+        className="relative rounded-xl overflow-hidden border-2 border-dashed transition-all cursor-pointer"
         style={{
           aspectRatio,
           borderColor: dragging ? '#bc3d3e' : tk.borderMed,
@@ -242,34 +326,74 @@ export const SingleImageUploader: React.FC<ImageUploaderProps> = ({ value, onCha
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4 text-center">
             <ImageIcon size={32} className="mb-2" style={{ color: tk.textMuted }} />
-            <p className="text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>Click or drag to upload</p>
-            <p className="text-xs mt-1" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>JPG, PNG, WebP</p>
+            <p className="text-sm" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textSecondary }}>
+              Click or drag to upload
+            </p>
+            <p className="text-xs mt-1" style={{ fontFamily: '"Raleway", sans-serif', color: tk.textMuted }}>
+              JPG, PNG, WebP
+            </p>
           </div>
         )}
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+
+      {/* File metadata pill — shown once a file is selected */}
+      {lastFile && <ImageMetaPill file={lastFile} />}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+      />
     </div>
   );
 };
 
 // ─── Multi Image Uploader ─────────────────────────────────────────────────────
-interface MultiImageUploaderProps { values: string[]; onChange: (urls: string[], files: (File | null)[]) => void; }
+interface MultiImageUploaderProps {
+  values: string[];
+  onChange: (urls: string[], files: (File | null)[]) => void;
+}
 
 export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ values, onChange }) => {
   const tk = useAdminTk();
   const slots = [0, 1, 2, 3];
-  const fileRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+  const fileRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
   const pendingFiles = useRef<(File | null)[]>([null, null, null, null]);
 
+  // Track per-slot selected files so we can show metadata under each slot
+  const [slotFiles, setSlotFiles] = useState<(File | null)[]>([null, null, null, null]);
+
   const handleFile = (index: number, file: File) => {
-    const newUrls = [...values]; while (newUrls.length < 4) newUrls.push('');
+    const newUrls = [...values];
+    while (newUrls.length < 4) newUrls.push('');
     newUrls[index] = URL.createObjectURL(file);
     pendingFiles.current[index] = file;
+
+    // Update slot file tracker
+    const newSlotFiles = [...slotFiles];
+    newSlotFiles[index] = file;
+    setSlotFiles(newSlotFiles);
+
     onChange(newUrls, [...pendingFiles.current]);
   };
+
   const removeImage = (index: number) => {
-    const newUrls = [...values]; newUrls[index] = '';
+    const newUrls = [...values];
+    newUrls[index] = '';
     pendingFiles.current[index] = null;
+
+    // Clear slot file tracker
+    const newSlotFiles = [...slotFiles];
+    newSlotFiles[index] = null;
+    setSlotFiles(newSlotFiles);
+
     onChange(newUrls, [...pendingFiles.current]);
   };
 
@@ -277,6 +401,7 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ values, 
     <div className="grid grid-cols-2 gap-3">
       {slots.map(i => (
         <div key={i} className="relative">
+          {/* Image slot */}
           <div
             className="rounded-xl overflow-hidden border-2 border-dashed transition-all cursor-pointer"
             style={{ aspectRatio: '3/4', borderColor: values[i] ? 'transparent' : tk.borderMed }}
@@ -298,6 +423,8 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ values, 
               </div>
             )}
           </div>
+
+          {/* Remove button */}
           {values[i] && (
             <button
               type="button"
@@ -309,7 +436,17 @@ export const MultiImageUploader: React.FC<MultiImageUploaderProps> = ({ values, 
               <X size={12} color="white" />
             </button>
           )}
-          <input ref={fileRefs[i]} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(i, f); }} />
+
+          {/* File metadata pill — shown once a file is selected for this slot */}
+          {slotFiles[i] && <ImageMetaPill file={slotFiles[i]!} />}
+
+          <input
+            ref={fileRefs[i]}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(i, f); }}
+          />
         </div>
       ))}
     </div>

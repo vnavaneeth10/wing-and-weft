@@ -96,6 +96,29 @@ const uniquePath = (prefix: string, index: number, file: File): string => {
   return `${slug}.${ext}`;
 };
 
+// ─── Helper: delete a file from Supabase storage by its public URL ────────────
+const deleteStorageFile = async (
+  bucket: string,
+  publicUrl: string,
+  token: string
+): Promise<void> => {
+  try {
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const oldPath = publicUrl.split(marker)[1];
+    if (!oldPath) return;
+    await fetch(
+      `${SUPABASE_URL}/storage/v1/object/${bucket}/${oldPath}`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+  } catch (e) {
+    // Non-fatal — log and continue
+    console.warn(`[deleteStorageFile] Could not delete from ${bucket}:`, e);
+  }
+};
+
 // ─── Auto product ID generator ───────────────────────────────────────────────
 export function generateProductId(): string {
   const date = new Date();
@@ -109,7 +132,6 @@ export function generateProductId(): string {
 }
 
 // ─── Date formatter ───────────────────────────────────────────────────────────
-// Formats a created_at ISO string into a human-readable Indian locale date + time.
 export function formatAddedDate(isoString?: string): { date: string; time: string } | null {
   if (!isoString) return null;
   const d = new Date(isoString);
@@ -128,10 +150,6 @@ export function useProducts() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
 
-  // ✅ FIX: Synchronous ref guard — prevents duplicate product creation
-  // even if the save button is clicked twice before React re-renders.
-  // A state variable (setSaving) is async and can be called twice before
-  // the first render cycle completes, allowing duplicate DB inserts.
   const isSavingRef = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -151,8 +169,6 @@ export function useProducts() {
                 const parsed = JSON.parse(p.specifications as unknown as string);
                 return Array.isArray(parsed) ? parsed : [];
               } catch (err) {
-                // ✅ FIX: Log warning instead of silently swallowing — prevents
-                // silent data loss if malformed specs are saved back to the DB.
                 console.warn(`[useProducts] Failed to parse specifications for product ${p.id}:`, err);
                 return [];
               }
@@ -173,6 +189,9 @@ export function useProducts() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // ✅ FIX: Delete old image at each slot before uploading the new one.
+  // This prevents stale JPG/PNG files accumulating in storage every time
+  // a product is edited and re-saved with new images.
   const uploadProductImages = async (
     productId: string,
     pendingFiles: (File | null)[],
@@ -185,6 +204,13 @@ export function useProducts() {
     await Promise.all(
       pendingFiles.map(async (file, i) => {
         if (!file) return;
+
+        // Delete old image at this slot before uploading replacement
+        const oldUrl = finalUrls[i];
+        if (oldUrl) {
+          await deleteStorageFile('product-images', oldUrl, session.access_token);
+        }
+
         const path   = `products/${productId}/${uniquePath('img', i, file)}`;
         const pubUrl = await uploadImage('product-images', path, file, session.access_token);
         finalUrls[i] = pubUrl;
@@ -200,9 +226,6 @@ export function useProducts() {
   ): Promise<DBProduct> => {
     if (!session) throw new Error('Not authenticated');
 
-    // ✅ FIX: Synchronous guard — if a save is already in progress (e.g. from a
-    // double-click or rapid re-submission), reject immediately before any network
-    // call is made. This is the primary fix for duplicate product creation.
     if (isSavingRef.current) throw new Error('Save already in progress — please wait.');
     isSavingRef.current = true;
 
@@ -218,7 +241,6 @@ export function useProducts() {
       setProducts((prev) => [updated, ...prev]);
       return updated;
     } finally {
-      // ✅ Always release the lock, even if an error is thrown mid-way.
       isSavingRef.current = false;
     }
   };
@@ -284,8 +306,17 @@ export function useBanners() {
     setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
   };
 
+  // ✅ FIX: Delete old banner image before uploading the new one.
+  // Previously, every banner image update left the old file in storage.
   const uploadBannerImage = async (id: string, file: File): Promise<string> => {
     if (!session) throw new Error('Not authenticated');
+
+    // Delete old banner image if one exists
+    const existingBanner = banners.find(b => b.id === id);
+    if (existingBanner?.image_url) {
+      await deleteStorageFile('banner-images', existingBanner.image_url, session.access_token);
+    }
+
     const ext    = file.name.split('.').pop() ?? 'jpg';
     const path   = `banners/${id}_${Date.now()}.${ext}`;
     const pubUrl = await uploadImage('banner-images', path, file, session.access_token);
@@ -357,8 +388,6 @@ export function useSettings() {
 
   const saveSetting = async (key: string, value: string): Promise<void> => {
     if (!session) throw new Error('Not authenticated');
-    // Fetch only the targeted row to get its DB id for PATCH.
-    // Scoped to a single key to minimise data transfer.
     const rows = await dbSelect<DBSettings>('settings', session.access_token);
     const existing = rows.find((s) => s.key === key);
     if (existing) {
@@ -380,12 +409,6 @@ export function useCategories() {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
 
-  /**
-   * ✅ NEW: Auto-computes each category's product count from the live products
-   * list instead of relying on the manually-editable count field.
-   * Pass the full products array (from useProducts) into this hook to enable it.
-   * Falls back to the DB-stored count when products are not yet loaded.
-   */
   const enrichWithProductCount = useCallback(
     (cats: DBCategory[], products: DBProduct[]): DBCategory[] => {
       if (!products.length) return cats;
@@ -433,6 +456,7 @@ export function useCategories() {
     return created;
   };
 
+  // ✅ FIX: Delete old category image before uploading the new one.
   const updateCategory = async (
     id: string,
     updates: Partial<DBCategory>,
@@ -441,6 +465,12 @@ export function useCategories() {
     if (!session) throw new Error('Not authenticated');
     let finalUpdates = { ...updates };
     if (imageFile) {
+      // Delete old category image if one exists
+      const existingCat = categories.find(c => c.id === id);
+      if (existingCat?.image) {
+        await deleteStorageFile('category-images', existingCat.image, session.access_token);
+      }
+
       const ext  = imageFile.name.split('.').pop() ?? 'jpg';
       const path = `categories/${id}_${Date.now()}.${ext}`;
       finalUpdates.image = await uploadImage('category-images', path, imageFile, session.access_token);
