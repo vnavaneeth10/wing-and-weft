@@ -236,7 +236,7 @@ const Footer: React.FC = () => {
                     }}
                     disabled={emailStatus === 'saving' || emailStatus === 'success'}
                     className="mt-0.5 flex-shrink-0 cursor-pointer"
-                    style={{ accentColor: '#FAF6EF' }}
+                    style={{ accentColor: isDark ? theme.accentPrimary : theme.footerButtonBg }}
                     aria-label="I agree to receive promotional emails from Wing & Weft"
                   />
                   <span
