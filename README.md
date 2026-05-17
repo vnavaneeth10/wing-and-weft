@@ -1,69 +1,92 @@
 # Wing & Weft — Complete Setup & Documentation Guide
 
+*Last updated: May 2026*
+
 ---
-
-
 
 ## 📋 Table of Contents
-1. [Project Overview](#overview)
-2. [Tech Stack](#tech-stack)
-3. [Quick Start (Local)](#quick-start)
-4. [Deploy to Vercel](#deploy-vercel)
-5. [Image Dimension Specifications](#image-dimensions)
-6. [Logo Specifications](#logo-specs)
-7. [Customization Guide](#customization)
-8. [Backend Recommendation](#backend)
-9. [Toggling Hidden Sections](#hidden-sections)
-10. [SEO Checklist](#seo)
-11. [Security Features](#security)
-12. [File Structure](#file-structure)
-13. [Suggestions & Improvements](#suggestions)
+
+**For Developers**
+1. [Project Overview](#1-project-overview)
+2. [Tech Stack](#2-tech-stack)
+3. [Quick Start (Local)](#3-quick-start-local)
+4. [Environment Variables](#4-environment-variables)
+5. [Deploy to Vercel](#5-deploy-to-vercel)
+6. [File Structure](#6-file-structure)
+7. [Architecture Notes](#7-architecture-notes)
+8. [Customization Reference](#8-customization-reference)
+9. [Image & Logo Specifications](#9-image--logo-specifications)
+10. [Analytics & Monitoring](#10-analytics--monitoring)
+11. [PWA Configuration](#11-pwa-configuration)
+12. [SEO Checklist](#12-seo-checklist)
+13. [Security Features](#13-security-features)
+14. [Known Issues & Fixes Applied](#14-known-issues--fixes-applied)
+15. [Future Improvements](#15-future-improvements)
+
+**For the Client**
+16. [How to Use the Admin Dashboard](#16-how-to-use-the-admin-dashboard)
 
 ---
 
-## 1. Project Overview <a name="overview"></a>
+---
 
-**Wing & Weft** is a static product display website for an online saree brand. It includes:
-- Animated loading screen with brand logo placeholder
-- Responsive navbar with search (debounced), categories dropdown, dark/light theme
-- Full-screen banner carousel with Ken Burns effect + scrolling ribbon
+# FOR DEVELOPERS
+
+---
+
+## 1. Project Overview
+
+**Wing & Weft** is a full-stack e-commerce storefront for an Indian saree brand. It is built on React + TypeScript with a Supabase backend and deployed on Vercel. The client manages all content — products, banners, stock, and settings — through a password-protected admin dashboard with no coding required.
+
+### What's live
+
+- Animated loading screen with brand logo
+- Responsive navbar with debounced search, category dropdown, dark/light theme toggle
+- Full-screen banner carousel with Ken Burns effect and scrollable ribbon
 - Auto-scrolling category cards
 - Tabbed collections (New Arrivals / Best Sellers / Featured)
-- Instagram section (toggleable)
-- Watch & Shop reels section (toggleable)
-- WhatsApp CTA section
-- Detailed product pages with image gallery, accordion specs, reviews skeleton
-- Category pages with filters, sort, search
-- Our Story page
-- Contact page (sends via WhatsApp)
+- Product listing pages with filters, sort, and search
+- Product detail pages with image gallery, lightbox zoom, accordion specs, and WhatsApp inquiry
+- FAQ page with accordion and category filters
+- Our Story page and Contact page (WhatsApp-routed)
 - Policy modals (6 policies)
-- Footer with newsletter, quick links, policy links
-- Floating WhatsApp button + scroll-to-top button
+- Footer with newsletter, quick links, and policy links
+- Floating WhatsApp button and scroll-to-top button
 - 404 fallback page
-- Full dark/light mode across entire site
+- Full dark/light mode across the entire site
+- Admin dashboard at `/admin` (login-gated, Supabase Auth)
+- Open Graph and WhatsApp link preview support
+- Schema.org structured data markup
+- GA4 analytics, Vercel Analytics, and Vercel Speed Insights
+- PWA-ready (installable, with `site.webmanifest`)
+- In-browser WebP conversion on image upload
 
 ---
 
-## 2. Tech Stack <a name="tech-stack"></a>
+## 2. Tech Stack
 
 | Technology | Purpose |
 |---|---|
 | React 18 | UI library |
 | TypeScript | Type safety |
 | Tailwind CSS | Styling |
-| Framer Motion | Animations (optional, add as needed) |
+| Framer Motion | Page and component animations |
 | React Router v6 | Client-side routing |
+| Supabase | Database, Auth, and Storage |
 | Lucide React | Icons |
-| Google Fonts | Cormorant Garamond, Playfair Display, Raleway |
-| Vercel | Deployment |
+| Google Fonts | DM Sans, Cormorant Garamond, Playfair Display |
+| Vercel | Deployment, Analytics, Speed Insights |
+| GA4 | Traffic analytics |
 
 ---
 
-## 3. Quick Start (Local) <a name="quick-start"></a>
+## 3. Quick Start (Local)
 
 ### Prerequisites
-- Node.js v18+ (https://nodejs.org)
+
+- Node.js v18+ — https://nodejs.org
 - npm or yarn
+- A Supabase project (see `.env` setup below)
 
 ### Steps
 
@@ -74,423 +97,490 @@ cd wing-and-weft
 # 2. Install dependencies
 npm install
 
-# 3. Start development server
-npm start
+# 3. Add environment variables (see Section 4)
+cp .env.example .env
+# → Fill in your Supabase keys
 
-# 4. Open in browser
-# → http://localhost:3000
+# 4. Start development server
+npm run dev
+
+# 5. Open in browser
+# → http://localhost:5173
 ```
 
 ### Build for production
+
 ```bash
 npm run build
-# Output is in /build folder — ready to deploy
+# Output is in /dist — ready to deploy
 ```
 
 ---
 
-## 4. Deploy to Vercel <a name="deploy-vercel"></a>
+## 4. Environment Variables
 
-### Option A: GitHub (Recommended)
-1. Push project to GitHub repository
-2. Go to https://vercel.com → Import Project
-3. Select your GitHub repo
-4. Settings:
-   - Framework: Create React App
+Create a `.env` file in the project root:
+
+```
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Get these values from: **Supabase → Project Settings → API**.
+
+> ⚠️ Never commit `.env` to GitHub. It is already listed in `.gitignore`.
+
+These same variables must also be added to Vercel under **Settings → Environment Variables** for the deployed site to work.
+
+---
+
+## 5. Deploy to Vercel
+
+### Recommended: GitHub integration
+
+1. Push the project to a GitHub repository
+2. Go to https://vercel.com → **Import Project** → select your repo
+3. Settings:
+   - Framework: Vite
    - Build Command: `npm run build`
-   - Output Directory: `build`
-5. Click Deploy → Done!
+   - Output Directory: `dist`
+4. Add the two environment variables from Section 4
+5. Click **Deploy**
 
-### Option B: Vercel CLI
-```bash
-npm install -g vercel
-vercel login
-cd wing-and-weft
-vercel --prod
-```
+### Custom domain (GoDaddy)
 
-### Custom Domain
-1. In Vercel dashboard → Project Settings → Domains
-2. Add your custom domain (e.g., `wingandweft.in`)
-3. Update DNS records as shown by Vercel
+The domain `wingandweft.com` is connected via GoDaddy DNS. To replicate or update:
 
----
+1. In Vercel → Project Settings → Domains → add your domain
+2. In GoDaddy DNS settings:
+   - Add a `CNAME` record: `www` → `cname.vercel-dns.com`
+   - Add an `A` record: `@` → `76.76.21.21`
+   - Remove any conflicting `A` or `CNAME` records on the same names
+3. DNS propagation takes up to 48 hours
 
-## 5. Image Dimension Specifications <a name="image-dimensions"></a>
-
-> **Share these with your client for all image submissions.**
-
-### 🖼️ Banner / Hero Images
-| Property | Value |
-|---|---|
-| **Dimensions** | **1440 × 700 px** |
-| Aspect Ratio | 16:5 (wide cinematic) |
-| Format | JPG or WebP |
-| Max File Size | 300 KB each |
-| Count | 3 images recommended |
-| Subject | Full saree draped model, lifestyle shots |
-| Notes | Keep subject slightly left-center; right side can fade to allow text overlay |
-
-### 📂 Category Cover Images
-| Property | Value |
-|---|---|
-| **Dimensions** | **400 × 600 px** |
-| Aspect Ratio | 2:3 (portrait) |
-| Format | JPG or WebP |
-| Max File Size | 150 KB each |
-| Count | 1 per category (5 categories) |
-| Subject | Close-up of saree fabric texture or draped look |
-| Notes | Will be displayed as vertical card, centered crop |
-
-### 🛍️ Product Images (per product)
-| Property | Value |
-|---|---|
-| **Dimensions** | **600 × 800 px** |
-| Aspect Ratio | 3:4 (portrait) |
-| Format | JPG or WebP |
-| Max File Size | 200 KB each |
-| Count | 4 images per product (required) |
-| Subject | Draped model / flat lay / fabric detail / border close-up |
-| Notes | Consistent background recommended (white or off-white) |
-
-### 📸 Instagram Feed Images
-| Property | Value |
-|---|---|
-| **Dimensions** | **400 × 500 px** |
-| Aspect Ratio | 4:5 |
-| Format | JPG |
-| Max File Size | 150 KB each |
-| Subject | Model shots, product shots from Instagram |
-
-### 🎬 Watch & Shop Reel Thumbnails
-| Property | Value |
-|---|---|
-| **Dimensions** | **400 × 600 px** |
-| Aspect Ratio | 2:3 (portrait, like phone reel) |
-| Format | JPG or MP4 (for videos) |
-| Max File Size | 2 MB (video), 150 KB (thumbnail) |
+> ℹ️ GoDaddy sometimes pre-populates conflicting DNS entries. Delete any existing `A` records for `@` before adding Vercel's.
 
 ---
 
-## 6. Logo Specifications <a name="logo-specs"></a>
-
-> **Share these with your designer/client for logo creation.**
-
-### Navbar Logo
-| Property | Value |
-|---|---|
-| **Recommended dimensions** | **400 × 400 px** (used at 48×48px in navbar) |
-| Format | SVG (ideal) or PNG with transparent background |
-| Shape | Square with rounded corners (displayed as circle in navbar) |
-| Color version needed | Full color version on transparent background |
-| File name | `logo.png` or `logo.svg` |
-
-### How to add logo once ready:
-1. Place `logo.png` in `/public/` folder
-2. In `Navbar.tsx` — find the commented `<img>` tag and uncomment it:
-   ```jsx
-   <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain rounded-full" />
-   ```
-3. In `LoadingScreen.tsx` — replace the `<span>W&W</span>` with:
-   ```jsx
-   <img src="/logo.png" alt="Wing & Weft" className="w-16 h-16 object-contain" />
-   ```
-4. In `OurStoryPage.tsx` — replace logo placeholder div with:
-   ```jsx
-   <img src="/logo.png" alt="Wing & Weft Logo" className="w-full h-full object-contain p-8" />
-   ```
-
-### Footer Logo
-| Property | Value |
-|---|---|
-| **Recommended dimensions** | **200 × 200 px** (displayed at 40×40px) |
-| Same as navbar logo (reuse the same file) |
-
----
-
-## 7. Customization Guide <a name="customization"></a>
-
-### 🔢 Update WhatsApp Business Number
-File: `src/data/products.ts`
-```typescript
-export const WHATSAPP_NUMBER = '919999999999'; // Format: country code + number (no + or spaces)
-// Example for India: '919876543210' for +91 98765 43210
-```
-
-### 📸 Add Real Product Images
-File: `src/data/products.ts` — update the `IMG` object:
-```typescript
-const IMG = {
-  p1: '/images/product-1-main.jpg',
-  p2: '/images/product-2-main.jpg',
-  // ...etc
-};
-```
-Place images in `/public/images/` folder.
-
-### ➕ Add New Products
-File: `src/data/products.ts` — add to `PRODUCTS` array:
-```typescript
-{
-  id: 'WW-026', // Always unique
-  name: 'Your Saree Name',
-  category: 'silk-sarees', // must match category id
-  fabric: 'Pure Silk',
-  price: 5000,
-  discountPrice: 4200, // optional, remove if no discount
-  rating: 4.5,
-  reviewCount: 0,
-  stock: 10, // Set to 0 for out of stock
-  colors: ['#BC3D3E', '#1A3A5C'],
-  images: ['/images/ww026-1.jpg', '/images/ww026-2.jpg', '/images/ww026-3.jpg', '/images/ww026-4.jpg'],
-  description: 'Full description here...',
-  specifications: {
-    sareeFabric: 'Pure Mulberry Silk',
-    sareeLength: '6.3 meters',
-    blouseLength: '0.8 meters',
-    blouseFabric: 'Pure Silk',
-  },
-  tags: ['New Arrivals'],
-  isNewArrival: true,
-  isBestSeller: false,
-  isFeatured: false,
-}
-```
-
-### 🔄 Update Stock Availability
-In `src/data/products.ts`, find the product by ID and change:
-```typescript
-stock: 0,  // Out of stock
-stock: 3,  // Low stock warning shows
-stock: 10, // Normal in stock
-```
-
-### 📝 Update Banner Slides
-File: `src/data/products.ts` — update `BANNER_SLIDES`:
-```typescript
-export const BANNER_SLIDES = [
-  {
-    id: '1',
-    image: '/images/banner-1.jpg',
-    title: 'Your Slide Title',
-    subtitle: 'Your subtitle text',
-    cta: 'Button Text',
-    link: '/category/silk-sarees',
-  },
-  // ...
-];
-```
-
-### 🎨 Change Brand Colors
-File: `tailwind.config.js`:
-```javascript
-brand: {
-  cream: '#e9e3cb',  // Light background
-  red: '#bc3d3e',    // Primary accent
-  orange: '#e69358', // Secondary accent
-  gold: '#b6893c',   // Gold details
-}
-```
-
----
-
-## 8. Backend Recommendation <a name="backend"></a>
-
-### ✅ Recommended Solution: Airtable + This Static Site
-
-Given your requirements (client has zero coding knowledge, needs to update products independently), here's the best approach:
-
-**Option A: Airtable (Best for your needs)**
-- Cost: Free for basic use (up to 1000 records)
-- Client can add/edit products in a spreadsheet-like interface
-- You build a small API integration in the app
-
-Setup:
-1. Create Airtable account at https://airtable.com
-2. Create a "Products" base with all fields (name, price, stock, images, etc.)
-3. Get API key from Airtable
-4. Replace the static `PRODUCTS` array with an Airtable fetch call
-
-```typescript
-// In src/data/products.ts, replace static PRODUCTS with:
-export const fetchProducts = async () => {
-  const response = await fetch(
-    `https://api.airtable.com/v0/${BASE_ID}/Products`,
-    { headers: { Authorization: `Bearer ${API_KEY}` } }
-  );
-  const data = await response.json();
-  return data.records.map(record => record.fields);
-};
-```
-
-**Option B: Google Sheets + Google Apps Script**
-- Cost: Free
-- Client familiar with Google Sheets
-- More setup but zero ongoing cost
-
-**Option C: Headless CMS (Contentful / Sanity)**
-- Cost: Free tier available
-- Most powerful content management
-- Visual editor for client
-- Recommended if you plan to scale
-
-**Option D: Simple Admin Dashboard (Future)**
-- Build a password-protected `/admin` page later
-- Use localStorage or Airtable API to manage products
-- Custom solution, one-time cost for development
-
-### ✅ For Stock Management (Immediate Solution)
-Since the client needs to independently update stock:
-1. Use Airtable as described above
-2. Client logs into Airtable, finds the product, changes `stock` to 0
-3. App auto-fetches latest data and shows "Out of Stock"
-
----
-
-## 9. Toggling Hidden Sections <a name="hidden-sections"></a>
-
-File: `src/pages/HomePage.tsx`
-
-```typescript
-// Set these to true/false based on threshold:
-const SHOW_INSTAGRAM = false;  // Hide Instagram section
-const SHOW_WATCH_SHOP = false; // Hide Watch & Shop section
-```
-
-Change to `true` when you want them visible.
-
----
-
-## 10. SEO Checklist <a name="seo"></a>
-
-The following are implemented:
-- ✅ Meta title, description, keywords in `public/index.html`
-- ✅ Open Graph tags for social sharing
-- ✅ Semantic HTML (nav, main, section, article, footer)
-- ✅ ARIA labels on all interactive elements
-- ✅ Alt text on all images
-- ✅ Lazy loading on images
-- ✅ Mobile-responsive design
-- ✅ Fast loading via code splitting and lazy pages
-
-**To add (recommended before launch):**
-1. Create `public/robots.txt`:
-   ```
-   User-agent: *
-   Allow: /
-   Sitemap: https://www.wingandweft.in/sitemap.xml
-   ```
-2. Add Google Analytics script to `public/index.html`
-3. Register on Google Search Console
-4. Add structured data (JSON-LD) for products
-
----
-
-## 11. Security Features <a name="security"></a>
-
-Implemented:
-- ✅ Security headers in `vercel.json` (XSS, X-Frame-Options, CSP, etc.)
-- ✅ `rel="noopener noreferrer"` on all external links
-- ✅ No sensitive data exposed in frontend
-- ✅ Input sanitization (forms use controlled components)
-- ✅ No localStorage used for sensitive data
-
----
-
-## 12. File Structure <a name="file-structure"></a>
+## 6. File Structure
 
 ```
 wing-and-weft/
 ├── public/
-│   ├── index.html          ← SEO meta, Google Fonts
-│   ├── favicon.ico         ← Add your favicon
-│   └── images/             ← Add product/banner images here
+│   ├── index.html            ← SEO meta, OG tags, schema markup, GA4 script
+│   ├── site.webmanifest      ← PWA manifest (display: browser — prevents install prompt)
+│   ├── favicon.ico
+│   └── og-image.jpg          ← OG/WhatsApp link preview image (1200×630)
 │
 ├── src/
 │   ├── components/
-│   │   ├── Navbar/         ← Navigation with search, dropdown, theme
-│   │   ├── Banner/         ← Hero carousel + ribbon
-│   │   ├── Category/       ← Auto-scroll category cards
-│   │   ├── Collections/    ← Tabbed product collections
-│   │   ├── Instagram/      ← Instagram feed section
-│   │   ├── WatchShop/      ← Video reel section
-│   │   ├── WhatsApp/       ← CTA section + floating buttons
-│   │   ├── Footer/         ← Full footer
-│   │   ├── Products/       ← ProductCard component (shared)
-│   │   ├── Policy/         ← Policy modal + data
-│   │   └── UI/             ← LoadingScreen, skeletons
+│   │   ├── Navbar/           ← Navigation, search, dropdown, theme toggle
+│   │   ├── Banner/           ← Hero carousel + scrolling ribbon
+│   │   ├── Category/         ← Auto-scroll category cards
+│   │   ├── Collections/      ← Tabbed product collections
+│   │   ├── Instagram/        ← Instagram feed section (toggleable)
+│   │   ├── WatchShop/        ← Video reel section (toggleable)
+│   │   ├── WhatsApp/         ← CTA section + floating buttons
+│   │   ├── Footer/           ← Full footer
+│   │   ├── Products/         ← ProductCard (shared), MultiImageUploader
+│   │   ├── Policy/           ← Policy modal + data
+│   │   └── UI/               ← LoadingScreen, skeletons, CategorySection
 │   │
 │   ├── pages/
 │   │   ├── HomePage.tsx
 │   │   ├── CategoryPage.tsx
 │   │   ├── ProductDetailPage.tsx
+│   │   ├── FAQPage.tsx
 │   │   ├── OurStoryPage.tsx
 │   │   ├── ContactPage.tsx
 │   │   ├── SearchPage.tsx
-│   │   └── NotFoundPage.tsx
-│   │
-│   ├── data/
-│   │   └── products.ts     ← ALL product data, categories, WhatsApp config
+│   │   ├── NotFoundPage.tsx
+│   │   └── admin/
+│   │       ├── AdminLoginPage.tsx
+│   │       ├── AdminDashboard.tsx
+│   │       ├── ProductsAdmin.tsx
+│   │       ├── BannersAdmin.tsx
+│   │       ├── InquiriesAdmin.tsx
+│   │       └── SettingsAdmin.tsx
 │   │
 │   ├── context/
-│   │   └── ThemeContext.tsx ← Dark/light theme state
+│   │   ├── ThemeContext.tsx   ← Dark/light mode
+│   │   └── SettingsContext.tsx ← Dynamic site settings from Supabase
 │   │
 │   ├── hooks/
-│   │   └── index.ts        ← useDebounce, useSearchSuggestions, useScrollToTop, useInView
+│   │   ├── index.ts           ← useDebounce, useScrollToTop, useInView
+│   │   ├── useProduct.ts      ← Single product fetch by ID
+│   │   └── useImageConverter.ts ← In-browser WebP conversion on upload
+│   │
+│   ├── lib/
+│   │   └── supabase.ts        ← Supabase client initialisation
 │   │
 │   ├── types/
-│   │   └── index.ts        ← TypeScript interfaces
+│   │   └── index.ts           ← TypeScript interfaces (Product, Banner, Inquiry, Settings)
 │   │
-│   ├── App.tsx             ← Root app, routing, loading screen
-│   └── index.css           ← Global styles, animations
+│   ├── App.tsx                ← Root, routing, loading screen, analytics init
+│   └── index.css              ← Global styles, animations, skeleton keyframes
 │
-├── tailwind.config.js      ← Brand colors, fonts, animations
-├── vercel.json             ← Security headers, routing
+├── tailwind.config.js         ← Brand colours, fonts, custom animations
+├── vercel.json                ← Security headers, SPA routing fallback
+├── vite.config.ts
 ├── package.json
 └── tsconfig.json
 ```
 
 ---
 
-## 13. Suggestions & Improvements <a name="suggestions"></a>
+## 7. Architecture Notes
 
-### 🚀 Priority Improvements Before Launch
-1. **Add a favicon** — Create a simple `favicon.ico` from your logo and add to `/public/`
-2. **Replace placeholder images** — Upload real saree photos to `/public/images/`
-3. **Update WhatsApp number** — Critical before launch
-4. **Add Google Analytics** — Track visitors from day one
-5. **Performance** — Use WebP format for all images (50% smaller than JPG)
+### Supabase tables
 
-### 💡 Feature Suggestions for Phase 2
-1. **Wishlist** — Let customers save favorites (localStorage)
-2. **Image zoom** — Hover/click to zoom on product detail page
-3. **Recently Viewed** — Show last 4 viewed products
-4. **Related Products** — Show similar category products at bottom of detail page
-5. **WhatsApp catalog** — Instead of just chat, use WhatsApp Catalog API
-6. **Google Maps embed** — If you have a store, show it on Contact page
-7. **Customer testimonials** — Static testimonials until review system is built
+| Table | Purpose |
+|---|---|
+| `products` | All product data including specs, tags, stock, visibility |
+| `banners` | Hero carousel slides (image, headline, subtitle, CTA, visibility) |
+| `inquiries` | Customer WhatsApp/contact form submissions |
+| `settings` | Dynamic site-wide config (WhatsApp number, Instagram URL, ribbon text, etc.) |
 
-### 📱 Mobile-Specific Suggestions
-1. Add touch swipe support to the banner (can use `react-swipeable`)
-2. Consider adding a bottom navigation bar on mobile
+Row Level Security (RLS) is enabled on all tables. Public `SELECT` is allowed on `products` and `banners`. All write operations require an authenticated admin session.
 
-### 🔐 Admin Panel Recommendation
-Build a simple `/admin` route (password protected) with:
-- Product list with inline stock editing
-- Toggle product visibility
-- Export to WhatsApp catalog format
+### Storage buckets
 
-Cost to build: 2–3 days of development work.
+| Bucket | Contents |
+|---|---|
+| `product-images` | Product photos (public) |
+| `banner-images` | Hero banner images (public) |
 
----
+### SettingsContext
 
-## 📞 Support
+`SettingsContext` fetches the `settings` table on app load and exposes values site-wide via `useSettings()`. This means WhatsApp number, Instagram URL, ribbon text, and social links are all editable by the client from the admin dashboard — no code changes or redeployments needed.
 
-For technical support or modifications, the codebase is fully commented and modular. Each component is self-contained.
+### Image conversion
 
-Contact: support@wingandweft.com
+`useImageConverter.ts` converts any uploaded image to WebP in the browser before it is sent to Supabase Storage. This runs automatically inside `MultiImageUploader` and keeps storage usage low without requiring any server-side processing.
+
+`MultiImageUploader` also enforces a **3:4 aspect ratio** on all uploaded product images and rejects non-conforming files with a clear error message.
 
 ---
 
-*Documentation last updated: March 2026*
-*Crafted with ❤️ for Wing & Weft*
+## 8. Customization Reference
+
+### Brand colours
+
+File: `tailwind.config.js`
+
+```javascript
+brand: {
+  cream: '#e9e3cb',
+  red: '#bc3d3e',
+  orange: '#e69358',
+  gold: '#b6893c',
+  saffron: '#f59e0b',  // hover accent on CategorySection
+}
+```
+
+### Toggling optional sections
+
+File: `src/pages/HomePage.tsx`
+
+```typescript
+const SHOW_INSTAGRAM = false;   // Set true when Instagram content is ready
+const SHOW_WATCH_SHOP = false;  // Set true when reels are ready
+```
+
+### WhatsApp number (fallback / hardcoded)
+
+The WhatsApp number is managed dynamically via `SettingsContext` and editable from the admin dashboard. A hardcoded fallback exists in `src/lib/constants.ts` in case the settings fetch fails:
+
+```typescript
+export const FALLBACK_WHATSAPP = '919XXXXXXXXXX';
+```
+
+### Adding a new product category
+
+1. Add the category to the `categories` array in `src/data/categories.ts`
+2. Add a corresponding cover image to Supabase Storage or `/public/images/`
+3. The admin dashboard will pick up the new category automatically in the product form dropdown
+
+---
+
+## 9. Image & Logo Specifications
+
+> Share this section with the client or photographer before any shoot.
+
+### Hero / Banner images
+
+| Property | Value |
+|---|---|
+| Dimensions | 1440 × 700 px |
+| Aspect ratio | ~16:5 |
+| Format | WebP preferred, JPG accepted |
+| Max file size | 300 KB |
+| Count | 3 slides recommended |
+| Notes | Keep subject slightly left-centre; right side can fade to allow text overlay |
+
+### Category cover images
+
+| Property | Value |
+|---|---|
+| Dimensions | 400 × 600 px |
+| Aspect ratio | 2:3 (portrait) |
+| Format | WebP or JPG |
+| Max file size | 150 KB |
+| Count | 1 per category |
+
+### Product images
+
+| Property | Value |
+|---|---|
+| Dimensions | 600 × 800 px |
+| Aspect ratio | 3:4 (portrait) — enforced at upload |
+| Format | Any (converted to WebP automatically on upload) |
+| Max file size | 200 KB after conversion |
+| Count | 4 per product (required) |
+| Notes | Consistent white or off-white background recommended |
+
+### OG / Link preview image
+
+| Property | Value |
+|---|---|
+| Dimensions | 1200 × 630 px |
+| Format | JPG |
+| File | `public/og-image.jpg` |
+| Notes | Used when the site link is shared on WhatsApp, Instagram, and social media |
+
+### Navbar logo
+
+| Property | Value |
+|---|---|
+| Recommended dimensions | 400 × 400 px (displayed at 48×48 px) |
+| Format | SVG (ideal) or PNG with transparent background |
+| Shape | Square — displayed as circle in navbar |
+| File name | `public/logo.png` or `public/logo.svg` |
+
+---
+
+## 10. Analytics & Monitoring
+
+### GA4
+
+GA4 is configured with measurement ID `G-PLLM2PLZQD`. The tracking script is embedded directly in `public/index.html`. No npm package is used.
+
+To verify it's firing: open the site → open browser DevTools → Network tab → filter for `collect` → you should see requests to `google-analytics.com`.
+
+### Vercel Analytics
+
+Enabled via the `@vercel/analytics` package, initialised in `App.tsx`:
+
+```typescript
+import { Analytics } from '@vercel/analytics/react';
+// Rendered inside <App> return
+<Analytics />
+```
+
+### Vercel Speed Insights
+
+Enabled via `@vercel/speed-insights`, also in `App.tsx`:
+
+```typescript
+import { SpeedInsights } from '@vercel/speed-insights/react';
+<SpeedInsights />
+```
+
+Both are visible in the Vercel dashboard under the **Analytics** and **Speed** tabs for the project.
+
+---
+
+## 11. PWA Configuration
+
+The site includes a `public/site.webmanifest` file for PWA metadata (name, icons, theme colour). The `display` field is intentionally set to `"browser"` rather than `"standalone"`:
+
+```json
+{
+  "display": "browser"
+}
+```
+
+> ⚠️ Do not change `display` to `"standalone"`. This triggers the browser's PWA install prompt, which interrupts the shopping experience and was reverted after testing.
+
+---
+
+## 12. SEO Checklist
+
+### Implemented
+
+- Meta title, description, and keywords in `public/index.html`
+- Open Graph tags for WhatsApp and social link previews
+- `og-image.jpg` (1200×630) for rich link previews
+- Schema.org JSON-LD structured data for the brand/organisation
+- Semantic HTML throughout (`nav`, `main`, `section`, `article`, `footer`)
+- ARIA labels on all interactive elements
+- Alt text on all images
+- Lazy loading on images below the fold
+- Mobile-responsive design
+- `robots.txt` allowing all crawlers and pointing to sitemap
+
+### To complete before next relaunch
+
+- Submit sitemap to Google Search Console
+- Add product-level JSON-LD (`@type: Product`) on `ProductDetailPage`
+- Register in Google Search Console and verify domain ownership
+
+---
+
+## 13. Security Features
+
+- Security headers in `vercel.json` (XSS protection, X-Frame-Options, CSP, HSTS)
+- `rel="noopener noreferrer"` on all external links
+- Supabase RLS policies — public users can only read; writes require authenticated session
+- No sensitive data exposed in frontend bundles
+- `.env` excluded from version control via `.gitignore`
+- Admin route protected by Supabase Auth — unauthenticated users are redirected to `/admin/login`
+
+---
+
+## 14. Known Issues & Fixes Applied
+
+| Issue | Root Cause | Fix Applied |
+|---|---|---|
+| Infinite loading skeleton on ProductDetailPage | `useProduct` hook received an empty `id` string on first render | Added guard: only fetch when `id` is truthy |
+| Image lightbox not working on product detail | React remounting + CSS animation conflict reset zoom state | Moved zoom logic outside animation scope; fixed z-index layering |
+| Mobile navbar category accordion broken | Desktop and mobile category open states shared the same variable | Split into separate `desktopOpen` and `mobileOpen` state |
+| PWA install prompt appearing unexpectedly | `site.webmanifest` had `"display": "standalone"` | Changed to `"display": "browser"` |
+| Star ratings not showing in admin dashboard | `review_count > 0` render guard blocked display; normalizer defaulted ratings to `true` via `?? true` | Fixed normalizer default; removed `review_count` guard on admin star display |
+| Admin product form fabric field locked to dropdown | Fabric field was a fixed select | Replaced with free-text input to support custom fabric descriptions |
+
+---
+
+## 15. Future Improvements
+
+### Phase 2 features
+
+- Wishlist — save favourites via Supabase (replaces localStorage approach)
+- Recently Viewed — last 4 products, stored in sessionStorage
+- Related Products — same-category products at the bottom of detail page
+- WhatsApp Catalog API integration for a richer shopping experience
+- Customer testimonials section (static until review system is built)
+- Google Maps embed on Contact page if a physical store opens
+
+### Mobile enhancements
+
+- Touch swipe support for the banner carousel (`react-swipeable`)
+- Bottom navigation bar on mobile for faster tab switching
+
+### Performance
+
+- Implement `React.lazy` + `Suspense` on all page-level routes if bundle size grows
+- Consider moving product images to a CDN if Supabase Storage free tier limits are approached
+
+---
+
+---
+
+# FOR THE CLIENT
+
+---
+
+## 16. How to Use the Admin Dashboard
+
+### Accessing the dashboard
+
+Open your browser and go to:
+
+```
+https://wingandweft.com/admin
+```
+
+Sign in with the email and password that were set up for you. Bookmark this page on your phone for quick access. The dashboard works fully on mobile — useful for updating stock after exhibitions or pop-up events.
+
+---
+
+### Adding a New Product
+
+1. Click **Products** in the left sidebar
+2. Click **Add Product** (top right)
+3. Fill in the product details:
+   - **Name** — the full product name as it should appear on the website
+   - **Category** — select from the dropdown (e.g. Silk Sarees, Cotton Sarees)
+   - **Fabric** — type the fabric description freely (e.g. "Pure Mulberry Silk with Zari Border")
+   - **Price** — original price in ₹
+   - **Discount Price** — leave blank if there is no discount
+   - **Stock** — number of pieces available
+   - **Description** — full product description shown on the product page
+   - **Specifications** — saree length, blouse length, blouse fabric, care instructions
+   - **Washing Instructions** — displayed separately on the product page
+   - **Tags** — tick New Arrival, Best Seller, and/or Featured as appropriate
+   - **Visibility** — toggle off to hide a product from the website without deleting it
+4. Upload 4 product photos using the image uploader (drag and drop, or click to browse). Photos must be portrait orientation (taller than they are wide). They are converted to the best format automatically.
+5. Click **Add Product**. The product appears on the website immediately.
+
+---
+
+### Updating Stock
+
+**Quick method (recommended for day-to-day use):**
+1. Go to **Products**
+2. Find the product
+3. Click directly on the stock badge (e.g. "10 in stock")
+4. Type the new number and press Enter
+5. Done — shows "Out of Stock" automatically when the count reaches 0
+
+**Full edit method:**
+1. Click the pencil (edit) icon on the product row
+2. Change the Stock field
+3. Click **Save**
+
+---
+
+### Hiding or Showing a Product
+
+Every product has a **visibility toggle** (eye icon) in the product list. Toggling it off hides the product from customers without deleting it. Toggle it back on to make it visible again. This is useful for products that are temporarily unavailable or being prepared.
+
+---
+
+### Managing Banners (Hero Slideshow)
+
+1. Click **Banners** in the sidebar
+2. Each slide (Slide 1, 2, 3) can be edited independently:
+   - Drag a new image into the image area to replace it
+   - Update the headline, subtitle, and button text
+   - Change where the button links to (e.g. `/category/silk-sarees`)
+3. Click **Save** on each slide after editing
+4. Use the eye icon to show or hide individual slides — useful for seasonal promotions
+
+---
+
+### Reading Customer Inquiries
+
+1. Click **Inquiries** in the sidebar
+2. New messages appear with a red indicator
+3. Click **Reply on WhatsApp** — this opens WhatsApp with the customer's number already filled in
+4. Mark messages as **Seen** or **Replied** to track follow-ups
+
+---
+
+### Updating Site Settings
+
+1. Click **Settings** in the sidebar
+2. You can update:
+   - **WhatsApp number** — the number customers reach when they click any WhatsApp button
+   - **Instagram URL** — your Instagram profile link
+   - **Ribbon text** — the scrolling text across the top of the homepage
+   - Other social and contact links
+3. Click **Save changes** — updates go live on the website immediately, no refresh needed
+
+---
+
+### Dashboard at a Glance
+
+| Section | What you can do |
+|---|---|
+| **Products** | Add, edit, delete, hide/show products. Update stock with one click. |
+| **Stock alerts** | The dashboard highlights products with 3 or fewer pieces remaining |
+| **Banners** | Replace images, edit headlines and button text, show/hide slides |
+| **Inquiries** | Read customer messages, reply via WhatsApp, track status |
+| **Settings** | Update WhatsApp number, Instagram link, ribbon text, and other site-wide details |
+
+---
+
+*Wing & Weft — Documentation v2.0 — May 2026*
+*For technical support, contact the developer.*
