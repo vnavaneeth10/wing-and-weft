@@ -32,7 +32,7 @@ export function useSearchSuggestions(query: string): Product[] {
         // Build URL manually — URLSearchParams encodes commas inside or() which breaks Supabase
         const encoded = encodeURIComponent(q);
         const url = `${SUPABASE_URL}/rest/v1/products`
-          + `?or=(name.ilike.*${encoded}*,category.ilike.*${encoded}*,fabric.ilike.*${encoded}*)`
+          + `?or=(name.ilike.*${encoded}*,category.ilike.*${encoded}*,fabric.ilike.*${encoded}*,id.ilike.*${encoded}*)`
           + `&select=id,name,category,fabric,price,discount_price,images`
           + `&limit=6`;
 

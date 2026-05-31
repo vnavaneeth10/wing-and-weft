@@ -268,6 +268,30 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
 
         {/* ── DESKTOP: Full details ── */}
         <div className="hidden md:block">
+
+          {/* ── Product ID badge ── */}
+          <div className="mb-2">
+            <span
+              className="inline-flex items-center font-label"
+              style={{
+                fontSize: '0.58rem',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                // Light: ink-muted text (#8C7060) on cream-dark bg (#EDE5D4), gold border
+                // Dark:  dark-muted text (#b8a88a) on dark-card bg (#231d17), dark-border
+                color:      isDark ? '#d4c4a8' : '#4A3728',
+                background: isDark ? '#231d17'  : '#EDE5D4',
+                border:     `1px solid ${isDark ? '#3a2e24' : '#d4c4a8'}`,
+                borderRadius: '4px',
+                padding: '2px 7px',
+                fontFamily: 'monospace',
+              }}
+              title={`Product ID: ${product.id}`}
+            >
+              {product.id}
+            </span>
+          </div>
+
           <p className="font-body mb-1.5" style={{
             fontSize: '0.58rem', letterSpacing: '0.2em',
             fontWeight: 700, textTransform: 'uppercase', color: '#b6893c',
@@ -306,6 +330,7 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
+                minHeight: 'calc(0.9rem * 1.35 * 2)',
               }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#bc3d3e'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = isDark ? '#f0e8d6' : '#1a1410'}
@@ -314,14 +339,14 @@ const ProductCard: React.FC<Props> = ({ product, compact = false }) => {
             </h3>
           </Link>
 
-          {/* Price row — desktop shows price + stock only (BUY is on hover over image) */}
+          {/* Price row */}
           <div>
             {product.discount_price ? (
               <div className="flex items-baseline gap-2">
                 <span className="font-body" style={{ fontSize: '1.05rem', fontWeight: 900, color: '#bc3d3e', letterSpacing: '-0.01em' }}>
                   ₹{product.discount_price.toLocaleString()}
                 </span>
-                <span className="font-body line-through" style={{ fontSize: '0.76rem', fontWeight: 500, color: isDark ? '#64748b' : '#a8a29e' }}>
+                <span className="font-body line-through" style={{ fontSize: '0.7rem', fontWeight: 400, color: isDark ? '#4a3e32' : '#c8bfb4', letterSpacing: '0' }}>
                   ₹{product.price.toLocaleString()}
                 </span>
               </div>
