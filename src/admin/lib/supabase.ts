@@ -215,19 +215,11 @@ export const dbDelete = async (
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-/** Returns the full CDN-ready public URL for a stored image */
+/** Returns the full CDN public URL for a stored image */
 export const getPublicUrl = (bucket: string, path: string): string =>
-  `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+  `https://cdn.wingandweft.com/${bucket}/${path.replace(/^\//, '')}`;
 
-/**
- * Uploads a file and returns its FULL public URL.
- *
- * FIX: Supabase Storage RLS policies block POST (INSERT) when a file already
- * exists at that path. We now try POST first and automatically retry with PUT
- * (UPDATE) if we get a 403 or 409. This resolves the
- * "new row violates row-level security policy" error on category, banner and
- * product image uploads.
- */
+/** Uploads a file directly to R2 via a short-lived signed URL, returns the full public URL */
 export const uploadImage = async (
   bucket: string,
   path: string,
@@ -236,30 +228,20 @@ export const uploadImage = async (
 ): Promise<string> => {
   const cleanPath = path.replace(/^\//, '');
 
-  const attempt = (method: 'POST' | 'PUT') =>
-    fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${cleanPath}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': file.type,
-        'x-upsert': 'true',
-      },
-      body: file,
-    });
+  const urlRes = await fetch('/api/get-upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ bucket, path: cleanPath, contentType: file.type }),
+  });
+  if (!urlRes.ok) throw new Error(`Could not get upload URL: ${await urlRes.text()}`);
+  const { uploadUrl, publicUrl } = await urlRes.json();
 
-  // First try POST (create)
-  let res = await attempt('POST');
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  });
+  if (!putRes.ok) throw new Error(`Upload to R2 failed: ${await putRes.text()}`);
 
-  // If Supabase RLS blocks the INSERT (403) or file already exists (409),
-  // retry with PUT (update/upsert) which hits the UPDATE policy instead.
-  if (res.status === 403 || res.status === 409) {
-    res = await attempt('PUT');
-  }
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Upload failed: ${errText}`);
-  }
-
-  return getPublicUrl(bucket, cleanPath);
+  return publicUrl;
 };
