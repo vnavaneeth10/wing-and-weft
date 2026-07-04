@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
+import { getBanners } from '../../lib/bannersCache';
+import { getSettings } from '../../lib/settingsCache';
 
 interface BannerSlide {
   id:         string;
@@ -15,15 +16,6 @@ interface BannerSlide {
   is_active:  boolean;
   sort_order: number;
 }
-
-const fetchBanners = async (): Promise<BannerSlide[]> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/banners?is_active=eq.true&order=sort_order.asc`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) throw new Error('Failed');
-  return res.json();
-};
 
 const RIBBON_ITEMS = [
   'Handwoven Heritage', '◆', 'Free Shipping Above ₹2000', '◆',
@@ -346,7 +338,7 @@ const Banner: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchBanners()
+    getBanners()
       .then(data => {
         const active = data.filter(b => b.image_url?.trim());
         const normalised = active.map(b => ({ ...b, eyebrow: b.eyebrow ?? '' }));
@@ -355,13 +347,8 @@ const Banner: React.FC = () => {
       })
       .catch(() => setStatus('empty'));
 
-    fetch(`${SUPABASE_URL}/rest/v1/settings?key=eq.ribbon_visible&select=value`, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-    })
-      .then(r => r.json())
-      .then((rows: { value: string }[]) => {
-        if (rows[0]?.value === 'false') setRibbonVisible(false);
-      })
+    getSettings()
+      .then(s => { if (s.ribbon_visible === 'false') setRibbonVisible(false); })
       .catch(() => {});
   }, []);
 

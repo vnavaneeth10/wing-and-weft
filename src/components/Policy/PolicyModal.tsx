@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, Mail, Phone, Instagram } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../admin/lib/supabase';
+import { getPolicyById } from '../../lib/policiesCache';
+import { getSettings } from '../../lib/settingsCache';
 
 interface PolicyData {
   id:      string;
@@ -17,46 +18,6 @@ interface ContactInfo {
   instagram_handle: string;
 }
 
-// ─── Fetch single policy from Supabase ────────────────────────────────────────
-const fetchPolicy = async (id: string): Promise<PolicyData | null> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/policies?id=eq.${encodeURIComponent(id)}&is_active=eq.true&select=id,title,content`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!data.length) return null;
-  const p = data[0];
-  return {
-    ...p,
-    content: Array.isArray(p.content) ? p.content : JSON.parse(p.content),
-  };
-};
-
-// ─── Fetch contact info from settings ────────────────────────────────────────
-const fetchContact = async (): Promise<ContactInfo> => {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/settings?select=key,value`,
-    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
-  );
-  const DEFAULTS: ContactInfo = {
-    phone:            '+91 99999 99999',
-    email:            'support@wingandweft.com',
-    instagram_url:    'https://www.instagram.com/wingandweft/',
-    instagram_handle: '@wingandweft',
-  };
-  if (!res.ok) return DEFAULTS;
-  const rows: { key: string; value: string }[] = await res.json();
-  const map: Record<string, string> = {};
-  rows.forEach(r => { if (r.key && r.value) map[r.key] = r.value; });
-  return {
-    phone:            map['contact_phone']    || DEFAULTS.phone,
-    email:            map['contact_email']    || DEFAULTS.email,
-    instagram_url:    map['instagram_url']    || DEFAULTS.instagram_url,
-    instagram_handle: map['instagram_handle'] || DEFAULTS.instagram_handle,
-  };
-};
-
 interface Props {
   policyId: string;
   onClose:  () => void;
@@ -70,8 +31,16 @@ const PolicyModal: React.FC<Props> = ({ policyId, onClose }) => {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchPolicy(policyId), fetchContact()])
-      .then(([p, c]) => { setPolicy(p); setContact(c); })
+    Promise.all([getPolicyById(policyId), getSettings()])
+      .then(([p, s]) => {
+        setPolicy(p);
+        setContact({
+          phone:            s.contact_phone,
+          email:            s.contact_email,
+          instagram_url:    s.instagram_url,
+          instagram_handle: s.instagram_handle,
+        });
+      })
       .finally(() => setLoading(false));
   }, [policyId]);
 

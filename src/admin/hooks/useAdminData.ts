@@ -2,6 +2,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, uploadImage, publicFetch, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { useAdminAuth } from '../lib/AdminAuthContext';
+import { clearCategoriesCache } from '../../lib/categoriesCache';
+import { clearSettingsCache } from '../../lib/settingsCache';
+import { clearBannersCache } from '../../lib/bannersCache';
+import { clearPoliciesCache } from '../../lib/policiesCache';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -304,6 +308,7 @@ export function useBanners() {
     if (!session) throw new Error('Not authenticated');
     await dbUpdate<DBBanner>('banners', session.access_token, id, updates);
     setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+    clearBannersCache();
   };
 
   // ✅ FIX: Delete old banner image before uploading the new one.
@@ -396,6 +401,7 @@ export function useSettings() {
       await dbInsert<DBSettings>('settings', session.access_token, { key, value });
     }
     setSettings((prev) => ({ ...prev, [key]: value }));
+    clearSettingsCache();
   };
 
   return { settings, loading, refresh, saveSetting };
@@ -453,6 +459,7 @@ export function useCategories() {
       image: imageUrl,
     });
     setCategories((prev) => [...prev, created].sort((a, b) => a.sort_order - b.sort_order));
+    clearCategoriesCache();
     return created;
   };
 
@@ -477,12 +484,14 @@ export function useCategories() {
     }
     await dbUpdate<DBCategory>('categories', session.access_token, id, finalUpdates);
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...finalUpdates } : c)));
+    clearCategoriesCache();
   };
 
   const deleteCategory = async (id: string): Promise<void> => {
     if (!session) throw new Error('Not authenticated');
     await dbDelete('categories', session.access_token, id);
     setCategories((prev) => prev.filter((c) => c.id !== id));
+    clearCategoriesCache();
   };
 
   return {
@@ -532,6 +541,7 @@ export function usePolicies() {
       updated_at: new Date().toISOString(),
     });
     await refresh();
+    clearPoliciesCache();
   }, [session, refresh]);
 
   return { policies, loading, refresh, updatePolicy };
